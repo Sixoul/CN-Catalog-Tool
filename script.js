@@ -25,7 +25,17 @@ try {
 
 // CONSTANTS
 const GITHUB_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME"; 
-const FILAMENT_COLORS = ["Jade White", "Light Gray", "Orange", "Sunflower Yellow", "Mistletoe Green", "Cocoa Brown", "Red", "Cyan", "Cobalt Blue", "Purple", "Blue Grey", "Hot Pink", "Black", "Matte Ivory White", "Matte Lilac Purple", "Matte Mandarin Orange", "Matte Plum", "Matte Dark Red", "Matte Grass Green", "Matte Dark Blue", "Matte Ash Gray", "Matte Charcoal", "Glow in Dark Blue", "Silk Blue Hawaii", "Silk+ Gold", "Metal Iridium Gold", "Metal Copper Brown", "Metal Iron Gray"];
+// Updated with your specific inventory
+const FILAMENT_COLORS = [
+    "Jade White", "Light Gray", "Orange", "Sunflower Yellow", "Mistletoe Green", "Cocoa Brown", 
+    "Red", "Cyan", "Cobalt Blue", "Purple", "Blue Grey", "Hot Pink", "Black", 
+    "Matte Ivory White", "Matte Lilac Purple", "Matte Mandarin Orange", "Matte Plum", 
+    "Matte Dark Red", "Matte Grass Green", "Matte Dark Blue", "Matte Ash Gray", "Matte Charcoal",
+    "Glow in Dark Blue", "Silk Blue Hawaii", "Silk+ Gold", "Metal Iridium Gold", 
+    "Metal Copper Brown", "Metal Iron Gray", "Translucent Red", "Wood Black Walnut", 
+    "PETG Translucent Clear", "Flashforge Burnt Titanium", "Rock PLA Mars Red", 
+    "Burgundy Red"
+];
 
 // LOCAL STATE
 let newsData = [], jamsData = [], rulesData = [], coinsData = [], catalogData = [], requestsData = [], queueData = [], leaderboardData = [];
@@ -307,8 +317,12 @@ function renderCatalog() {
     const c = document.getElementById('catalog-feed'); 
     if(c) { 
         c.innerHTML=''; 
+        // Ensure currentTier is valid
+        if(!currentTier) currentTier = 'tier1';
+        
         const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false); 
-        if(f.length === 0) c.innerHTML = '<p style="color:#666">No items.</p>'; 
+        
+        if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier yet.</p>'; 
         else f.forEach(i => { 
             let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; 
             let act = `onclick="initRequest('${i.id}')"`; 
@@ -512,8 +526,114 @@ function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins()
 function getIconClass(belt) { const b=(belt||'white').toLowerCase(); if(b.includes('robot'))return 'fa-robot'; if(b.includes('ai'))return 'fa-microchip'; if(b.includes('jr'))return 'fa-child'; return 'fa-user-ninja'; }
 function openGitHubUpload() { if (GITHUB_REPO_URL.includes("github.com")) window.open(GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main", '_blank'); else showAlert("Error", "Configure GITHUB_REPO_URL"); }
 function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
-function submitRequest() { const name = document.getElementById('req-ninja-name').value; if(!name) return showAlert("Error","Name required"); let details = "Standard"; if(document.getElementById('req-color')) details = "Color: " + document.getElementById('req-color').value; const req={name, item: currentRequestItem.name, details, time: new Date().toLocaleString(), createdAt:Date.now()}; if(db) db.collection("requests").add(req); else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); } closeReqModal(); showAlert("Success", "Sent!"); }
-function initRequest(id) { currentRequestItem=catalogData.find(x=>x.id===id); document.getElementById('req-item-name').innerText=currentRequestItem.name; document.getElementById('req-modal').style.display='flex'; }
+function submitRequest() { 
+    const name = document.getElementById('req-ninja-name').value; 
+    if(!name) return showAlert("Error","Name required"); 
+    
+    let details = "Standard"; 
+    if(document.getElementById('req-color')) {
+        details = "Color: " + document.getElementById('req-color').value;
+    }
+
+    const req = {
+        name, 
+        item: currentRequestItem.name, 
+        details, 
+        time: new Date().toLocaleString(), 
+        createdAt: Date.now()
+    }; 
+    
+    if(db) {
+        db.collection("requests").add(req);
+    } else { 
+        requestsData.push({id: "local_" + Date.now(), ...req}); 
+        saveLocal('cn_requests', requestsData); 
+    } 
+    
+    closeReqModal(); 
+    showAlert("Success", "Sent!"); 
+}
+
+// --- NEW FUNCTIONS FOR CATALOG ---
+
+// 1. Filter Catalog (Switch Tiers)
+function filterCatalog(tier, btn) {
+    currentTier = tier;
+    // Update UI
+    document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    renderCatalog();
+}
+
+// 2. Increment Interest (Standard Items)
+function incrementInterest(id) {
+    const item = catalogData.find(x => x.id === id);
+    if(!item) return;
+
+    if(db) {
+        // Firestore increment
+        const ref = db.collection("catalog").doc(id);
+        ref.update({
+            interest: firebase.firestore.FieldValue.increment(1)
+        }).then(() => {
+            showAlert("Recorded", "Interest noted! We'll stock up soon.");
+        }).catch(err => {
+            console.error(err);
+            showAlert("Error", "Could not record interest.");
+        });
+    } else {
+        // Local increment
+        item.interest = (item.interest || 0) + 1;
+        saveLocal('cn_catalog', catalogData);
+        renderAdminLists(); // Update admin view to show new interest count
+        showAlert("Recorded", "Interest noted! (Local Mode)");
+    }
+}
+
+// 3. Request Modal Init (Premium Items)
+function initRequest(id) {
+    currentRequestItem = catalogData.find(x => x.id === id);
+    if(!currentRequestItem) return;
+
+    document.getElementById('req-item-name').innerText = currentRequestItem.name;
+
+    // Generate Dynamic Fields (Color Selection)
+    const container = document.getElementById('req-dynamic-fields');
+    container.innerHTML = ''; // Clear previous fields
+
+    // Create Color Dropdown using user's specific filament list
+    const label = document.createElement('label');
+    label.className = 'req-label';
+    label.innerText = 'Select Color:';
+    
+    const select = document.createElement('select');
+    select.id = 'req-color';
+    select.className = 'req-input';
+    
+    // Default Option
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = "Surprise Me";
+    defaultOpt.innerText = "-- Select a Color --";
+    select.appendChild(defaultOpt);
+
+    FILAMENT_COLORS.forEach(color => {
+        const opt = document.createElement('option');
+        opt.value = color;
+        opt.innerText = color;
+        select.appendChild(opt);
+    });
+
+    container.appendChild(label);
+    container.appendChild(select);
+
+    // Auto-fill name if logged in
+    if(currentUser && currentUser.name !== "Sensei") {
+        document.getElementById('req-ninja-name').value = currentUser.name;
+    }
+
+    document.getElementById('req-modal').style.display = 'flex';
+}
+
 function updateReqImage(url, styleName) { const img = document.getElementById('req-main-img'); if(img) img.src = url; const sel = document.getElementById('req-var'); if(sel) sel.value = styleName; }
 function updateReqImageFromSelect(val) { if(currentRequestItem.variationImages && currentRequestItem.variationImages[val]) { const img = document.getElementById('req-main-img'); if(img) img.src = currentRequestItem.variationImages[val]; } }
 function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
