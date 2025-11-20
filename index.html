@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     
-    <!-- FIREBASE SDKs (REQUIRED FOR DATABASE) -->
+    <!-- FIREBASE SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
@@ -127,8 +127,7 @@
 
             <!-- ADMIN VIEW -->
             <div id="admin-view">
-                <div class="admin-top-bar"><i class="fa-solid fa-wrench"></i> SENSEI ADMIN VIEW - AUTHORIZED PERSONNEL ONLY</div>
-                
+                <div class="admin-top-bar"><i class="fa-solid fa-wrench"></i> SENSEI ADMIN VIEW</div>
                 <div class="admin-layout">
                     <div class="admin-nav">
                         <div class="admin-nav-btn active" onclick="showAdminSection('admin-home', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
@@ -171,8 +170,8 @@
                                 </div>
                             </div>
                             <div class="admin-card">
-                                <h3>☁️ Data Sync (Import)</h3>
-                                <p style="color:#aaa; font-size:0.8rem;">Paste CSV data here to overwrite the leaderboard.</p>
+                                <h3>☁️ Data Sync</h3>
+                                <p style="color:#aaa; font-size:0.8rem;">Paste CSV data here to overwrite leaderboard.</p>
                                 <textarea id="csv-import-area" class="admin-input" style="height:100px;" placeholder="Paste CSV here..."></textarea>
                                 <button class="btn-sync" onclick="importLeaderboardCSV()" style="width:100%">IMPORT & SYNC</button>
                             </div>
@@ -182,7 +181,6 @@
                         <div id="admin-cat" class="admin-section">
                             <div class="admin-card">
                                 <h3>🛍️ Manage Catalog Items <button class="btn-add" onclick="showAddCatModal()" style="width:auto; padding:5px 10px;">+ Add New</button></h3>
-                                <p style="color:#aaa; font-size:0.8rem;">Convert images to WebP here: <a href="https://cloudconvert.com/jpg-to-webp" target="_blank" style="color:var(--color-home);">CloudConvert</a></p>
                                 <div id="admin-cat-list"></div>
                             </div>
                         </div>
@@ -204,34 +202,28 @@
         </div>
     </div>
 
-    <!-- MODALS -->
+    <!-- === MODALS === -->
 
-    <!-- NEW: NEWS EDITOR MODAL -->
+    <!-- NEWS EDITOR MODAL -->
     <div id="news-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:500px; height:auto;">
             <div class="modal-header"><h2 style="color:white; margin:0;">Edit News</h2><button onclick="closeNewsModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
                 <label style="color:white; font-size:0.8rem;">Event Title:</label>
                 <input type="text" id="news-input-title" class="admin-input" placeholder="e.g. Winter Pizza Party">
-                <label style="color:white; font-size:0.8rem;">Date/Time Details:</label>
+                <label style="color:white; font-size:0.8rem;">Date/Time:</label>
                 <input type="text" id="news-input-date" class="admin-input" placeholder="e.g. Dec 15 @ 5pm">
                 <label style="color:white; font-size:0.8rem;">Status Badge:</label>
-                <p style="color:#888; font-size:0.75rem; margin-top:0;">The colored text on the right of the card.</p>
                 <input type="text" id="news-input-badge" class="admin-input" placeholder="e.g. COMING SOON" list="badge-suggestions">
                 <datalist id="badge-suggestions">
-                    <option value="COMING SOON">
-                    <option value="MARK CALENDAR">
-                    <option value="EVENT">
-                    <option value="INFO">
-                    <option value="URGENT">
-                    <option value="CAMPS">
+                    <option value="COMING SOON"><option value="MARK CALENDAR"><option value="EVENT"><option value="INFO"><option value="URGENT"><option value="CAMPS">
                 </datalist>
                 <button onclick="saveNews()" class="admin-btn btn-add">SAVE NEWS</button>
             </div>
         </div>
     </div>
 
-    <!-- NEW: RULES EDITOR MODAL -->
+    <!-- RULES EDITOR MODAL -->
     <div id="rules-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:500px; height:auto;">
             <div class="modal-header"><h2 style="color:white; margin:0;">Edit Rule</h2><button onclick="closeRulesModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button></div>
@@ -247,7 +239,7 @@
         </div>
     </div>
 
-    <!-- NEW: COIN EDITOR MODAL -->
+    <!-- COIN EDITOR MODAL -->
     <div id="coin-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:500px; height:auto;">
             <div class="modal-header"><h2 style="color:white; margin:0;">Edit Coin Task</h2><button onclick="closeCoinModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button></div>
@@ -256,27 +248,21 @@
                 <input type="text" id="coin-input-task" class="admin-input" placeholder="e.g. Wear Ninja Shirt">
                 <label style="color:white; font-size:0.8rem;">Value (Number):</label>
                 <input type="text" id="coin-input-val" class="admin-input" placeholder="e.g. +5">
-                <p style="color:#888; font-size:0.75rem;">Badge color (Silver/Gold/Obsidian) is automatic based on value.</p>
+                <p style="color:#888; font-size:0.75rem;">Badge color is automatic based on value.</p>
                 <button onclick="saveCoin()" class="admin-btn btn-add">SAVE TASK</button>
             </div>
         </div>
     </div>
 
-    <!-- CATALOG ADD/EDIT MODAL -->
+    <!-- CATALOG MODAL -->
     <div id="cat-edit-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:500px; height:auto;">
-            <div class="modal-header">
-                <h2 style="color:white; margin:0;">Edit Item</h2>
-                <button onclick="closeCatModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+            <div class="modal-header"><h2 style="color:white; margin:0;">Edit Item</h2><button onclick="closeCatModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
                 <input type="text" id="ce-name" class="admin-input" placeholder="Item Name">
                 <input type="text" id="ce-cost" class="admin-input" placeholder="Cost (e.g. 100 Coins)">
                 <select id="ce-tier" class="admin-input">
-                    <option value="tier1">Tier 1</option>
-                    <option value="tier2">Tier 2</option>
-                    <option value="tier3">Tier 3</option>
-                    <option value="tier4">Tier 4</option>
+                    <option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option>
                 </select>
                 <input type="text" id="ce-img" class="admin-input" placeholder="Image URL (optional)">
                 <div style="display:flex;gap:10px;"><button onclick="openGitHubUpload()" class="admin-btn" style="background:#333;">Upload Img</button><button onclick="saveCatItem()" class="admin-btn btn-add">SAVE ITEM</button></div>
@@ -284,8 +270,33 @@
         </div>
     </div>
 
-    <!-- AUTH MODAL -->
-    <div id="admin-auth-modal" class="modal-overlay"><div class="modal-content" style="max-width:400px; height:auto;"><div class="modal-header" style="border-bottom-color: var(--color-admin);"><h2 style="margin:0; color: white;">Sensei Login</h2><button onclick="closeAdminAuthModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body" style="text-align: center;"><input type="password" id="admin-auth-input" class="admin-input" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" placeholder="••••••••" onkeydown="if(event.key==='Enter') submitAdminAuth()"><button onclick="submitAdminAuth()" class="btn-blue" style="width:100%; background: var(--color-admin); margin-top: 10px;">UNLOCK</button></div></div></div>
+    <!-- CONFIRMATION MODAL -->
+    <div id="confirm-modal" class="modal-overlay" style="z-index: 300;">
+        <div class="modal-content" style="max-width:400px; height:auto; border-color: #e74c3c;">
+            <div class="modal-header" style="border-bottom-color: #e74c3c;"><h2 style="margin:0; color:white;">Confirm Action</h2></div>
+            <div class="modal-body" style="text-align:center;">
+                <p id="confirm-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Are you sure?</p>
+                <div style="display:flex; gap:10px;">
+                    <button id="confirm-yes-btn" class="btn-blue" style="background:#e74c3c; width:50%;">YES</button>
+                    <button onclick="document.getElementById('confirm-modal').style.display='none'" class="btn-blue" style="background:#555; width:50%;">NO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERT MODAL -->
+    <div id="alert-modal" class="modal-overlay" style="z-index: 300;">
+        <div class="modal-content" style="max-width:400px; height:auto; border-color: var(--color-games);">
+            <div class="modal-header" style="border-bottom-color: var(--color-games);"><h2 id="alert-title" style="margin:0; color:white;">Notice</h2></div>
+            <div class="modal-body" style="text-align:center;">
+                <p id="alert-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Message</p>
+                <button onclick="document.getElementById('alert-modal').style.display='none'" class="btn-blue" style="background:var(--color-games); width:100%;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="admin-auth-modal" class="modal-overlay"><div class="modal-content" style="max-width:400px; height:auto;"><div class="modal-header" style="border-bottom-color: var(--color-admin);"><h2 style="margin:0; color: white;">Login</h2><button onclick="closeAdminAuthModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body" style="text-align: center;"><input type="password" id="admin-auth-input" class="admin-input" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" placeholder="••••••••" onkeydown="if(event.key==='Enter') submitAdminAuth()"><button onclick="submitAdminAuth()" class="btn-blue" style="width:100%; background: var(--color-admin); margin-top: 10px;">UNLOCK</button></div></div></div>
     
     <!-- REQ & JAM MODALS -->
     <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"></div><div id="req-gallery" class="req-gallery" style="display:none;"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3><input type="text" id="req-ninja-name" class="admin-input" placeholder="Ninja Name"><div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SEND</button></div></div></div>
