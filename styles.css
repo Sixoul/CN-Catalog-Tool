@@ -42,7 +42,6 @@
 }
 
 /* ... [Rest of CSS is unchanged, ensure you keep root, body, sidebar etc.] ... */
-/* Re-pasting core layout to ensure file integrity */
 :root { --bg-dark: #0e1025; --bg-sidebar: #090a18; --card-bg: #161932; --text-main: #ffffff; --text-muted: #8b9bb4; --color-home: #2393CD; --color-games: #2ecc71; --color-jams: #f1c40f; --color-catalog: #9b59b6; --color-queue: #e67e22; --color-impact: #1abc9c; --color-academies: #e74c3c; --color-leaderboard: #e74c3c; --color-admin: #c0392b; --coin-silver: #bdc3c7; --coin-gold: #f1c40f; --coin-obsidian: #8e44ad; --belt-white: #ffffff; --belt-yellow: #f1c40f; --belt-orange: #e67e22; --belt-green: #2ecc71; --belt-blue: #3498db; --belt-purple: #9b59b6; --belt-brown: #795548; --belt-red: #e74c3c; --belt-black: #333333; }
 * { box-sizing: border-box; }
 body { font-family: 'Poppins', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; }
