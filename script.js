@@ -29,13 +29,13 @@ let newsData = [], jamsData = [], rulesData = [], coinsData = [], catalogData = 
 let currentTier = 'tier1';
 let currentRequestItem = null;
 let editingCatId = null;
-let editingId = null; // General editing ID for News/Rules/Coins
+let editingId = null; 
 let editingNinjaId = null;
 let clickCount = 0;
 let clickTimer;
 
 // MOCK DATA (Fallback)
-const defaultNews = [{ id: "n1", title: "Minecraft Parents Night Out", date: "Nov 22", badge: "COMING SOON" }];
+const defaultNews = [{ id: "n1", title: "Minecraft Parents Night Out", date: "Nov 22", badge: "COMING SOON" }, { id: "n2", title: "Winter Belt Ceremony", date: "Dec 15", badge: "EVENT" }];
 const defaultRules = [{ id: "r1", title: "Respect Equipment", desc: "Treat keyboards gently.", penalty: "-1 Coin" }];
 const defaultCoins = [{ id: "c1", task: "Wear Ninja Shirt", val: "+1", type: "silver" }];
 const defaultCatalog = [{ id: "cat1", name: "Ninja Star", cost: "50 Coins", tier: "tier1", icon: "fa-star", type: "standard", image: "", visible: true }];
@@ -66,7 +66,131 @@ function subscribeToData() {
     }
 }
 
-// --- CORE RENDERERS (User View) ---
+// --- RENDER ADMIN LISTS (UPDATED VISUALS) ---
+function renderAdminLists() {
+    // NEWS - VISUAL CARDS
+    const nList = document.getElementById('admin-news-list'); if(nList) {
+        nList.innerHTML = '';
+        newsData.forEach(n => {
+            nList.innerHTML += `
+            <div class="admin-list-wrapper">
+                <div class="list-card passed" style="pointer-events:none; margin:0;">
+                    <div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div>
+                    <div class="status-badge" style="color:var(--color-games)">${n.badge} ></div>
+                </div>
+                <button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button>
+            </div>`;
+        });
+    }
+    
+    // RULES - VISUAL CARDS
+    const rList = document.getElementById('admin-rules-list'); if(rList) {
+        rList.innerHTML = '';
+        rulesData.forEach(r => {
+            const badge = r.penalty ? `<div class="status-badge" style="color:#e74c3c; border:1px solid #e74c3c;">${r.penalty}</div>` : '';
+            rList.innerHTML += `
+            <div class="admin-list-wrapper">
+                <div class="list-card pending" style="pointer-events:none; margin:0;">
+                    <div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${badge}
+                </div>
+                <button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button>
+            </div>`;
+        });
+    }
+
+    // COINS - VISUAL CARDS
+    const cList = document.getElementById('admin-coins-list'); if(cList) {
+        cList.innerHTML = '';
+        coinsData.forEach(c => {
+            cList.innerHTML += `
+            <div class="admin-list-wrapper">
+                <div style="flex-grow:1; background:#161932; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:white; font-weight:bold;">${c.task}</span>
+                    <div>${formatCoinBreakdown(c.val)}</div>
+                </div>
+                <button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button>
+            </div>`;
+        });
+    }
+
+    // CATALOG - VISUAL GRID BY TIER
+    const catList = document.getElementById('admin-cat-list'); if(catList) {
+        catList.innerHTML = '';
+        const tiers = ['tier1', 'tier2', 'tier3', 'tier4'];
+        const tierNames = {'tier1':'Tier 1', 'tier2':'Tier 2', 'tier3':'Tier 3', 'tier4':'Tier 4'};
+        
+        tiers.forEach(tier => {
+            catList.innerHTML += `<div class="admin-tier-header">${tierNames[tier]}</div>`;
+            let gridHtml = `<div class="admin-store-grid">`;
+            const items = catalogData.filter(i => i.tier === tier);
+            items.forEach(i => {
+                let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`;
+                let hiddenClass = i.visible === false ? 'hidden' : '';
+                gridHtml += `
+                <div class="admin-store-card ${hiddenClass}">
+                    <div class="admin-store-icon">${img}</div>
+                    <div style="flex-grow:1;">
+                        <h4 style="margin:0; color:white; font-size:0.9rem;">${i.name}</h4>
+                        <p style="margin:0; color:#888; font-size:0.8rem;">${i.cost}</p>
+                    </div>
+                    <div class="admin-store-actions">
+                        <button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12; color:black;">Edit</button>
+                        <button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button>
+                    </div>
+                </div>`;
+            });
+            gridHtml += `</div>`;
+            catList.innerHTML += gridHtml;
+        });
+    }
+
+    renderAdminRequests();
+    renderAdminQueueList();
+    renderAdminLbPreview();
+}
+
+function renderAdminQueueList() {
+    const qList = document.getElementById('admin-queue-manage-list'); 
+    if(qList) {
+        qList.innerHTML = '';
+        queueData.forEach((q, i) => {
+            const idOrIndex = q.id ? `'${q.id}'` : `'${i}'`;
+            qList.innerHTML += `
+            <div class="admin-list-item" style="display:block;">
+                <div style="display:flex; justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div>
+                <div style="color:#aaa; font-size:0.8rem;">${q.item} ${q.details ? ' | ' + q.details : ''}</div>
+                <div style="color:#666; font-size:0.7rem;">Added: ${q.createdAt ? new Date(q.createdAt).toLocaleTimeString() : 'Unknown'}</div>
+                <div style="margin-top:5px;">
+                    <button onclick="updateQueueStatus(${idOrIndex}, 'Pending')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#555;">Pending</button>
+                    <button onclick="updateQueueStatus(${idOrIndex}, 'Printing')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#9b59b6;">Printing</button>
+                    <button onclick="updateQueueStatus(${idOrIndex}, 'Ready!')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#2ecc71;">Ready</button>
+                    <button onclick="updateQueueStatus(${idOrIndex}, 'Picked Up')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#1abc9c;">Done</button>
+                </div>
+            </div>`;
+        });
+    }
+}
+
+function renderAdminLbPreview() {
+    const pList = document.getElementById('admin-lb-preview-list');
+    if(pList) {
+        pList.innerHTML = '';
+        const sorted = [...leaderboardData].sort((a, b) => b.points - a.points).slice(0, 5);
+        sorted.forEach((n, i) => {
+             pList.innerHTML += `
+             <div class="admin-lb-preview-row">
+                 <div class="admin-lb-rank">#${i+1}</div>
+                 <div class="admin-lb-name">${n.name}</div>
+                 <div class="admin-lb-points">${n.points}</div>
+             </div>`;
+        });
+    }
+}
+
+// --- USER RENDERERS ---
 function renderNews() {
     const c = document.getElementById('news-feed'); if(!c) return; c.innerHTML = '';
     newsData.forEach(i => c.innerHTML += `<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`);
@@ -81,7 +205,6 @@ function renderCoins() {
 }
 function renderCatalog() {
     const c = document.getElementById('catalog-feed'); if(!c) return; c.innerHTML='';
-    // Filter out hidden items for users
     const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false);
     if(f.length===0) c.innerHTML='<p style="color:#666;">No items.</p>';
     else f.forEach(i => {
@@ -117,15 +240,6 @@ function renderLeaderboard() {
         const beltColor = getBeltColor(item.belt);
         list.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${index + 4}</div><div class="lb-row-belt" style="border-color: ${beltColor}"><i class="fa-solid fa-user-ninja" style="color: ${beltColor}"></i></div><div class="lb-row-name">${item.name}</div><div class="lb-row-points">${item.points}</div></div>`;
     });
-    
-    // Admin Preview
-    const adminPrev = document.getElementById('admin-lb-preview-list');
-    if(adminPrev) {
-        adminPrev.innerHTML = '';
-        sorted.slice(0, 5).forEach((item, i) => {
-             adminPrev.innerHTML += `<div class="req-item"><div>#${i+1} <strong>${item.name}</strong></div><div>${item.points}</div></div>`;
-        });
-    }
 }
 function renderJams() {
     const c = document.getElementById('jams-feed'); if(!c) return; c.innerHTML='';
@@ -135,117 +249,6 @@ function renderJams() {
         if(j.status === 'results') { cl='passed'; txt='RESULTS >'; col='#2ecc71'; }
         c.innerHTML += `<div class="list-card ${cl}" onclick="openJamModal('${j.id}')" style="cursor:pointer;"><div class="card-info"><h3>${j.title}</h3><p>${j.deadline}</p></div><div class="status-badge" style="color:${col}">${txt}</div></div>`;
     });
-}
-
-// --- ADMIN VISUAL RENDERERS ---
-function renderAdminLists() {
-    // News (Visual Cards)
-    const nList = document.getElementById('admin-news-list'); if(nList) {
-        nList.innerHTML = '';
-        newsData.forEach(n => {
-            // Reusing list-card style + overlay buttons
-            nList.innerHTML += `
-            <div class="admin-item-card news">
-                <div class="admin-item-content">
-                    <div class="admin-item-title">${n.title}</div>
-                    <div class="admin-item-meta">${n.date} • ${n.badge}</div>
-                </div>
-                <div class="admin-item-actions">
-                    <button onclick="openNewsModal('${n.id}')" class="admin-btn btn-edit">Edit</button>
-                    <button onclick="deleteNews('${n.id}')" class="admin-btn btn-danger">Del</button>
-                </div>
-            </div>`;
-        });
-    }
-    
-    // Rules (Visual Cards)
-    const rList = document.getElementById('admin-rules-list'); if(rList) {
-        rList.innerHTML = '';
-        rulesData.forEach(r => {
-            rList.innerHTML += `
-            <div class="admin-item-card rules">
-                <div class="admin-item-content">
-                    <div class="admin-item-title">${r.title}</div>
-                    <div class="admin-item-meta">${r.desc}</div>
-                </div>
-                <div class="admin-item-actions">
-                    <button onclick="openRulesModal('${r.id}')" class="admin-btn btn-edit">Edit</button>
-                    <button onclick="deleteRule('${r.id}')" class="admin-btn btn-danger">Del</button>
-                </div>
-            </div>`;
-        });
-    }
-
-    // Coins (Visual Cards)
-    const cList = document.getElementById('admin-coins-list'); if(cList) {
-        cList.innerHTML = '';
-        coinsData.forEach(c => {
-            cList.innerHTML += `
-            <div class="admin-item-card coins">
-                <div class="admin-item-content">
-                    <div class="admin-item-title">${c.task}</div>
-                    <div class="admin-item-meta">${formatCoinBreakdown(c.val)}</div>
-                </div>
-                <div class="admin-item-actions">
-                    <button onclick="openCoinModal('${c.id}')" class="admin-btn btn-edit">Edit</button>
-                    <button onclick="deleteCoin('${c.id}')" class="admin-btn btn-danger">Del</button>
-                </div>
-            </div>`;
-        });
-    }
-
-    // Catalog (Visual Grid with Headers)
-    const catList = document.getElementById('admin-cat-list'); if(catList) {
-        catList.innerHTML = '';
-        const tiers = ['tier1', 'tier2', 'tier3', 'tier4'];
-        const tierNames = {'tier1':'Tier 1', 'tier2':'Tier 2', 'tier3':'Tier 3', 'tier4':'Tier 4'};
-        
-        tiers.forEach(tier => {
-            // Add Header
-            catList.innerHTML += `<div class="admin-tier-header">${tierNames[tier]}</div>`;
-            // Add Grid Container
-            let gridHtml = `<div class="admin-store-grid">`;
-            const items = catalogData.filter(i => i.tier === tier);
-            items.forEach(i => {
-                let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`;
-                let hiddenClass = i.visible === false ? 'hidden' : '';
-                gridHtml += `
-                <div class="admin-store-card ${hiddenClass}">
-                    <div class="admin-store-icon">${img}</div>
-                    <div style="flex-grow:1;">
-                        <h4 style="margin:0; color:white; font-size:0.9rem;">${i.name}</h4>
-                        <p style="margin:0; color:#888; font-size:0.8rem;">${i.cost}</p>
-                    </div>
-                    <div class="admin-store-actions">
-                        <button onclick="editCatItem('${i.id}')" class="admin-btn btn-edit" style="padding:5px;">Edit</button>
-                        <button onclick="deleteCatItem('${i.id}')" class="admin-btn btn-danger" style="padding:5px;">Del</button>
-                    </div>
-                </div>`;
-            });
-            gridHtml += `</div>`;
-            catList.innerHTML += gridHtml;
-        });
-    }
-
-    renderAdminRequests();
-    // Queue (Visual List)
-    const qList = document.getElementById('admin-queue-manage-list'); if(qList) {
-        qList.innerHTML = '';
-        queueData.forEach(q => {
-            const safeId = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`;
-            qList.innerHTML += `
-            <div class="admin-list-item" style="display:block;">
-                <div style="display:flex; justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div>
-                <div style="color:#aaa; font-size:0.8rem;">${q.item} ${q.details ? ' | ' + q.details : ''}</div>
-                <div style="margin-top:5px;">
-                    <button onclick="updateQueueStatus(${safeId}, 'Pending')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#555;">Pending</button>
-                    <button onclick="updateQueueStatus(${safeId}, 'Printing')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#9b59b6;">Printing</button>
-                    <button onclick="updateQueueStatus(${safeId}, 'Ready!')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#2ecc71;">Ready</button>
-                    <button onclick="updateQueueStatus(${safeId}, 'Picked Up')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#1abc9c;">Done</button>
-                </div>
-            </div>`;
-        });
-    }
 }
 
 // --- MODALS & CRUD ---
@@ -264,28 +267,17 @@ function deleteRule(id) { showConfirm("Delete?", () => { if(db) db.collection("r
 // COINS
 function openCoinModal(id=null) { editingId = id; if(id) { const item = coinsData.find(c => c.id === id); document.getElementById('coin-input-task').value = item.task; document.getElementById('coin-input-val').value = item.val; } else { document.getElementById('coin-input-task').value = ''; document.getElementById('coin-input-val').value = ''; } document.getElementById('coin-modal').style.display = 'flex'; }
 function closeCoinModal() { document.getElementById('coin-modal').style.display = 'none'; }
-function saveCoin() { const task = document.getElementById('coin-input-task').value; const val = document.getElementById('coin-input-val').value; if(task) { if(db) { if(editingId) db.collection("coins").doc(editingId).update({task, val}); else db.collection("coins").add({task, val}); } else { if(editingId) { const idx = coinsData.findIndex(c => c.id === editingId); if(idx > -1) coinsData[idx] = {id:editingId, task, val}; } else { coinsData.push({id: "local_" + Date.now(), task, val}); } saveLocal('cn_coins', coinsData); renderCoins(); renderAdminLists(); } closeCoinModal(); showAlert("Success", "Coin task saved!"); } }
+function saveCoin() { const task = document.getElementById('coin-input-task').value; const val = document.getElementById('coin-input-val').value; if(task) { if(db) { if(editingId) db.collection("coins").doc(editingId).update({task, val}); else db.collection("coins").add({task, val}); } else { if(editingId) { const idx = coinsData.findIndex(c => c.id === editingId); if(idx > -1) coinsData[idx] = {id:editingId, task, val}; } else { coinsData.push({id: "local_" + Date.now(), task, val}); } saveLocal('cn_coins', coinsData); renderCoins(); renderAdminLists(); } closeCoinModal(); showAlert("Success", "Task saved!"); } }
 function deleteCoin(id) { showConfirm("Delete?", () => { if(db) db.collection("coins").doc(id).delete(); else { coinsData = coinsData.filter(c => c.id !== id); saveLocal('cn_coins', coinsData); renderCoins(); renderAdminLists(); } }); }
 
-// CATALOG ADMIN
-function showAddCatModal() { editingCatId = null; document.getElementById('ce-name').value=''; document.getElementById('ce-cost').value=''; document.getElementById('ce-img').value=''; document.getElementById('cat-edit-modal').style.display='flex'; }
+// CATALOG
+function showAddCatModal() { editingCatId = null; document.getElementById('ce-name').value=''; document.getElementById('ce-cost').value=''; document.getElementById('ce-img').value=''; document.getElementById('ce-visible').checked = true; document.getElementById('cat-edit-modal').style.display='flex'; }
 function editCatItem(id) { editingCatId = id; const item = catalogData.find(x => x.id === id); if (!item) return; document.getElementById('ce-name').value = item.name; document.getElementById('ce-cost').value = item.cost; document.getElementById('ce-tier').value = item.tier; document.getElementById('ce-img').value = item.image || ''; document.getElementById('ce-visible').checked = item.visible !== false; document.getElementById('cat-edit-modal').style.display='flex'; }
 function saveCatItem() { const n = document.getElementById('ce-name').value; const c = document.getElementById('ce-cost').value; const t = document.getElementById('ce-tier').value; const im = document.getElementById('ce-img').value; const vis = document.getElementById('ce-visible').checked; if(n) { const data = {name:n, cost:c, tier:t, icon:'fa-cube', type:'standard', image:im, visible:vis}; if(db) { if(editingCatId) db.collection("catalog").doc(editingCatId).update(data); else db.collection("catalog").add({...data, createdAt: Date.now()}); } else { if(editingCatId) { const idx = catalogData.findIndex(x => x.id === editingCatId); if(idx > -1) catalogData[idx] = {id: editingCatId, ...data}; } else { catalogData.push({id: "local_" + Date.now(), ...data}); } saveLocal('cn_catalog', catalogData); renderCatalog(); renderAdminLists(); } closeCatModal(); } }
 function deleteCatItem(id) { if(confirm("Delete?")) { if(db) db.collection("catalog").doc(id).delete(); else { catalogData = catalogData.filter(x => x.id !== id); saveLocal('cn_catalog', catalogData); renderCatalog(); renderAdminLists(); } } }
 function closeCatModal() { document.getElementById('cat-edit-modal').style.display='none'; }
 
-// ADMIN LEADERBOARD
-function adminAddNinja() {
-    const name = document.getElementById('admin-lb-add-name').value;
-    if(name) {
-        if(db) db.collection("leaderboard").add({name: name, points: 0, belt: "White"});
-        else { leaderboardData.push({id:"local_"+Date.now(), name, points:0, belt:"White"}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); }
-        document.getElementById('admin-lb-add-name').value = '';
-        showAlert("Success", "Ninja Added!");
-    }
-}
-
-// --- HELPER UTILS & AUTH ---
+// HELPER UTILS
 function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 function formatCoinBreakdown(valStr) { if(!valStr) return ''; if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`; const num = parseInt(valStr.replace(/\D/g, '')) || 0; if(num === 0) return `<span class="coin-val silver">0</span>`; let html = ''; const obsidian = Math.floor(num / 25); let rem = num % 25; const gold = Math.floor(rem / 5); const silver = rem % 5; if(obsidian > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsidian}</span>`; if(gold > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${gold}</span>`; if(silver > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silver}</span>`; return html; }
 function getBeltColor(belt) { const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)'; }
@@ -308,6 +300,6 @@ function approveRequest(id) { const r = requestsData.find(x => x.id === id); if(
 function deleteRequest(id) { if(db) db.collection("requests").doc(id).delete(); else { requestsData=requestsData.filter(x=>x.id!==id); saveLocal('cn_requests',requestsData); renderAdminRequests(); } }
 function updateQueueStatus(id, status) { if(db) { if(status === 'Picked Up') db.collection("queue").doc(id).delete(); else db.collection("queue").doc(id).update({status: status}); } else { const idx = queueData.findIndex(x => x.id === id); if(idx > -1) { if(status === 'Picked Up') queueData.splice(idx, 1); else queueData[idx].status = status; saveLocal('cn_queue', queueData); renderQueue(); renderAdminLists(); } } }
 function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; if(requestsData.length === 0) c.innerHTML = '<p style="color:#666; padding:10px;">No pending requests.</p>'; requestsData.forEach((r) => { c.innerHTML += `<div class="req-item"><div><strong>${r.name}</strong> - ${r.item}<br><span style="color:#aaa; font-size:0.7rem;">${r.details}</span></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#27ae60; color:white; border:none;">ADD</button><button onclick="deleteRequest('${r.id}')" class="btn-danger">X</button></div></div>`; }); }
-
+function adminAddNinja() { const name = document.getElementById('admin-lb-add-name').value; if(name) { if(db) db.collection("leaderboard").add({name: name, points: 0, belt: "White"}); else { leaderboardData.push({id:"local_"+Date.now(), name, points:0, belt:"White"}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); renderAdminLists(); } document.getElementById('admin-lb-add-name').value = ''; showAlert("Success", "Ninja Added!"); } }
 // INIT
 subscribeToData();
