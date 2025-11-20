@@ -72,6 +72,28 @@ function renderCatalog() {
     });
 }
 
+// --- MODAL & ALERT SYSTEM ---
+function showAlert(title, msg) {
+    document.getElementById('alert-title').innerText = title;
+    document.getElementById('alert-msg').innerText = msg;
+    document.getElementById('alert-modal').style.display = 'flex';
+}
+
+function showConfirm(msg, callback) {
+    document.getElementById('confirm-msg').innerText = msg;
+    const yesBtn = document.getElementById('confirm-yes-btn');
+    // Remove old listener to avoid stacking
+    const newBtn = yesBtn.cloneNode(true);
+    yesBtn.parentNode.replaceChild(newBtn, yesBtn);
+    
+    newBtn.onclick = function() {
+        document.getElementById('confirm-modal').style.display = 'none';
+        callback();
+    };
+    document.getElementById('confirm-modal').style.display = 'flex';
+}
+
+
 // --- ADMIN MODAL LOGIC ---
 let editingId = null;
 
@@ -112,17 +134,18 @@ function saveNews() {
             renderNews(); renderAdminLists();
         }
         closeNewsModal();
+        showAlert("Success", "News item saved!");
     }
 }
 function deleteNews(id) { 
-    if(confirm("Delete?")) {
+    showConfirm("Delete this news item?", () => {
         if(typeof db !== 'undefined') db.collection("news").doc(id).delete();
         else {
             newsData = newsData.filter(n => n.id !== id);
             localStorage.setItem('cn_news', JSON.stringify(newsData));
             renderNews(); renderAdminLists();
         }
-    }
+    });
 }
 
 // RULES
@@ -160,17 +183,18 @@ function saveRule() {
             renderRules(); renderAdminLists();
         }
         closeRulesModal();
+        showAlert("Success", "Rule saved!");
     }
 }
 function deleteRule(id) {
-    if(confirm("Delete?")) {
+    showConfirm("Delete this rule?", () => {
         if(typeof db !== 'undefined') db.collection("rules").doc(id).delete();
         else {
             rulesData = rulesData.filter(r => r.id !== id);
             localStorage.setItem('cn_rules', JSON.stringify(rulesData));
             renderRules(); renderAdminLists();
         }
-    }
+    });
 }
 
 // COINS
@@ -205,17 +229,18 @@ function saveCoin() {
             renderCoins(); renderAdminLists();
         }
         closeCoinModal();
+        showAlert("Success", "Coin task saved!");
     }
 }
 function deleteCoin(id) {
-     if(confirm("Delete?")) {
+     showConfirm("Delete this task?", () => {
         if(typeof db !== 'undefined') db.collection("coins").doc(id).delete();
         else {
             coinsData = coinsData.filter(c => c.id !== id);
             localStorage.setItem('cn_coins', JSON.stringify(coinsData));
             renderCoins(); renderAdminLists();
         }
-    }
+    });
 }
 
 // --- ADMIN LIST RENDERER ---
@@ -288,7 +313,7 @@ let currentTier='tier1'; function filterCatalog(t,b){currentTier=t; document.que
 function showTab(id,el){document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); el.classList.add('active');}
 let clickCount=0, clickTimer; function handleLogoClick(){clickCount++; clearTimeout(clickTimer); clickTimer=setTimeout(()=>{clickCount=0},2000); if(clickCount===3) document.getElementById('admin-auth-modal').style.display='flex';}
 function closeAdminAuthModal(){document.getElementById('admin-auth-modal').style.display='none';}
-function submitAdminAuth(){if(document.getElementById('admin-auth-input').value==="@2633Ninjas"){document.getElementById('admin-auth-input').value=''; closeAdminAuthModal(); document.getElementById('admin-view').classList.add('active'); showAdminSection('admin-home', document.querySelector('.admin-nav-btn'));}else alert("Denied");}
+function submitAdminAuth(){if(document.getElementById('admin-auth-input').value==="@2633Ninjas"){document.getElementById('admin-auth-input').value=''; closeAdminAuthModal(); document.getElementById('admin-view').classList.add('active'); showAdminSection('admin-home', document.querySelector('.admin-nav-btn')); showAlert("Access Granted", "Welcome Sensei!");}else showAlert("Error", "Access Denied");}
 function exitAdmin(){document.getElementById('admin-view').classList.remove('active');}
 function showAdminSection(id,btn){document.querySelectorAll('.admin-section').forEach(x=>x.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(x=>x.classList.remove('active')); btn.classList.add('active'); renderAdminLists();}
 function renderQueue(){ /* ... */ } // Assuming previous implementation
