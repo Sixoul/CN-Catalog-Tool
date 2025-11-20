@@ -272,3 +272,96 @@ function closeJamModal() { document.getElementById('jam-modal').style.display='n
 function showAlert(t,m) { document.getElementById('alert-title').innerText=t; document.getElementById('alert-msg').innerText=m; document.getElementById('alert-modal').style.display='flex'; }
 function showConfirm(m,cb) { document.getElementById('confirm-msg').innerText=m; const b=document.getElementById('confirm-yes-btn'); const n=b.cloneNode(true); b.parentNode.replaceChild(n,b); n.onclick=()=>{document.getElementById('confirm-modal').style.display='none';cb();}; document.getElementById('confirm-modal').style.display='flex'; }
 function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
+
+
+/* --- LOGIN VIEW (IMPACT STYLE) --- */
+#login-view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    background: radial-gradient(circle at 50% 50%, #2393CD 0%, #005b96 100%);
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 300000; /* On top of everything */
+}
+
+/* Circles Background Effect */
+.bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+}
+.circle-1 { width: 600px; height: 600px; top: -100px; left: -100px; }
+.circle-2 { width: 400px; height: 400px; bottom: -50px; right: -50px; }
+.circle-3 { width: 200px; height: 200px; bottom: 20%; left: 20%; }
+
+.login-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 40px;
+    border-radius: 12px;
+    width: 400px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 2;
+}
+
+.login-logo {
+    font-size: 3rem;
+    color: white;
+    margin-bottom: 10px;
+}
+
+.login-title {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 30px;
+    letter-spacing: 1px;
+}
+
+.login-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 4px;
+    border: none;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.btn-login {
+    width: 100%;
+    padding: 12px;
+    background-color: #27ae60; /* Impact Green */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.btn-login:hover { background-color: #219150; }
+
+.login-toggle {
+    margin-top: 20px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.login-toggle:hover { color: white; }
+
+.login-error {
+    color: #ff6b6b;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    display: none;
+}
