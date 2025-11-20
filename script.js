@@ -391,90 +391,136 @@ function renderJams() {
 
 // --- ADMIN LISTS ---
 function renderAdminLists() {
-    const nList=document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n=>nList.innerHTML+=`<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); }
-    const rList=document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r=>{ const b=r.penalty?`<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>`:''; rList.innerHTML+=`<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); }
-    const cList=document.getElementById('admin-coins-list'); if(cList){ cList.innerHTML=''; coinsData.forEach(c=>cList.innerHTML+=`<div class="admin-list-wrapper"><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); }
+    // 1. Render News
+    const nList = document.getElementById('admin-news-list'); 
+    if(nList){ 
+        nList.innerHTML=''; 
+        newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); 
+    }
+
+    // 2. Render Rules
+    const rList = document.getElementById('admin-rules-list'); 
+    if(rList){ 
+        rList.innerHTML=''; 
+        rulesData.forEach(r => { 
+            const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; 
+            rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; 
+        }); 
+    }
+
+    // 3. Render Coins
+    const cList = document.getElementById('admin-coins-list'); 
+    if(cList){ 
+        cList.innerHTML=''; 
+        coinsData.forEach(c => cList.innerHTML += `<div class="admin-list-wrapper"><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); 
+    }
     
-    const catList=document.getElementById('admin-cat-list'); if(catList){ catList.innerHTML=''; const st=catalogData.filter(c=>c.type==='standard'); if(st.length>0){ catList.innerHTML+=`<div class="admin-tier-header">Interest</div>`; st.forEach(s=>catList.innerHTML+=`<div class="interest-item"><span>${s.name}</span><span class="interest-count">${s.interest||0} Requests</span></div>`); } const tiers=['tier1','tier2','tier3','tier4']; const tierNames={'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; tiers.forEach(t=>{ catList.innerHTML+=`<div class="admin-tier-header">${tierNames[t]}</div>`; let g=`<div class="admin-store-grid">`; catalogData.filter(i=>i.tier===t).forEach(i=>{ let img=i.image&&i.image.length>5?`<img src="${i.image}">`:`<i class="fa-solid ${i.icon}"></i>`; let h=i.visible===false?'hidden':''; g+=`<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><p style="margin:0;color:#888;font-size:0.8rem;">${i.cost}</p></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`; }); g+=`</div>`; catList.innerHTML+=g; }); }
+    // 4. Render Interest Tracker (MOVED TO QUEUE SECTION)
+    const intList = document.getElementById('admin-interest-list');
+    if(intList) {
+        intList.innerHTML = '';
+        const st = catalogData.filter(c => c.type === 'standard');
+        
+        if(st.length === 0) {
+            intList.innerHTML = '<p style="color:#666; padding:10px; font-size:0.9rem;">No interest recorded yet.</p>';
+        } else {
+            // Sort by highest interest
+            st.sort((a, b) => (b.interest || 0) - (a.interest || 0));
+            
+            st.forEach(s => {
+                // Only show items that actually have interest > 0, or show all? 
+                // Showing all allows you to see everything, but let's highlight those with interest.
+                const count = s.interest || 0;
+                const countStyle = count > 0 ? 'background:var(--color-home); color:white;' : 'background:#333; color:#666;';
+                
+                intList.innerHTML += `
+                <div class="interest-item">
+                    <span style="color:white;">${s.name}</span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="interest-count" style="${countStyle}">${count} Requests</span>
+                        <button onclick="resetInterest('${s.id}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer; font-size:0.7rem; padding:4px 8px; font-weight:bold;">Clear</button>
+                    </div>
+                </div>`;
+            });
+        }
+    }
+
+    // 5. Render Catalog (Tiers Only - Interest Logic Removed from here)
+    const catList = document.getElementById('admin-cat-list'); 
+    if(catList){ 
+        catList.innerHTML=''; 
+        const tiers = ['tier1','tier2','tier3','tier4']; 
+        const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; 
+        
+        tiers.forEach(t => { 
+            catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; 
+            let g = `<div class="admin-store-grid">`; 
+            
+            catalogData.filter(i => i.tier === t).forEach(i => { 
+                let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; 
+                let h = i.visible === false ? 'hidden' : ''; 
+                
+                g += `
+                <div class="admin-store-card ${h}">
+                    <div class="admin-store-icon">${img}</div>
+                    <div style="flex-grow:1;">
+                        <h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4>
+                        <p style="margin:0;color:#888;font-size:0.8rem;">${i.cost}</p>
+                    </div>
+                    <div class="admin-store-actions">
+                        <button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button>
+                        <button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button>
+                    </div>
+                </div>`; 
+            }); 
+            g += `</div>`; 
+            catList.innerHTML += g; 
+        }); 
+    }
+
     renderAdminRequests();
-    const qList=document.getElementById('admin-queue-manage-list'); if(qList){ qList.innerHTML=''; queueData.filter(q=>q.status!=='Picked Up').forEach(q=>{ const id=q.id?`'${q.id}'`:`'${queueData.indexOf(q)}'`; qList.innerHTML+=`<div class="admin-list-item" style="display:block;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details?'| '+q.details:''}</div><div style="margin-top:5px;"><button onclick="updateQueueStatus(${id},'Waiting for Payment')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#e74c3c;">Pay</button><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; }); }
+    
+    // 6. Render Queue Manager
+    const qList = document.getElementById('admin-queue-manage-list'); 
+    if(qList){ 
+        qList.innerHTML=''; 
+        queueData.filter(q => q.status !== 'Picked Up').forEach(q => { 
+            const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; 
+            qList.innerHTML += `
+            <div class="admin-list-item" style="display:block;">
+                <div style="display:flex;justify-content:space-between;">
+                    <strong>${q.name}</strong> 
+                    <span>${q.status}</span>
+                </div>
+                <div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details ? '| '+q.details : ''}</div>
+                <div style="margin-top:5px;">
+                    <button onclick="updateQueueStatus(${id},'Waiting for Payment')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#e74c3c;">Pay</button>
+                    <button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#555;">Pend</button>
+                    <button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#9b59b6;">Print</button>
+                    <button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#2ecc71;">Ready</button>
+                    <button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#1abc9c;">Done</button>
+                </div>
+            </div>`; 
+        }); 
+    }
+    
     renderAdminLbPreview();
 }
 
-function renderAdminLbPreview() {
-    const c = document.getElementById('admin-lb-preview-list');
-    if(!c) return;
-    c.innerHTML = '';
+// --- NEW HELPER: RESET INTEREST ---
+function resetInterest(id) {
+    const item = catalogData.find(x => x.id === id);
+    if(!item) return;
     
-    const sorted = [...leaderboardData].sort((a,b) => b.points - a.points);
-    
-    if (sorted.length === 0) {
-        c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>';
-        return;
-    }
-
-    sorted.forEach((ninja, index) => {
-        // NOTE: We show the FULL name here so Admin can identify the student
-        c.innerHTML += `
-            <div class="admin-lb-preview-row">
-                <div class="admin-lb-rank">#${index + 1}</div>
-                <div class="admin-lb-name">${ninja.name}</div>
-                <div class="admin-lb-points">${ninja.points}</div>
-            </div>
-        `;
+    showConfirm("Reset count for " + item.name + "?", () => {
+        if(db) {
+             db.collection("catalog").doc(id).update({ interest: 0 });
+        } else {
+            item.interest = 0;
+            saveLocal('cn_catalog', catalogData);
+            renderAdminLists();
+        }
     });
-}
-
-function renderAdminRequests() {
-    const c = document.getElementById('admin-requests-list');
-    if(!c) return;
-    c.innerHTML = '';
-    const pending = requestsData.filter(r => !r.archived); // Assuming archiving mechanic or just show all
-    
-    if(pending.length === 0) {
-        c.innerHTML = '<p style="color:#666; padding:10px;">No requests.</p>';
-        return;
-    }
-    
-    pending.forEach(r => {
-        c.innerHTML += `
-        <div class="req-item">
-            <div style="flex:1;">
-                <div style="color:white; font-weight:bold;">${r.name}</div>
-                <div style="color:#var(--color-catalog);">${r.item}</div>
-                <div style="color:#888; font-size:0.75rem;">${r.details}</div>
-            </div>
-            <div class="req-actions">
-                <button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">Approve</button>
-                <button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">Del</button>
-            </div>
-        </div>`;
-    });
-}
-
-function approveRequest(id) {
-    const r = requestsData.find(x => x.id === id);
-    if(!r) return;
-    
-    // Move to Queue
-    const qItem = {
-        name: r.name,
-        item: r.item,
-        details: r.details,
-        status: "Waiting for Payment",
-        createdAt: Date.now()
-    };
-    
-    if(db) {
-        db.collection("queue").add(qItem);
-        db.collection("requests").doc(id).delete();
-    } else {
-        queueData.push({id: "local_q_"+Date.now(), ...qItem});
-        requestsData = requestsData.filter(x => x.id !== id);
-        saveLocal('cn_queue', queueData);
-        saveLocal('cn_requests', requestsData);
-        refreshAll();
-    }
 }
 
 function deleteRequest(id) {
