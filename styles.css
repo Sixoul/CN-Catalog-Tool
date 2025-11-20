@@ -506,3 +506,25 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
     .lb-icon { width: 60px; height: 60px; font-size: 1.8rem; }
     .lb-top-3 { gap: 10px; }
 }
+
+/* Floating Admin Button (Visible when Admin is in User View) */
+.floating-admin-btn {
+    display: none; /* Hidden by default */
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background-color: var(--color-admin);
+    color: white;
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(192, 57, 43, 0.5);
+    z-index: 200000;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+}
+.floating-admin-btn:hover {
+    transform: scale(1.1) rotate(90deg);
