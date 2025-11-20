@@ -284,58 +284,38 @@ function importLeaderboardCSV() {
     });
 }
 
-// JAMS
-function renderJams() {
-    const c = document.getElementById('jams-feed'); c.innerHTML='';
-    if(jamsData.length === 0) c.innerHTML = '<p style="color:#666; text-align:center;">No active contests.</p>';
-    jamsData.forEach(j => {
-        let cl = 'alert', txt = 'ACTIVE >', col = 'var(--color-jams)';
-        if(j.status === 'waiting') { cl='pending'; txt='WAITING >'; col='#aaa'; }
-        if(j.status === 'results') { cl='passed'; txt='RESULTS >'; col='#2ecc71'; }
-        c.innerHTML += `<div class="list-card ${cl}" onclick="openJamModal('${j.id}')" style="cursor:pointer;"><div class="card-info"><h3>${j.title}</h3><p>${j.deadline}</p></div><div class="status-badge" style="color:${col}">${txt}</div></div>`;
+function adminSearchNinja() {
+    const q = document.getElementById('admin-lb-search').value.toLowerCase();
+    const resDiv = document.getElementById('admin-lb-results');
+    resDiv.innerHTML = '';
+    if(q.length < 2) return;
+    const matches = leaderboardData.filter(n => n.name.toLowerCase().includes(q));
+    matches.forEach(m => {
+        resDiv.innerHTML += `<div class="admin-list-item" style="cursor:pointer;" onclick="selectNinja('${m.id}', '${m.name}', ${m.points})">${m.name} (${m.points})</div>`;
     });
 }
 
-// ADMIN LISTS RENDER
-function renderAdminLists() {
-    // 1. NEWS
-    const nList = document.getElementById('admin-news-list'); nList.innerHTML = '';
-    newsData.forEach(n => nList.innerHTML += `<div class="admin-list-item"><span>${n.title}</span><div class="admin-list-actions"><button onclick="editNews('${n.id}')" class="btn-edit">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-danger">Del</button></div></div>`);
+let editingNinjaId = null;
+function selectNinja(id, name, points) {
+    editingNinjaId = id;
+    document.getElementById('admin-lb-edit').style.display = 'block';
+    document.getElementById('admin-lb-name').innerText = name;
+    document.getElementById('admin-lb-current').innerText = points;
+}
+
+function adminUpdatePoints() {
+    if(!editingNinjaId) return;
+    const adj = parseInt(document.getElementById('admin-lb-adjust').value);
+    const current = parseInt(document.getElementById('admin-lb-current').innerText);
+    const newTotal = current + adj;
     
-    // 2. RULES
-    const rList = document.getElementById('admin-rules-list'); rList.innerHTML = '';
-    rulesData.forEach(r => rList.innerHTML += `<div class="admin-list-item"><span>${r.title}</span><div class="admin-list-actions"><button onclick="editRule('${r.id}')" class="btn-edit">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-danger">Del</button></div></div>`);
-
-    // 3. COINS
-    const cList = document.getElementById('admin-coins-list'); cList.innerHTML = '';
-    coinsData.forEach(c => cList.innerHTML += `<div class="admin-list-item"><span>${c.task} (${c.val})</span><div class="admin-list-actions"><button onclick="editCoin('${c.id}')" class="btn-edit">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-danger">Del</button></div></div>`);
-
-    // 4. CATALOG
-    const catList = document.getElementById('admin-cat-list'); catList.innerHTML = '';
-    catalogData.forEach(c => catList.innerHTML += `<div class="admin-list-item"><span>${c.name} (${c.cost})</span><div class="admin-list-actions"><button onclick="editCatItem('${c.id}')" class="btn-edit">Edit</button><button onclick="deleteCatItem('${c.id}')" class="btn-danger">Del</button></div></div>`);
-
-    // 5. REQUESTS
-    renderAdminRequests();
-
-    // 6. QUEUE
-    const qList = document.getElementById('admin-queue-manage-list'); qList.innerHTML = '';
-    queueData.forEach((q, i) => {
-        qList.innerHTML += `
-        <div class="admin-list-item" style="display:block;">
-            <div style="display:flex; justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div>
-            <div style="color:#aaa; font-size:0.8rem;">${q.item} ${q.details ? ' | ' + q.details : ''}</div>
-            <div style="margin-top:5px;">
-                <button onclick="updateQueueStatus(${i}, 'Pending')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#555;">Pending</button>
-                <button onclick="updateQueueStatus(${i}, 'Printing')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#9b59b6;">Printing</button>
-                <button onclick="updateQueueStatus(${i}, 'Ready!')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#2ecc71;">Ready</button>
-                <button onclick="updateQueueStatus(${i}, 'Picked Up')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#1abc9c;">Done</button>
-            </div>
-        </div>`;
-    });
+    db.collection("leaderboard").doc(editingNinjaId).update({ points: newTotal });
+    document.getElementById('admin-lb-current').innerText = newTotal;
+    document.getElementById('admin-lb-adjust').value = '';
 }
 
 
-// --- UTILS ---
+// UTILS
 function formatCoinBreakdown(valStr) {
     if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`;
     const num = parseInt(valStr.replace(/\D/g, '')) || 0;
@@ -350,43 +330,19 @@ function formatCoinBreakdown(valStr) {
     if(silver > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silver}</span>`;
     return html;
 }
-
 function getBeltColor(belt) {
     const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' };
     return map[belt.toLowerCase()] || 'var(--belt-white)';
 }
 
-function adminSearchNinja() {
-    const q = document.getElementById('admin-lb-search').value.toLowerCase();
-    const resDiv = document.getElementById('admin-lb-results');
-    resDiv.innerHTML = '';
-    if(q.length < 2) return;
-    const matches = leaderboardData.filter(n => n.name.toLowerCase().includes(q));
-    matches.forEach(m => {
-        resDiv.innerHTML += `<div class="admin-list-item" style="cursor:pointer;" onclick="selectNinja('${m.id}', '${m.name}', ${m.points})">${m.name} (${m.points})</div>`;
-    });
-}
-let editingNinjaId = null;
-function selectNinja(id, name, points) {
-    editingNinjaId = id;
-    document.getElementById('admin-lb-edit').style.display = 'block';
-    document.getElementById('admin-lb-name').innerText = name;
-    document.getElementById('admin-lb-current').innerText = points;
-}
-function adminUpdatePoints() {
-    if(!editingNinjaId) return;
-    const adj = parseInt(document.getElementById('admin-lb-adjust').value);
-    const current = parseInt(document.getElementById('admin-lb-current').innerText);
-    const newTotal = current + adj;
-    db.collection("leaderboard").doc(editingNinjaId).update({ points: newTotal });
-    document.getElementById('admin-lb-current').innerText = newTotal;
-    document.getElementById('admin-lb-adjust').value = '';
-}
-
 // AUTH & NAV
 let clickCount = 0;
+let clickTimer; // Must define globally so clearTimeout works
+
 function handleLogoClick() {
-     clickCount++; setTimeout(() => { clickCount = 0; }, 2000);
+     clickCount++; 
+     clearTimeout(clickTimer); 
+     clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
      if(clickCount === 3) { clickCount = 0; document.getElementById('admin-auth-modal').style.display = 'flex'; }
 }
 function closeAdminAuthModal() { document.getElementById('admin-auth-modal').style.display = 'none'; }
@@ -404,5 +360,6 @@ function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>
 function closeReqModal() { document.getElementById('req-modal').style.display = 'none'; }
 function closeJamModal() { document.getElementById('jam-modal').style.display = 'none'; }
 function openGitHubUpload() { if (GITHUB_REPO_URL.includes("github.com")) window.open(GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main", '_blank'); else alert("Configure GITHUB_REPO_URL"); }
+
 // START
 subscribeToData();
