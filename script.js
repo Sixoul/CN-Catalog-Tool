@@ -1,4 +1,5 @@
 // --- FIREBASE CONFIGURATION ---
+// WARNING: Ensure you restrict these keys in your Google Cloud Console if this goes public.
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
   authDomain: "codeninjas-dashboard.firebaseapp.com",
@@ -81,7 +82,7 @@ function subscribeToData() {
     }
 }
 
-// --- CSV PROCESSOR (FIXED) ---
+// --- CSV PROCESSOR ---
 function processCSVFile() {
     const fileInput = document.getElementById('csv-file-input');
     if (fileInput.files.length === 0) return showAlert("Error", "No file selected.");
@@ -171,7 +172,7 @@ function processCSVFile() {
     reader.readAsText(file);
 }
 
-// --- CATALOG ADMIN FUNCTIONS (FIXED) ---
+// --- CATALOG ADMIN FUNCTIONS ---
 function showAddCatModal() { 
     editingCatId = null; 
     document.getElementById('ce-name').value=''; 
@@ -251,13 +252,105 @@ function toggleCatOptions(v) { document.getElementById('ce-options-container').s
 function renderVariationInputs() { /* No op for simplicity unless needed */ }
 
 // --- RENDERERS ---
-function renderNews() { const c = document.getElementById('news-feed'); if(c) { c.innerHTML=''; newsData.forEach(i=>c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); } }
-function renderRules() { const c = document.getElementById('rules-feed'); if(c) { c.innerHTML=''; rulesData.forEach(r=>c.innerHTML+=`<div class="list-card pending"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${r.penalty?`<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>`:''}</div>`); } }
-function renderCoins() { const c = document.getElementById('coin-feed'); if(c) { c.innerHTML=''; coinsData.forEach(i=>c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); } }
-function renderCatalog() { const c=document.getElementById('catalog-feed'); if(c) { c.innerHTML=''; const f=catalogData.filter(i=>i.tier===currentTier && i.visible!==false); if(f.length===0)c.innerHTML='<p style="color:#666">No items.</p>'; else f.forEach(i=>{ let img=i.image&&i.image.length>5?`<img src="${i.image}">`:`<i class="fa-solid ${i.icon}"></i>`; let act=`onclick="initRequest('${i.id}')"`; if(i.type==='standard')act=`onclick="incrementInterest('${i.id}')"`; c.innerHTML+=`<div class="store-card"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name}</h4><p>${i.cost}</p></div><div class="store-action"><button class="btn-req" ${act}>Request</button></div></div>`; }); } }
-function renderQueue() { const c=document.getElementById('queue-list'); if(c) { c.innerHTML=''; let q=[]; if(!showHistory) q=queueData.filter(i=>i.status.toLowerCase()!=='picked up'); else q=[...queueData].sort((a,b)=>b.createdAt-a.createdAt); if(q.length===0)c.innerHTML='<p style="color:#666;text-align:center;">Empty.</p>'; else q.forEach((i,x)=>{ let s=i.status.toLowerCase(),cl='status-pending',icon='fa-clock',cc='queue-card'; if(s.includes('ready')){cl='status-ready';icon='fa-check';cc+=' ready-pickup';} else if(s.includes('printing')){cl='status-printing printing-anim';icon='fa-print';} else if(s.includes('waiting')){cl='status-waiting-print';icon='fa-hourglass';} else if(s.includes('payment')){cl='status-waiting-payment';icon='fa-circle-dollar-to-slot';} c.innerHTML+=`<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${i.name}</h3><p>${i.item}</p></div></div><div class="q-status ${cl}">${i.status} <i class="fa-solid ${icon}"></i></div></div>`; }); } }
-function renderLeaderboard() { const p=document.getElementById('lb-podium'); if(!p)return; p.innerHTML=''; const l=document.getElementById('lb-list'); l.innerHTML=''; const s=[...leaderboardData].sort((a,b)=>b.points-a.points); const v=[]; if(s[1])v.push({...s[1],rank:2}); if(s[0])v.push({...s[0],rank:1}); if(s[2])v.push({...s[2],rank:3}); v.forEach(i=>{ p.innerHTML+=`<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${i.name}</div><div class="lb-points">${i.points} pts</div></div>`; }); s.slice(3).forEach((i,x)=>{ l.innerHTML+=`<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${i.name}</div><div class="lb-row-points">${i.points}</div></div>`; }); renderAdminLbPreview(); }
-function renderJams() { const c = document.getElementById('jams-feed'); if(!c) return; c.innerHTML=''; jamsData.forEach(j => { let cl = 'alert', txt = 'ACTIVE >', col = 'var(--color-jams)'; if(j.status === 'waiting') { cl='pending'; txt='WAITING >'; col='#aaa'; } if(j.status === 'results') { cl='passed'; txt='RESULTS >'; col='#2ecc71'; } c.innerHTML += `<div class="list-card ${cl}" onclick="openJamModal('${j.id}')" style="cursor:pointer;"><div class="card-info"><h3>${j.title}</h3><p>${j.deadline}</p></div><div class="status-badge" style="color:${col}">${txt}</div></div>`; }); }
+function renderNews() { 
+    const c = document.getElementById('news-feed'); 
+    if(c) { 
+        c.innerHTML=''; 
+        newsData.forEach(i => {
+            c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`; 
+        });
+    } 
+}
+
+function renderRules() { 
+    const c = document.getElementById('rules-feed'); 
+    if(c) { 
+        c.innerHTML=''; 
+        rulesData.forEach(r => {
+            c.innerHTML+=`<div class="list-card pending"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${r.penalty?`<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>`:''}</div>`; 
+        });
+    } 
+}
+
+function renderCoins() { 
+    const c = document.getElementById('coin-feed'); 
+    if(c) { 
+        c.innerHTML=''; 
+        coinsData.forEach(i => {
+            c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`; 
+        });
+    } 
+}
+
+function renderCatalog() { 
+    const c = document.getElementById('catalog-feed'); 
+    if(c) { 
+        c.innerHTML=''; 
+        const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false); 
+        if(f.length === 0) c.innerHTML = '<p style="color:#666">No items.</p>'; 
+        else f.forEach(i => { 
+            let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; 
+            let act = `onclick="initRequest('${i.id}')"`; 
+            if(i.type === 'standard') act = `onclick="incrementInterest('${i.id}')"`; 
+            c.innerHTML += `<div class="store-card"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name}</h4><p>${i.cost}</p></div><div class="store-action"><button class="btn-req" ${act}>Request</button></div></div>`; 
+        }); 
+    } 
+}
+
+function renderQueue() { 
+    const c = document.getElementById('queue-list'); 
+    if(c) { 
+        c.innerHTML=''; 
+        let q = []; 
+        if(!showHistory) q = queueData.filter(i => i.status.toLowerCase() !== 'picked up'); 
+        else q = [...queueData].sort((a,b) => b.createdAt - a.createdAt); 
+        
+        if(q.length === 0) c.innerHTML = '<p style="color:#666;text-align:center;">Empty.</p>'; 
+        else q.forEach((i,x) => { 
+            let s = i.status.toLowerCase(), cl = 'status-pending', icon = 'fa-clock', cc = 'queue-card'; 
+            if(s.includes('ready')){ cl='status-ready'; icon='fa-check'; cc+=' ready-pickup'; } 
+            else if(s.includes('printing')){ cl='status-printing printing-anim'; icon='fa-print'; } 
+            else if(s.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } 
+            else if(s.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
+            
+            c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${i.name}</h3><p>${i.item}</p></div></div><div class="q-status ${cl}">${i.status} <i class="fa-solid ${icon}"></i></div></div>`; 
+        }); 
+    } 
+}
+
+function renderLeaderboard() { 
+    const p = document.getElementById('lb-podium'); 
+    if(!p) return; 
+    p.innerHTML = ''; 
+    const l = document.getElementById('lb-list'); 
+    l.innerHTML = ''; 
+    const s = [...leaderboardData].sort((a,b) => b.points - a.points); 
+    const v = []; 
+    if(s[1]) v.push({...s[1], rank: 2}); 
+    if(s[0]) v.push({...s[0], rank: 1}); 
+    if(s[2]) v.push({...s[2], rank: 3}); 
+    
+    v.forEach(i => { 
+        p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${i.name}</div><div class="lb-points">${i.points} pts</div></div>`; 
+    }); 
+    
+    s.slice(3).forEach((i,x) => { 
+        l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${i.name}</div><div class="lb-row-points">${i.points}</div></div>`; 
+    }); 
+    renderAdminLbPreview(); 
+}
+
+function renderJams() { 
+    const c = document.getElementById('jams-feed'); 
+    if(!c) return; 
+    c.innerHTML=''; 
+    jamsData.forEach(j => { 
+        let cl = 'alert', txt = 'ACTIVE >', col = 'var(--color-jams)'; 
+        if(j.status === 'waiting') { cl='pending'; txt='WAITING >'; col='#aaa'; } 
+        if(j.status === 'results') { cl='passed'; txt='RESULTS >'; col='#2ecc71'; } 
+        c.innerHTML += `<div class="list-card ${cl}" onclick="openJamModal('${j.id}')" style="cursor:pointer;"><div class="card-info"><h3>${j.title}</h3><p>${j.deadline}</p></div><div class="status-badge" style="color:${col}">${txt}</div></div>`; 
+    }); 
+}
 
 // --- ADMIN LISTS ---
 function renderAdminLists() {
@@ -292,9 +385,19 @@ function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data));
 function formatCoinBreakdown(valStr) { if(!valStr) return ''; if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`; const num = parseInt(valStr.replace(/\D/g, '')) || 0; if(num === 0) return `<span class="coin-val silver">0</span>`; let html = ''; const obsidian = Math.floor(num / 25); let rem = num % 25; const gold = Math.floor(rem / 5); const silver = rem % 5; if(obsidian > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsidian}</span>`; if(gold > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${gold}</span>`; if(silver > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silver}</span>`; return html; }
 function getBeltColor(belt) { const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)'; }
 function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
-function handleLogoClick() { if(window.innerWidth < 768) return; clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); if(clickCount === 3) { clickCount = 0; document.getElementById('admin-auth-modal').style.display = 'flex'; document.getElementById('admin-auth-input').focus(); } }
-function closeAdminAuthModal() { document.getElementById('admin-auth-modal').style.display = 'none'; }
-function submitAdminAuth() { if(document.getElementById('admin-auth-input').value==="@2633Ninjas"){ document.getElementById('admin-auth-input').value=''; closeAdminAuthModal(); currentUser = {name:"Sensei", isAdmin:true}; localStorage.setItem('cn_user',JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); } else { showAlert("Error", "Access Denied"); } }
+function handleLogoClick() { 
+    if(window.innerWidth < 768) return; 
+    clickCount++; 
+    clearTimeout(clickTimer); 
+    clickTimer = setTimeout(() => { clickCount = 0; }, 2000); 
+    
+    if(clickCount === 3) { 
+        clickCount = 0; 
+        // Direct to admin login toggle instead of separate modal
+        toggleAdminLogin();
+    } 
+}
+
 function exitAdmin() { document.getElementById('admin-view').classList.remove('active'); }
 function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
 function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
@@ -307,17 +410,137 @@ function updateReqImage(url, styleName) { const img = document.getElementById('r
 function updateReqImageFromSelect(val) { if(currentRequestItem.variationImages && currentRequestItem.variationImages[val]) { const img = document.getElementById('req-main-img'); if(img) img.src = currentRequestItem.variationImages[val]; } }
 function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
 function closeJamModal() { document.getElementById('jam-modal').style.display='none'; }
-function toggleAdminLogin() { const n=document.getElementById('ninja-login-form'), a=document.getElementById('admin-login-form'); if(n.style.display==='none'){n.style.display='block';a.style.display='none';}else{n.style.display='none';a.style.display='block';} }
-function attemptNinjaLogin() { const n=document.getElementById('login-username').value.trim(); if(!n)return; const u=leaderboardData.find(l=>l.name.toLowerCase()===n.toLowerCase()); if(u){currentUser=u;localStorage.setItem('cn_user',JSON.stringify(u));enterDashboard();}else document.getElementById('login-error-msg').style.display='block'; }
-function attemptAdminLogin() { const e=document.getElementById('admin-email').value, p=document.getElementById('admin-pass').value; if(auth){ auth.signInWithEmailAndPassword(e,p).then(()=>{currentUser={name:"Sensei",isAdmin:true};localStorage.setItem('cn_user',JSON.stringify(currentUser));enterDashboard();document.getElementById('admin-view').classList.add('active');}).catch(err=>document.getElementById('login-error-msg').style.display='block'); } else { if(p==="@2633Ninjas"){currentUser={name:"Sensei",isAdmin:true};localStorage.setItem('cn_user',JSON.stringify(currentUser));enterDashboard();document.getElementById('admin-view').classList.add('active');}else document.getElementById('login-error-msg').style.display='block'; } }
-function enterDashboard() { document.getElementById('login-view').style.display='none'; document.getElementById('main-app').style.display='flex'; document.getElementById('current-user-name').innerText=currentUser.name.split(' ')[0]; if(currentUser.isAdmin) document.getElementById('floating-admin-toggle').style.display='flex'; refreshAll(); }
-function logout() { localStorage.removeItem('cn_user'); currentUser=null; if(auth)auth.signOut(); location.reload(); }
-function toggleUserView() { document.getElementById('admin-view').classList.remove('active'); document.getElementById('floating-admin-toggle').style.display='flex'; }
-function restoreAdminView() { document.getElementById('admin-view').classList.add('active'); }
-function toggleHistoryView() { showHistory=!showHistory; const b=document.querySelector('#admin-queue .btn-edit'); if(b) b.innerText=showHistory?"Hide History":"History"; const h=document.getElementById('admin-queue-history-list'); if(h){h.style.display=showHistory?'block':'none';renderQueueHistory();} }
-function renderQueueHistory() { const h=document.getElementById('history-content'); if(!h)return; h.innerHTML=''; const p=queueData.filter(q=>q.status==='Picked Up'); if(p.length===0)h.innerHTML='<p style="color:#666;font-size:0.8rem;">No history.</p>'; else p.forEach(q=>h.innerHTML+=`<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} <span style="font-size:0.7rem">${q.createdAt?new Date(q.createdAt).toLocaleDateString():'N/A'}</span></div>`); }
-function showAlert(t,m) { document.getElementById('alert-title').innerText=t; document.getElementById('alert-msg').innerText=m; document.getElementById('alert-modal').style.display='flex'; }
-function showConfirm(m,cb) { document.getElementById('confirm-msg').innerText=m; const b=document.getElementById('confirm-yes-btn'); const n=b.cloneNode(true); b.parentNode.replaceChild(n,b); n.onclick=()=>{document.getElementById('confirm-modal').style.display='none';cb();}; document.getElementById('confirm-modal').style.display='flex'; }
 
-// INIT
-subscribeToData();
+// --- AUTH FUNCTIONS (FIXED) ---
+
+function toggleAdminLogin() { 
+    const n = document.getElementById('ninja-login-form');
+    const a = document.getElementById('admin-login-form');
+    
+    if(n.style.display === 'none') {
+        n.style.display = 'block';
+        a.style.display = 'none';
+    } else {
+        n.style.display = 'none';
+        a.style.display = 'block';
+        document.getElementById('admin-pass').focus();
+    } 
+}
+
+function attemptNinjaLogin() { 
+    const n = document.getElementById('login-username').value.trim(); 
+    if(!n) return; 
+    const u = leaderboardData.find(l => l.name.toLowerCase() === n.toLowerCase()); 
+    if(u){
+        currentUser = u;
+        localStorage.setItem('cn_user', JSON.stringify(u));
+        enterDashboard();
+    } else {
+        document.getElementById('login-error-msg').style.display = 'block';
+        document.getElementById('login-error-msg').innerText = 'Ninja not found in roster.';
+    } 
+}
+
+function attemptAdminLogin() { 
+    const e = document.getElementById('admin-email').value; 
+    const p = document.getElementById('admin-pass').value; 
+
+    // 1. CHECK HARDCODED MASTER PASSWORD FIRST (Works offline/without Firebase)
+    if(p === "@2633Ninjas") {
+        loginAsAdmin();
+        return;
+    }
+
+    // 2. ATTEMPT FIREBASE LOGIN
+    if(auth) {
+        auth.signInWithEmailAndPassword(e, p)
+            .then(() => {
+                loginAsAdmin();
+            })
+            .catch(err => {
+                console.error("Firebase Login Failed:", err);
+                document.getElementById('login-error-msg').style.display = 'block';
+                document.getElementById('login-error-msg').innerText = 'Access Denied.';
+            });
+    } else {
+        // 3. IF NO FIREBASE AND WRONG PASSWORD
+        document.getElementById('login-error-msg').style.display = 'block';
+        document.getElementById('login-error-msg').innerText = 'Access Denied (Offline).';
+    } 
+}
+
+function loginAsAdmin() {
+    currentUser = { name: "Sensei", isAdmin: true };
+    localStorage.setItem('cn_user', JSON.stringify(currentUser));
+    enterDashboard();
+    // Force admin view open immediately on login
+    document.getElementById('admin-view').classList.add('active');
+}
+
+function enterDashboard() { 
+    document.getElementById('login-view').style.display = 'none'; 
+    document.getElementById('main-app').style.display = 'flex'; 
+    document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; 
+    
+    if(currentUser.isAdmin) {
+        document.getElementById('floating-admin-toggle').style.display = 'flex';
+    } else {
+        document.getElementById('floating-admin-toggle').style.display = 'none';
+    }
+    
+    refreshAll(); 
+}
+
+function logout() { 
+    localStorage.removeItem('cn_user'); 
+    currentUser = null; 
+    if(auth) auth.signOut(); 
+    location.reload(); 
+}
+
+function toggleUserView() { 
+    document.getElementById('admin-view').classList.remove('active'); 
+    document.getElementById('floating-admin-toggle').style.display = 'flex'; 
+}
+
+function restoreAdminView() { 
+    document.getElementById('admin-view').classList.add('active'); 
+}
+
+function toggleHistoryView() { 
+    showHistory = !showHistory; 
+    const b = document.querySelector('#admin-queue .btn-edit'); 
+    if(b) b.innerText = showHistory ? "Hide History" : "History"; 
+    const h = document.getElementById('admin-queue-history-list'); 
+    if(h) {
+        h.style.display = showHistory ? 'block' : 'none';
+        renderQueueHistory();
+    } 
+}
+
+function renderQueueHistory() { 
+    const h = document.getElementById('history-content'); 
+    if(!h) return; 
+    h.innerHTML = ''; 
+    const p = queueData.filter(q => q.status === 'Picked Up'); 
+    if(p.length === 0) h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>'; 
+    else p.forEach(q => h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`); 
+}
+
+function showAlert(t, m) { 
+    document.getElementById('alert-title').innerText = t; 
+    document.getElementById('alert-msg').innerText = m; 
+    document.getElementById('alert-modal').style.display = 'flex'; 
+}
+
+function showConfirm(m, cb) { 
+    document.getElementById('confirm-msg').innerText = m; 
+    const b = document.getElementById('confirm-yes-btn'); 
+    const n = b.cloneNode(true); 
+    b.parentNode.replaceChild(n, b); 
+    n.onclick = () => { 
+        document.getElementById('confirm-modal').style.display = 'none'; 
+        cb(); 
+    }; 
+    document.getElementById('confirm-modal').style.display = 'flex'; 
+}
