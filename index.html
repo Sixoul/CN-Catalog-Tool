@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Ninjas Dashboard - Cerritos</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div id="admin-login-btn" class="logo-container">
+            <div class="cn-logo"><i class="fa-solid fa-user-ninja"></i></div>
+        </div>
+        <div class="nav-item home-theme active" onclick="showTab('home', this)"><i class="fa-solid fa-house"></i><span>Home</span></div>
+        <div class="nav-item lb-theme" onclick="showTab('leaderboard', this)"><i class="fa-solid fa-medal"></i><span>Leaderboard</span></div>
+        <div class="nav-item jams-theme" onclick="showTab('jams', this)"><i class="fa-solid fa-trophy"></i><span>Contests</span></div>
+        <div class="nav-item catalog-theme" onclick="showTab('catalog', this)"><i class="fa-solid fa-cube"></i><span>Prize<br>Catalog</span></div>
+        <div class="nav-item queue-theme" onclick="showTab('queue', this)"><i class="fa-solid fa-list-ol"></i><span>Queue</span></div>
+        <div class="nav-item games-theme" onclick="showTab('games', this)"><i class="fa-solid fa-gamepad"></i><span>Games</span></div>
+        
+        <div class="nav-spacer"></div>
+        <a href="https://impact.codeninjas.com" target="_blank" class="nav-link-ext impact-link"><i class="fa-solid fa-chart-line fa-2x"></i><span style="font-size: 0.6rem; margin-top: 5px; font-weight: 600;">IMPACT</span></a>
+        <a href="https://academies.codeninjas.com" target="_blank" class="nav-link-ext academies-link"><i class="fa-solid fa-graduation-cap fa-2x"></i><span style="font-size: 0.6rem; margin-top: 5px; font-weight: 600;">ACADEMY</span></a>
+        <br>
+    </nav>
+
+    <div class="main-wrapper">
+        <header>
+            <div class="welcome-section">
+                <h1>Hello, Ninjas!</h1>
+                <p>Welcome to the Dojo. Build something amazing today.</p>
+                <div class="location-badge"><i class="fa-solid fa-location-dot"></i> Cerritos</div>
+            </div>
+        </header>
+
+        <div class="content-area">
+            
+            <!-- HOME TAB -->
+            <div id="home" class="tab-content active">
+                <div class="home-grid">
+                    <div class="news-column">
+                        <div class="section-title"><span>📢 Dojo News & Events</span><span style="font-size: 0.8rem; color: var(--text-muted)">SCROLL FOR MORE ></span></div>
+                        <div id="news-feed" class="scroll-container"></div>
+                        <div style="height: 1px; background: #2a2e45; margin: 10px 0 20px 0;"></div>
+                        <div class="section-title"><span>⚠️ Dojo Rules</span></div>
+                        <div id="rules-feed" class="scroll-container"></div>
+                    </div>
+                    <div class="coins-column">
+                        <div class="section-title"><span>💰 Code Coins</span></div>
+                        <div class="coin-panel">
+                            <div style="text-align: center; margin-bottom: 15px;">
+                                <i class="fa-solid fa-coins fa-3x" style="color: var(--color-jams);"></i>
+                                <h4 style="margin: 10px 0 0 0;">Ways to Earn</h4>
+                            </div>
+                            <ul id="coin-feed" class="coin-list"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GAMES TAB -->
+            <div id="games" class="tab-content">
+                <div class="section-title">🎮 Games of the Week</div>
+                <div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Roblox: Obby Creator</h3><p>Build Complexity: Low // Fun: High</p></div><button class="btn-blue" style="background-color: var(--color-games);">LAUNCH</button></div>
+                <div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Minecraft: Creative Server</h3><p>IP: 192.168.1.X</p></div><div class="status-badge" style="color: var(--color-games)">ONLINE ></div></div>
+            </div>
+
+            <!-- JAMS TAB -->
+            <div id="jams" class="tab-content">
+                <div class="section-title">🏆 Active Contests & Jams</div>
+                <div id="jams-feed"></div>
+            </div>
+
+            <!-- CATALOG TAB -->
+            <div id="catalog" class="tab-content">
+                <div class="section-title">🖨️ 3D Print Prize Catalog</div>
+                <div class="tier-tabs">
+                    <button class="tier-btn active" onclick="filterCatalog('tier1', this)">Tier 1</button>
+                    <button class="tier-btn" onclick="filterCatalog('tier2', this)">Tier 2</button>
+                    <button class="tier-btn" onclick="filterCatalog('tier3', this)">Tier 3</button>
+                    <button class="tier-btn" onclick="filterCatalog('tier4', this)">Tier 4</button>
+                </div>
+                <div id="catalog-feed" class="store-grid"></div>
+            </div>
+
+            <!-- QUEUE TAB -->
+            <div id="queue" class="tab-content">
+                <div class="section-title"><span>⏳ Print Queue Status</span><span style="font-size: 0.8rem; color: var(--text-muted)">LIVE UPDATES ></span></div>
+                <div id="queue-list" class="queue-list scroll-container" style="height: calc(100vh - 200px);"></div>
+            </div>
+
+            <!-- LEADERBOARD TAB -->
+            <div id="leaderboard" class="tab-content">
+                <div class="section-title">
+                    <span>📈 Ninja Leaderboard</span>
+                </div>
+                <div class="lb-container scroll-container" style="height: calc(100vh - 200px);">
+                    <div id="lb-podium" class="lb-top-3"></div>
+                    <div id="lb-list" class="lb-list"></div>
+                </div>
+            </div>
+
+            <!-- ADMIN VIEW -->
+            <div id="admin-view">
+                <div class="admin-top-bar"><i class="fa-solid fa-wrench"></i> SENSEI ADMIN VIEW - AUTHORIZED PERSONNEL ONLY</div>
+                
+                <div class="admin-layout">
+                    <div class="admin-nav">
+                        <div class="admin-nav-btn active" onclick="showAdminSection('admin-home', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
+                        <div class="admin-nav-btn" onclick="showAdminSection('admin-lb', this)"><i class="fa-solid fa-medal"></i> Leaderboard</div>
+                        <div class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)"><i class="fa-solid fa-cube"></i> Catalog</div>
+                        <div class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)"><i class="fa-solid fa-list"></i> Queue & Reqs</div>
+                        <div style="flex-grow:1;"></div>
+                        <div class="admin-nav-btn" onclick="exitAdmin()" style="color: #e74c3c;"><i class="fa-solid fa-door-open"></i> Exit Admin</div>
+                    </div>
+
+                    <div class="admin-content">
+                        <!-- ADMIN HOME: NEWS, RULES, COINS -->
+                        <div id="admin-home" class="admin-section active">
+                            <div class="admin-card">
+                                <h3>📢 Manage News <button class="btn-add" onclick="addNews()" style="width:auto; padding:5px 10px;">+ Add</button></h3>
+                                <div id="admin-news-list"></div>
+                            </div>
+                            <div class="admin-card">
+                                <h3>⚠️ Manage Rules <button class="btn-add" onclick="addRule()" style="width:auto; padding:5px 10px;">+ Add</button></h3>
+                                <div id="admin-rules-list"></div>
+                            </div>
+                            <div class="admin-card">
+                                <h3>💰 Coin Tasks <button class="btn-add" onclick="addCoin()" style="width:auto; padding:5px 10px;">+ Add</button></h3>
+                                <div id="admin-coins-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- ADMIN LEADERBOARD -->
+                        <div id="admin-lb" class="admin-section">
+                            <div class="admin-card">
+                                <h3>🔍 Student Point Manager</h3>
+                                <p style="color:#aaa; font-size:0.8rem;">Find a student to calculate updated points.</p>
+                                <input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()">
+                                <div id="admin-lb-results" style="margin-bottom: 15px;"></div>
+                                
+                                <div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px;">
+                                    <h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);">Student Name</h4>
+                                    <p>Current: <span id="admin-lb-current">0</span> pts</p>
+                                    <input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Points to Add (e.g. 50) or Remove (-20)">
+                                    <button class="admin-btn btn-add" onclick="adminUpdatePoints()">CALCULATE & COPY</button>
+                                    <p style="color:orange; font-size:0.8rem; margin-top:5px;">*Updates local display & copies new total to clipboard for Google Sheet.</p>
+                                </div>
+                            </div>
+                            <div class="admin-card">
+                                <h3>☁️ Data Sync</h3>
+                                <p style="color:#aaa; font-size:0.8rem;">To sync points: Open Google Sheet, Paste new CSV data into "Roster" tab.</p>
+                                <a href="https://docs.google.com/spreadsheets" target="_blank" class="admin-btn btn-sync" style="background: #27ae60;"><i class="fa-solid fa-table"></i> Open Google Sheet</a>
+                            </div>
+                        </div>
+
+                        <!-- ADMIN CATALOG -->
+                        <div id="admin-cat" class="admin-section">
+                            <div class="admin-card">
+                                <h3>🛍️ Manage Catalog Items <button class="btn-add" onclick="showAddCatModal()" style="width:auto; padding:5px 10px;">+ Add New</button></h3>
+                                <p style="color:#aaa; font-size:0.8rem;">Convert images to WebP here: <a href="https://cloudconvert.com/jpg-to-webp" target="_blank" style="color:var(--color-home);">CloudConvert</a></p>
+                                <div id="admin-cat-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- ADMIN QUEUE & REQUESTS -->
+                        <div id="admin-queue" class="admin-section">
+                            <div class="admin-card" style="border-color: var(--color-catalog);">
+                                <h3>📩 Incoming Requests</h3>
+                                <div id="admin-requests-list" class="req-list"></div>
+                            </div>
+                            <div class="admin-card">
+                                <h3>⏳ Active Print Queue</h3>
+                                <div id="admin-queue-manage-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Catalog Add/Edit Modal -->
+    <div id="cat-edit-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:500px; height:auto;">
+            <div class="modal-header">
+                <h2 style="color:white; margin:0;">Edit Item</h2>
+                <button onclick="closeCatModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="ce-name" class="admin-input" placeholder="Item Name">
+                <input type="text" id="ce-cost" class="admin-input" placeholder="Cost (e.g. 100 Coins)">
+                <select id="ce-tier" class="admin-input">
+                    <option value="tier1">Tier 1</option>
+                    <option value="tier2">Tier 2</option>
+                    <option value="tier3">Tier 3</option>
+                    <option value="tier4">Tier 4</option>
+                </select>
+                <input type="text" id="ce-img" class="admin-input" placeholder="Image URL (optional)">
+                <p style="color:#aaa; font-size:0.8rem; margin-top:0;">Need WebP? <a href="https://cloudconvert.com/jpg-to-webp" target="_blank" style="color:var(--color-home);">Convert Here</a></p>
+                <button onclick="saveCatItem()" class="admin-btn btn-add">SAVE ITEM</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="admin-auth-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:400px; height:auto;">
+            <div class="modal-header" style="border-bottom-color: var(--color-admin);">
+                <h2 style="margin:0; color: white;">Sensei Login</h2>
+                <button onclick="closeAdminAuthModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="color: #aaa; margin-bottom: 20px;">Enter Access Code:</p>
+                <input type="password" id="admin-auth-input" class="admin-input" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" placeholder="••••••••" onkeydown="if(event.key==='Enter') submitAdminAuth()">
+                <button onclick="submitAdminAuth()" class="btn-blue" style="width:100%; background: var(--color-admin); margin-top: 20px; padding: 15px;">UNLOCK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Modal -->
+    <div id="req-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="margin:0; color: white;">Request Print</h2>
+                <button onclick="closeReqModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="req-img-container" class="req-img-container"></div>
+                <div id="req-gallery" class="req-gallery" style="display:none;"></div>
+                <h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item Name</h3>
+                <p style="color:#aaa; font-size:0.9rem; margin-bottom: 20px;">Please complete the request details.</p>
+                <label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label>
+                <input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name">
+                <div id="req-dynamic-fields"></div>
+                <button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SEND REQUEST</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jam Modal -->
+    <div id="jam-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title" style="margin:0; color: white;">Contest Title</h2>
+                <button onclick="closeJamModal()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-status-banner" style="padding:10px; background:#222; color:#aaa; text-align:center; border-radius:4px; margin-bottom:20px; font-weight:bold;">STATUS</div>
+                <div style="display:flex; gap:20px;">
+                    <div style="flex:1;">
+                        <h3 style="color: var(--color-jams);">Details</h3>
+                        <p id="modal-desc" style="color:#ccc;"></p>
+                        <p style="color:#888; font-size:0.9rem;">Deadline: <span id="modal-deadline" style="color:white;"></span></p>
+                    </div>
+                    <div style="flex:1;">
+                        <h3 style="color: var(--color-jams);">Requirements</h3>
+                        <ul id="modal-reqs" style="color:#ccc; padding-left:20px;"></ul>
+                    </div>
+                </div>
+                <div id="jam-submit-area" style="margin-top:20px;"></div>
+                <div style="margin-top:30px;">
+                    <h3 id="modal-subs-title" style="border-bottom:1px solid #444; padding-bottom:10px; color:white;">Submissions</h3>
+                    <div id="modal-subs-grid" class="sub-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic Script -->
+    <script src="script.js"></script>
+</body>
+</html>
