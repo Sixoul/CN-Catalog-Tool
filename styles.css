@@ -1,73 +1,3 @@
-/* ... [Previous CSS Content] ... */
-/* Keep all previous CSS. Add/Replace these specific Admin sections: */
-
-/* ADMIN CATALOG - TIER HEADERS WITH LINES */
-.admin-tier-container {
-    margin-bottom: 40px;
-}
-
-.admin-tier-header {
-    display: flex;
-    align-items: center;
-    color: var(--color-catalog);
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.admin-tier-header::after {
-    content: "";
-    flex-grow: 1;
-    height: 2px;
-    background: var(--color-catalog);
-    margin-left: 15px;
-    opacity: 0.3;
-}
-
-/* ADMIN LIST CARDS (Parity with Student View) */
-/* We reuse .list-card but add a wrapper to hold the admin buttons */
-.admin-list-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-.admin-list-wrapper .list-card {
-    flex-grow: 1;
-    margin-bottom: 0; /* Remove default margin since wrapper handles it */
-    cursor: default;
-}
-
-/* Small admin buttons for the list view */
-.btn-mini {
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: none;
-    color: white;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: bold;
-    transition: 0.2s;
-}
-.btn-mini:hover { transform: scale(1.05); }
-
-/* Leaderboard Preview in Admin */
-.admin-lb-preview-row {
-    display: flex;
-    align-items: center;
-    padding: 8px 15px;
-    background: #1a1d3a;
-    border-bottom: 1px solid #2a2e45;
-    font-size: 0.9rem;
-}
-.admin-lb-preview-row:last-child { border-bottom: none; }
-.admin-lb-rank { color: #888; width: 30px; font-weight: bold; }
-.admin-lb-name { flex-grow: 1; color: white; }
-.admin-lb-points { color: var(--color-games); font-weight: bold; }
-
-/* Include previous CSS for root, body, sidebar, modal-overlay, etc. */
 :root {
     --bg-dark: #0e1025;
     --bg-sidebar: #090a18;
@@ -298,18 +228,50 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 }
 #admin-view.active { display: flex; }
 
-.admin-top-bar { width: 100%; background-color: var(--color-admin); color: white; text-align: center; padding: 8px; font-weight: 700; letter-spacing: 1px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 101; flex-shrink: 0; }
-.admin-layout { display: flex; flex: 1; overflow: hidden; }
-.admin-nav { width: 250px; background: rgba(0,0,0,0.5); border-right: 1px solid #34495e; padding-top: 20px; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
-.admin-nav-btn { padding: 15px 20px; color: #aaa; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-weight: 600; }
+.admin-top-bar { 
+    width: 100%; background-color: var(--color-admin); color: white; text-align: center; 
+    padding: 8px; font-weight: 700; letter-spacing: 1px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 101; 
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.admin-layout { 
+    display: flex; 
+    flex: 1; /* Take remaining height */
+    overflow: hidden; /* Contain inner scrolls */
+}
+
+/* Admin Sidebar */
+.admin-nav { 
+    width: 250px; /* Fixed width */
+    background: #0a0c18; /* Solid background */
+    border-right: 1px solid #34495e; 
+    padding-top: 20px; 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0; /* Prevent sidebar collapse */
+    overflow-y: auto;
+}
+.admin-nav-btn { 
+    padding: 15px 20px; color: #aaa; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-weight: 600;
+}
 .admin-nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
 .admin-nav-btn.active { background: rgba(192, 57, 43, 0.1); color: white; border-left-color: var(--color-admin); }
 .admin-nav-btn i { width: 25px; text-align: center; margin-right: 10px; }
-.admin-content { flex: 1; padding: 30px; overflow-y: auto; background: rgba(0,0,0,0.1); }
+
+.admin-content { 
+    flex: 1; /* Take remaining width */
+    padding: 30px; 
+    overflow-y: auto; /* Scroll only content */
+    background: rgba(0,0,0,0.1);
+}
+
+/* Admin Sections */
 .admin-section { display: none; animation: fadeIn 0.3s; }
 .admin-section.active { display: block; }
+
 .admin-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid #34495e; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
 .admin-card h3 { margin-top: 0; color: white; border-bottom: 1px solid #34495e; padding-bottom: 10px; font-size: 1.1rem; display: flex; justify-content: space-between; }
+
 .admin-input { width: 100%; padding: 10px; margin-bottom: 10px; background: #0e1025; border: 1px solid #34495e; color: white; border-radius: 6px; font-family: inherit; }
 .admin-btn { width: 100%; padding: 10px; cursor: pointer; font-weight: bold; border: none; border-radius: 6px; margin-top: 5px; transition: 0.2s; }
 .admin-btn:hover { filter: brightness(1.1); }
@@ -318,6 +280,7 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .btn-danger { background: var(--color-admin); color: white; }
 .btn-edit { background: #f39c12; color: black; width:auto; padding:5px 10px; margin-right: 5px; }
 .btn-sync { background: #2980b9; color: white; text-decoration: none; display: block; text-align: center; margin-bottom: 10px; border-radius: 6px; padding: 10px; font-weight: bold; }
+
 .req-list { max-height: 400px; overflow-y: auto; }
 .req-item { background: #0e1025; padding: 10px; margin-bottom: 8px; border: 1px solid #34495e; border-radius: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
 .req-actions button { padding: 4px 8px; font-size: 0.7rem; margin-left: 5px; cursor: pointer; border-radius: 4px; }
@@ -346,3 +309,103 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
     .lb-icon { width: 60px; height: 60px; font-size: 1.8rem; }
     .lb-top-3 { gap: 10px; }
 }
+
+/* --- ADMIN ITEM CARDS (Parity with Student View) --- */
+.admin-list-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.admin-list-wrapper .list-card {
+    flex-grow: 1;
+    margin-bottom: 0; 
+    cursor: default;
+}
+.btn-mini {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    transition: 0.2s;
+}
+.btn-mini:hover { transform: scale(1.05); }
+
+/* --- ADMIN CATALOG - TIER HEADERS WITH LINES --- */
+.admin-tier-container { margin-bottom: 40px; }
+
+.admin-tier-header {
+    display: flex;
+    align-items: center;
+    color: var(--color-catalog);
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin: 20px 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.admin-tier-header::after {
+    content: "";
+    flex-grow: 1;
+    height: 2px;
+    background: var(--color-catalog);
+    margin-left: 15px;
+    opacity: 0.3;
+}
+
+.admin-store-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.admin-store-card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #34495e;
+    position: relative;
+}
+
+.admin-store-card.hidden {
+    opacity: 0.5;
+    border-style: dashed;
+}
+.admin-store-card.hidden::after {
+    content: "HIDDEN";
+    position: absolute;
+    top: 5px; right: 5px;
+    background: #e74c3c;
+    color: white;
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.admin-store-icon { width: 50px; height: 50px; border-radius: 50%; background: #0e1025; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; overflow: hidden; }
+.admin-store-icon img { width: 100%; height: 100%; object-fit: cover; }
+.admin-store-icon i { font-size: 1.2rem; color: white; }
+
+.admin-store-actions { width: 100%; display: flex; gap: 5px; margin-top: 10px; }
+.admin-store-actions button { flex: 1; }
+
+/* --- ADMIN LEADERBOARD PREVIEW --- */
+.admin-lb-preview-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    background: #1a1d3a;
+    border-bottom: 1px solid #2a2e45;
+    font-size: 0.9rem;
+}
+.admin-lb-preview-row:last-child { border-bottom: none; }
+.admin-lb-rank { color: #888; width: 30px; font-weight: bold; }
+.admin-lb-name { flex-grow: 1; color: white; }
+.admin-lb-points { color: var(--color-games); font-weight: bold; }
