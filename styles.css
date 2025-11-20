@@ -1,79 +1,71 @@
 /* ... [Previous CSS Content] ... */
-/* Add these new styles at the end or update existing Admin sections */
+/* Keep all previous CSS. Add/Replace these specific Admin sections: */
 
-/* ADMIN DASHBOARD VISUALS */
-.admin-item-card {
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-left: 4px solid transparent;
-    position: relative;
-    transition: 0.2s;
+/* ADMIN CATALOG - TIER HEADERS WITH LINES */
+.admin-tier-container {
+    margin-bottom: 40px;
 }
-/* Replicate Main Themes */
-.admin-item-card.news { border-left-color: var(--color-games); }
-.admin-item-card.rules { border-left-color: #e74c3c; }
-.admin-item-card.coins { border-left-color: var(--color-jams); }
 
-.admin-item-content { flex-grow: 1; }
-.admin-item-title { font-size: 1rem; font-weight: 600; color: white; margin-bottom: 2px; }
-.admin-item-meta { font-size: 0.8rem; color: #888; }
-
-.admin-item-actions { display: flex; gap: 5px; }
-
-/* ADMIN CATALOG STYLES */
 .admin-tier-header {
+    display: flex;
+    align-items: center;
     color: var(--color-catalog);
     font-size: 1.2rem;
     font-weight: bold;
-    margin: 20px 0 10px 0;
-    border-bottom: 1px solid #444;
-    padding-bottom: 5px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.admin-store-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
+.admin-tier-header::after {
+    content: "";
+    flex-grow: 1;
+    height: 2px;
+    background: var(--color-catalog);
+    margin-left: 15px;
+    opacity: 0.3;
 }
 
-.admin-store-card {
-    background: var(--card-bg);
-    border-radius: 8px;
-    padding: 15px;
+/* ADMIN LIST CARDS (Parity with Student View) */
+/* We reuse .list-card but add a wrapper to hold the admin buttons */
+.admin-list-wrapper {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    text-align: center;
-    border: 1px solid #34495e;
-    position: relative;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.admin-list-wrapper .list-card {
+    flex-grow: 1;
+    margin-bottom: 0; /* Remove default margin since wrapper handles it */
+    cursor: default;
 }
 
-.admin-store-card.hidden {
-    opacity: 0.5;
-    border-style: dashed;
-}
-.admin-store-card.hidden::after {
-    content: "HIDDEN";
-    position: absolute;
-    top: 5px; right: 5px;
-    background: #e74c3c;
+/* Small admin buttons for the list view */
+.btn-mini {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: none;
     color: white;
-    font-size: 0.6rem;
-    padding: 2px 4px;
-    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: bold;
+    transition: 0.2s;
 }
+.btn-mini:hover { transform: scale(1.05); }
 
-.admin-store-icon { width: 50px; height: 50px; border-radius: 50%; background: #0e1025; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; overflow: hidden; }
-.admin-store-icon img { width: 100%; height: 100%; object-fit: cover; }
-.admin-store-icon i { font-size: 1.2rem; color: white; }
-
-.admin-store-actions { width: 100%; display: flex; gap: 5px; margin-top: 10px; }
-.admin-store-actions button { flex: 1; }
+/* Leaderboard Preview in Admin */
+.admin-lb-preview-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    background: #1a1d3a;
+    border-bottom: 1px solid #2a2e45;
+    font-size: 0.9rem;
+}
+.admin-lb-preview-row:last-child { border-bottom: none; }
+.admin-lb-rank { color: #888; width: 30px; font-weight: bold; }
+.admin-lb-name { flex-grow: 1; color: white; }
+.admin-lb-points { color: var(--color-games); font-weight: bold; }
 
 /* Include previous CSS for root, body, sidebar, modal-overlay, etc. */
 :root {
@@ -326,7 +318,6 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .btn-danger { background: var(--color-admin); color: white; }
 .btn-edit { background: #f39c12; color: black; width:auto; padding:5px 10px; margin-right: 5px; }
 .btn-sync { background: #2980b9; color: white; text-decoration: none; display: block; text-align: center; margin-bottom: 10px; border-radius: 6px; padding: 10px; font-weight: bold; }
-
 .req-list { max-height: 400px; overflow-y: auto; }
 .req-item { background: #0e1025; padding: 10px; margin-bottom: 8px; border: 1px solid #34495e; border-radius: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
 .req-actions button { padding: 4px 8px; font-size: 0.7rem; margin-left: 5px; cursor: pointer; border-radius: 4px; }
