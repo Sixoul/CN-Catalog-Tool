@@ -251,6 +251,27 @@ function closeCatModal() { document.getElementById('cat-edit-modal').style.displ
 function toggleCatOptions(v) { document.getElementById('ce-options-container').style.display = v === 'premium_variant' ? 'block' : 'none'; }
 function renderVariationInputs() { /* No op for simplicity unless needed */ }
 
+// --- HELPER: FORMAT NAME (First Name + Last Initial) ---
+function formatName(name) {
+    if (!name) return 'Ninja';
+    // Handle both "John Doe" and "john.doe" formats
+    const clean = name.replace(/\./g, ' '); 
+    const parts = clean.split(' ').filter(p => p.length > 0);
+    
+    if (parts.length === 0) return 'Ninja';
+    if (parts.length === 1) return capitalize(parts[0]);
+    
+    const first = capitalize(parts[0]);
+    const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+    
+    return `${first} ${lastInitial}.`;
+}
+
+function capitalize(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 // --- RENDERERS ---
 function renderNews() { 
     const c = document.getElementById('news-feed'); 
@@ -313,7 +334,7 @@ function renderQueue() {
             else if(s.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } 
             else if(s.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
             
-            c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${i.name}</h3><p>${i.item}</p></div></div><div class="q-status ${cl}">${i.status} <i class="fa-solid ${icon}"></i></div></div>`; 
+            c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item}</p></div></div><div class="q-status ${cl}">${i.status} <i class="fa-solid ${icon}"></i></div></div>`; 
         }); 
     } 
 }
@@ -331,11 +352,13 @@ function renderLeaderboard() {
     if(s[2]) v.push({...s[2], rank: 3}); 
     
     v.forEach(i => { 
-        p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${i.name}</div><div class="lb-points">${i.points} pts</div></div>`; 
+        // Uses formatName() for privacy on the podium
+        p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`; 
     }); 
     
     s.slice(3).forEach((i,x) => { 
-        l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${i.name}</div><div class="lb-row-points">${i.points}</div></div>`; 
+        // Uses formatName() for privacy in the list
+        l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${formatName(i.name)}</div><div class="lb-row-points">${i.points}</div></div>`; 
     }); 
     renderAdminLbPreview(); 
 }
@@ -362,6 +385,91 @@ function renderAdminLists() {
     renderAdminRequests();
     const qList=document.getElementById('admin-queue-manage-list'); if(qList){ qList.innerHTML=''; queueData.filter(q=>q.status!=='Picked Up').forEach(q=>{ const id=q.id?`'${q.id}'`:`'${queueData.indexOf(q)}'`; qList.innerHTML+=`<div class="admin-list-item" style="display:block;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details?'| '+q.details:''}</div><div style="margin-top:5px;"><button onclick="updateQueueStatus(${id},'Waiting for Payment')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#e74c3c;">Pay</button><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; }); }
     renderAdminLbPreview();
+}
+
+function renderAdminLbPreview() {
+    const c = document.getElementById('admin-lb-preview-list');
+    if(!c) return;
+    c.innerHTML = '';
+    
+    const sorted = [...leaderboardData].sort((a,b) => b.points - a.points);
+    
+    if (sorted.length === 0) {
+        c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>';
+        return;
+    }
+
+    sorted.forEach((ninja, index) => {
+        // NOTE: We show the FULL name here so Admin can identify the student
+        c.innerHTML += `
+            <div class="admin-lb-preview-row">
+                <div class="admin-lb-rank">#${index + 1}</div>
+                <div class="admin-lb-name">${ninja.name}</div>
+                <div class="admin-lb-points">${ninja.points}</div>
+            </div>
+        `;
+    });
+}
+
+function renderAdminRequests() {
+    const c = document.getElementById('admin-requests-list');
+    if(!c) return;
+    c.innerHTML = '';
+    const pending = requestsData.filter(r => !r.archived); // Assuming archiving mechanic or just show all
+    
+    if(pending.length === 0) {
+        c.innerHTML = '<p style="color:#666; padding:10px;">No requests.</p>';
+        return;
+    }
+    
+    pending.forEach(r => {
+        c.innerHTML += `
+        <div class="req-item">
+            <div style="flex:1;">
+                <div style="color:white; font-weight:bold;">${r.name}</div>
+                <div style="color:#var(--color-catalog);">${r.item}</div>
+                <div style="color:#888; font-size:0.75rem;">${r.details}</div>
+            </div>
+            <div class="req-actions">
+                <button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">Approve</button>
+                <button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">Del</button>
+            </div>
+        </div>`;
+    });
+}
+
+function approveRequest(id) {
+    const r = requestsData.find(x => x.id === id);
+    if(!r) return;
+    
+    // Move to Queue
+    const qItem = {
+        name: r.name,
+        item: r.item,
+        details: r.details,
+        status: "Waiting for Payment",
+        createdAt: Date.now()
+    };
+    
+    if(db) {
+        db.collection("queue").add(qItem);
+        db.collection("requests").doc(id).delete();
+    } else {
+        queueData.push({id: "local_q_"+Date.now(), ...qItem});
+        requestsData = requestsData.filter(x => x.id !== id);
+        saveLocal('cn_queue', queueData);
+        saveLocal('cn_requests', requestsData);
+        refreshAll();
+    }
+}
+
+function deleteRequest(id) {
+    if(db) db.collection("requests").doc(id).delete();
+    else {
+        requestsData = requestsData.filter(x => x.id !== id);
+        saveLocal('cn_requests', requestsData);
+        renderAdminRequests();
+    }
 }
 
 // CRUD & MODALS
@@ -411,7 +519,7 @@ function updateReqImageFromSelect(val) { if(currentRequestItem.variationImages &
 function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
 function closeJamModal() { document.getElementById('jam-modal').style.display='none'; }
 
-// --- AUTH FUNCTIONS (FIXED) ---
+// --- AUTH FUNCTIONS ---
 
 function toggleAdminLogin() { 
     const n = document.getElementById('ninja-login-form');
@@ -543,4 +651,76 @@ function showConfirm(m, cb) {
         cb(); 
     }; 
     document.getElementById('confirm-modal').style.display = 'flex'; 
+}
+
+// ADMIN STUDENT POINTS
+function adminSearchNinja() {
+    const q = document.getElementById('admin-lb-search').value.toLowerCase();
+    const resDiv = document.getElementById('admin-lb-results');
+    resDiv.innerHTML = '';
+    
+    if(q.length < 2) return;
+    
+    const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q));
+    
+    found.slice(0, 5).forEach(n => {
+        resDiv.innerHTML += `
+            <div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">
+                ${n.name} <span style="color:var(--color-games); font-weight:bold;">${n.points} pts</span>
+            </div>
+        `;
+    });
+}
+
+function selectNinjaToEdit(id) {
+    const n = leaderboardData.find(x => x.id === id);
+    if(!n) return;
+    editingNinjaId = id;
+    document.getElementById('admin-lb-results').innerHTML = '';
+    document.getElementById('admin-lb-search').value = '';
+    document.getElementById('admin-lb-edit').style.display = 'block';
+    document.getElementById('admin-lb-name').innerText = n.name;
+    document.getElementById('admin-lb-current').innerText = n.points;
+}
+
+function adminUpdatePoints() {
+    if(!editingNinjaId) return;
+    const val = parseInt(document.getElementById('admin-lb-adjust').value);
+    if(isNaN(val)) return;
+    
+    const n = leaderboardData.find(x => x.id === editingNinjaId);
+    if(!n) return;
+    
+    const newPoints = (n.points || 0) + val;
+    
+    if(db) {
+        db.collection("leaderboard").doc(editingNinjaId).update({ points: newPoints });
+    } else {
+        const idx = leaderboardData.findIndex(x => x.id === editingNinjaId);
+        leaderboardData[idx].points = newPoints;
+        saveLocal('cn_leaderboard', leaderboardData);
+        renderLeaderboard();
+    }
+    
+    // Reset UI
+    document.getElementById('admin-lb-edit').style.display = 'none';
+    document.getElementById('admin-lb-adjust').value = '';
+    showAlert("Success", `Updated ${n.name} to ${newPoints} pts`);
+}
+
+function adminAddNinja() {
+    const name = document.getElementById('admin-lb-add-name').value;
+    if(!name) return;
+    
+    const data = { name: name, points: 0, belt: 'White' };
+    
+    if(db) {
+        db.collection("leaderboard").add(data);
+    } else {
+        leaderboardData.push({id: "local_n_"+Date.now(), ...data});
+        saveLocal('cn_leaderboard', leaderboardData);
+        renderLeaderboard();
+    }
+    document.getElementById('admin-lb-add-name').value = '';
+    showAlert("Success", "Added " + name);
 }
