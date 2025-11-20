@@ -106,6 +106,11 @@
                     <button class="tier-btn" onclick="filterCatalog('tier4', this)">Tier 4</button>
                 </div>
                 <div id="catalog-feed" class="store-grid"></div>
+                <!-- REPAIR WARNING -->
+                <div style="margin-top: 30px; padding: 15px; background: rgba(231, 76, 60, 0.1); border-left: 4px solid #e74c3c; border-radius: 4px;">
+                    <strong style="color: #e74c3c;">⚠️ Print Repair Policy:</strong> 
+                    <span style="color: #aaa; font-size: 0.9rem;">Broken print? Repairs are free within <strong>7 days</strong>. After 7 days, reprints/repairs cost <strong>50%</strong> of the item's coin value. (Sensei discretion applies).</span>
+                </div>
             </div>
 
             <!-- QUEUE TAB -->
@@ -186,19 +191,33 @@
                         <div id="admin-cat" class="admin-section">
                             <div class="admin-card">
                                 <h3>🛍️ Manage Catalog Items <button class="btn-add" onclick="showAddCatModal()" style="width:auto; padding:5px 10px;">+ Add New</button></h3>
+                                <p style="color:#aaa; font-size:0.8rem;">Convert images to WebP here: <a href="https://cloudconvert.com/jpg-to-webp" target="_blank" style="color:var(--color-home);">CloudConvert</a></p>
                                 <div id="admin-cat-list"></div>
                             </div>
                         </div>
 
                         <!-- ADMIN QUEUE -->
                         <div id="admin-queue" class="admin-section">
+                            <!-- INTEREST TRACKER MOVED HERE -->
+                            <div class="admin-card" style="border-color: var(--color-home);">
+                                <h3>📊 Interest Tracker <span style="font-size:0.8rem; color:#aaa; font-weight:normal;">(Requests for Standard Items)</span></h3>
+                                <div id="admin-interest-list" class="req-list" style="max-height: 150px;"></div>
+                            </div>
+
                             <div class="admin-card" style="border-color: var(--color-catalog);">
-                                <h3>📩 Incoming Requests</h3>
+                                <h3>📩 Incoming Premium Requests</h3>
                                 <div id="admin-requests-list" class="req-list"></div>
                             </div>
                             <div class="admin-card">
-                                <h3>⏳ Active Print Queue</h3>
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                    <h3 style="margin:0;">⏳ Active Print Queue</h3>
+                                    <button onclick="toggleHistoryView()" class="btn-edit" style="width:auto;">View History (6mo)</button>
+                                </div>
                                 <div id="admin-queue-manage-list"></div>
+                                <div id="admin-queue-history-list" style="display:none; border-top:1px solid #444; padding-top:10px; margin-top:10px;">
+                                    <h4 style="color:#aaa; margin-top:0;">Completed History</h4>
+                                    <div id="history-content"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -248,23 +267,52 @@
         <div class="modal-content" style="max-width:500px; height:auto;">
             <div class="modal-header"><h2 style="color:white; margin:0;">Edit Item</h2><button onclick="closeCatModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
+                <label style="color:#aaa; font-size:0.8rem;">Item Name:</label>
                 <input type="text" id="ce-name" class="admin-input" placeholder="Item Name" onkeydown="if(event.key==='Enter') saveCatItem()">
+                
+                <label style="color:#aaa; font-size:0.8rem;">Cost:</label>
                 <input type="text" id="ce-cost" class="admin-input" placeholder="Cost (e.g. 100 Coins)" onkeydown="if(event.key==='Enter') saveCatItem()">
-                <select id="ce-tier" class="admin-input"><option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option></select>
-                <input type="text" id="ce-img" class="admin-input" placeholder="Image URL (optional)">
+                
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1">
+                        <label style="color:#aaa; font-size:0.8rem;">Tier:</label>
+                        <select id="ce-tier" class="admin-input"><option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option></select>
+                    </div>
+                    <div style="flex:1">
+                        <label style="color:#aaa; font-size:0.8rem;">Type:</label>
+                        <select id="ce-type" class="admin-input" onchange="toggleCatOptions(this.value)">
+                            <option value="standard">Standard (Counter)</option>
+                            <option value="premium_custom">Custom Print</option>
+                            <option value="premium_variant">Variations</option>
+                            <option value="custom_multi">Multi-Color</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="ce-options-container" style="display:none;">
+                    <label style="color:#aaa; font-size:0.8rem;">Variations (Comma separated):</label>
+                    <input type="text" id="ce-options" class="admin-input" placeholder="Red, Blue, Green">
+                </div>
+
+                <label style="color:#aaa; font-size:0.8rem;">Image URL:</label>
+                <input type="text" id="ce-img" class="admin-input" placeholder="https://...">
+                
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                     <label style="color:white; font-size:0.9rem; cursor:pointer;">
-                        <input type="checkbox" id="ce-visible" checked> Visible to Ninjas?
+                        <input type="checkbox" id="ce-visible" checked> Visible?
                     </label>
                 </div>
-                <p style="color:#aaa; font-size:0.8rem; margin-top:0;">Need WebP? <a href="https://cloudconvert.com/jpg-to-webp" target="_blank" style="color:var(--color-home);">Convert Here</a></p>
-                <div style="display:flex;gap:10px;"><button onclick="openGitHubUpload()" class="admin-btn" style="background:#333;">Upload Img</button><button onclick="saveCatItem()" class="admin-btn btn-add">SAVE ITEM</button></div>
+                
+                <div style="display:flex;gap:10px;">
+                    <button onclick="openGitHubUpload()" class="admin-btn" style="background:#333;">Upload Img</button>
+                    <button onclick="saveCatItem()" class="admin-btn btn-add">SAVE ITEM</button>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="admin-auth-modal" class="modal-overlay"><div class="modal-content" style="max-width:400px; height:auto;"><div class="modal-header" style="border-bottom-color: var(--color-admin);"><h2 style="margin:0; color: white;">Login</h2><button onclick="closeAdminAuthModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body" style="text-align: center;"><input type="password" id="admin-auth-input" class="admin-input" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" placeholder="••••••••" onkeydown="if(event.key==='Enter') submitAdminAuth()"><button onclick="submitAdminAuth()" class="btn-blue" style="width:100%; background: var(--color-admin); margin-top: 10px;">UNLOCK</button></div></div></div>
-    <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"></div><div id="req-gallery" class="req-gallery" style="display:none;"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3><input type="text" id="req-ninja-name" class="admin-input" placeholder="Ninja Name" onkeydown="if(event.key==='Enter') submitRequest()"><div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SEND</button></div></div></div>
+    <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"></div><div id="req-gallery" class="req-gallery" style="display:none;"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3><p style="color:#aaa; font-size:0.9rem; margin-bottom: 20px;">Please complete the request details.<br><br><span style="color:#e74c3c; font-size:0.8rem;">⚠️ Repairs free for 7 days. After 7 days, reprints cost 50%.</span></p><label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label><input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name" onkeydown="if(event.key==='Enter') submitRequest()"><div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SEND REQUEST</button></div></div></div>
     <div id="jam-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 id="modal-title" style="margin:0; color: white;">Contest</h2><button onclick="closeJamModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="modal-status-banner" style="padding:10px; background:#222; color:#aaa; text-align:center; border-radius:4px; margin-bottom:20px; font-weight:bold;">STATUS</div><div style="display:flex; gap:20px;"><div style="flex:1;"><h3 style="color: var(--color-jams);">Details</h3><p id="modal-desc" style="color:#ccc;"></p><p style="color:#888; font-size:0.9rem;">Deadline: <span id="modal-deadline" style="color:white;"></span></p></div><div style="flex:1;"><h3 style="color: var(--color-jams);">Reqs</h3><ul id="modal-reqs" style="color:#ccc; padding-left:20px;"></ul></div></div><div id="jam-submit-area" style="margin-top:20px;"></div><div style="margin-top:30px;"><h3 id="modal-subs-title" style="border-bottom:1px solid #444; padding-bottom:10px; color:white;">Submissions</h3><div id="modal-subs-grid" class="sub-grid"></div></div></div></div></div>
     
     <div id="confirm-modal" class="modal-overlay" style="z-index: 300000;"><div class="modal-content" style="max-width:400px; height:auto; border-color: #e74c3c;"><div class="modal-header" style="border-bottom-color: #e74c3c;"><h2 style="margin:0; color:white;">Confirm Action</h2></div><div class="modal-body" style="text-align:center;"><p id="confirm-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Are you sure?</p><div style="display:flex; gap:10px;"><button id="confirm-yes-btn" class="btn-blue" style="background:#e74c3c; width:50%;">YES</button><button onclick="document.getElementById('confirm-modal').style.display='none'" class="btn-blue" style="background:#555; width:50%;">NO</button></div></div></div></div>
