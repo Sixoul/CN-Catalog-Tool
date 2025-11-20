@@ -9,14 +9,17 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let db;
+let db = null;
 try {
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    console.log("Firebase Initialized");
+    if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        console.log("Firebase Initialized");
+    } else {
+        console.warn("Firebase SDK not loaded.");
+    }
 } catch (e) {
-    console.log("Running in Demo Mode (Local Storage)");
-    db = null; // Explicitly null if failed
+    console.log("Running in Demo Mode (Local Storage)", e);
 }
 
 // CONSTANTS
@@ -66,6 +69,229 @@ function subscribeToData() {
         requestsData = JSON.parse(localStorage.getItem('cn_requests')) || mockRequests;
         jamsData = JSON.parse(localStorage.getItem('cn_jams')) || defaultJams;
         refreshAll();
+    }
+}
+
+// --- MODAL & ALERT SYSTEM ---
+function showAlert(title, msg) {
+    document.getElementById('alert-title').innerText = title;
+    document.getElementById('alert-msg').innerText = msg;
+    document.getElementById('alert-modal').style.display = 'flex';
+}
+
+function showConfirm(msg, callback) {
+    document.getElementById('confirm-msg').innerText = msg;
+    const yesBtn = document.getElementById('confirm-yes-btn');
+    const newBtn = yesBtn.cloneNode(true);
+    yesBtn.parentNode.replaceChild(newBtn, yesBtn);
+    newBtn.onclick = function() {
+        document.getElementById('confirm-modal').style.display = 'none';
+        callback();
+    };
+    document.getElementById('confirm-modal').style.display = 'flex';
+}
+
+// --- ADMIN MODAL LOGIC (Fixed IDs and Functions) ---
+let editingId = null;
+
+// NEWS
+function openNewsModal(id=null) {
+    editingId = id; // String ID from firebase or mock
+    if(id) {
+        const item = newsData.find(n => n.id === id);
+        if(item) {
+            document.getElementById('news-input-title').value = item.title;
+            document.getElementById('news-input-date').value = item.date;
+            document.getElementById('news-input-badge').value = item.badge;
+        }
+    } else {
+        document.getElementById('news-input-title').value = '';
+        document.getElementById('news-input-date').value = '';
+        document.getElementById('news-input-badge').value = '';
+    }
+    document.getElementById('news-modal').style.display = 'flex';
+}
+function closeNewsModal() { document.getElementById('news-modal').style.display = 'none'; }
+function saveNews() {
+    const title = document.getElementById('news-input-title').value;
+    const date = document.getElementById('news-input-date').value;
+    const badge = document.getElementById('news-input-badge').value;
+    
+    if(title) {
+        if(db) {
+            if(editingId) db.collection("news").doc(editingId).update({title, date, badge});
+            else db.collection("news").add({title, date, badge, createdAt: Date.now()});
+        } else {
+            // LocalStorage Fallback
+            if(editingId) {
+                const idx = newsData.findIndex(n => n.id === editingId);
+                if(idx > -1) newsData[idx] = {id:editingId, title, date, badge};
+            } else {
+                newsData.unshift({id: "local_" + Date.now(), title, date, badge});
+            }
+            saveLocal('cn_news', newsData);
+            renderNews(); renderAdminLists();
+        }
+        closeNewsModal();
+        showAlert("Success", "News item saved!");
+    }
+}
+function deleteNews(id) { 
+    showConfirm("Delete this news item?", () => {
+        if(db) db.collection("news").doc(id).delete();
+        else {
+            newsData = newsData.filter(n => n.id !== id);
+            saveLocal('cn_news', newsData);
+            renderNews(); renderAdminLists();
+        }
+    });
+}
+
+// RULES
+function openRulesModal(id=null) {
+    editingId = id;
+    if(id) {
+        const item = rulesData.find(r => r.id === id);
+        if(item) {
+            document.getElementById('rule-input-title').value = item.title;
+            document.getElementById('rule-input-desc').value = item.desc;
+            document.getElementById('rule-input-penalty').value = item.penalty;
+        }
+    } else {
+        document.getElementById('rule-input-title').value = '';
+        document.getElementById('rule-input-desc').value = '';
+        document.getElementById('rule-input-penalty').value = '';
+    }
+    document.getElementById('rules-modal').style.display = 'flex';
+}
+function closeRulesModal() { document.getElementById('rules-modal').style.display = 'none'; }
+function saveRule() {
+    const title = document.getElementById('rule-input-title').value;
+    const desc = document.getElementById('rule-input-desc').value;
+    const penalty = document.getElementById('rule-input-penalty').value;
+    if(title) {
+        if(db) {
+            if(editingId) db.collection("rules").doc(editingId).update({title, desc, penalty});
+            else db.collection("rules").add({title, desc, penalty, createdAt: Date.now()});
+        } else {
+             if(editingId) {
+                const idx = rulesData.findIndex(r => r.id === editingId);
+                if(idx > -1) rulesData[idx] = {id:editingId, title, desc, penalty};
+            } else {
+                rulesData.push({id: "local_" + Date.now(), title, desc, penalty});
+            }
+            saveLocal('cn_rules', rulesData);
+            renderRules(); renderAdminLists();
+        }
+        closeRulesModal();
+        showAlert("Success", "Rule saved!");
+    }
+}
+function deleteRule(id) {
+    showConfirm("Delete this rule?", () => {
+        if(db) db.collection("rules").doc(id).delete();
+        else {
+            rulesData = rulesData.filter(r => r.id !== id);
+            saveLocal('cn_rules', rulesData);
+            renderRules(); renderAdminLists();
+        }
+    });
+}
+
+// COINS
+function openCoinModal(id=null) {
+    editingId = id;
+    if(id) {
+        const item = coinsData.find(c => c.id === id);
+        if(item) {
+            document.getElementById('coin-input-task').value = item.task;
+            document.getElementById('coin-input-val').value = item.val;
+        }
+    } else {
+        document.getElementById('coin-input-task').value = '';
+        document.getElementById('coin-input-val').value = '';
+    }
+    document.getElementById('coin-modal').style.display = 'flex';
+}
+function closeCoinModal() { document.getElementById('coin-modal').style.display = 'none'; }
+function saveCoin() {
+    const task = document.getElementById('coin-input-task').value;
+    const val = document.getElementById('coin-input-val').value;
+    if(task) {
+        if(db) {
+            if(editingId) db.collection("coins").doc(editingId).update({task, val});
+            else db.collection("coins").add({task, val});
+        } else {
+            if(editingId) {
+                const idx = coinsData.findIndex(c => c.id === editingId);
+                if(idx > -1) coinsData[idx] = {id:editingId, task, val};
+            } else {
+                coinsData.push({id: "local_" + Date.now(), task, val});
+            }
+            saveLocal('cn_coins', coinsData);
+            renderCoins(); renderAdminLists();
+        }
+        closeCoinModal();
+        showAlert("Success", "Coin task saved!");
+    }
+}
+function deleteCoin(id) {
+     showConfirm("Delete this task?", () => {
+        if(db) db.collection("coins").doc(id).delete();
+        else {
+            coinsData = coinsData.filter(c => c.id !== id);
+            saveLocal('cn_coins', coinsData);
+            renderCoins(); renderAdminLists();
+        }
+    });
+}
+
+// --- ADMIN LIST RENDERER (Corrected to use openXModal) ---
+function renderAdminLists() {
+    const nList = document.getElementById('admin-news-list'); if(nList) {
+        nList.innerHTML = '';
+        newsData.forEach(n => nList.innerHTML += `<div class="admin-list-item"><span>${n.title}</span><div class="admin-list-actions"><button onclick="openNewsModal('${n.id}')" class="btn-edit">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-danger">Del</button></div></div>`);
+    }
+    
+    const rList = document.getElementById('admin-rules-list'); if(rList) {
+        rList.innerHTML = '';
+        rulesData.forEach(r => rList.innerHTML += `<div class="admin-list-item"><span>${r.title}</span><div class="admin-list-actions"><button onclick="openRulesModal('${r.id}')" class="btn-edit">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-danger">Del</button></div></div>`);
+    }
+
+    const cList = document.getElementById('admin-coins-list'); if(cList) {
+        cList.innerHTML = '';
+        coinsData.forEach(c => cList.innerHTML += `<div class="admin-list-item"><span>${c.task} (${c.val})</span><div class="admin-list-actions"><button onclick="openCoinModal('${c.id}')" class="btn-edit">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-danger">Del</button></div></div>`);
+    }
+
+    const catList = document.getElementById('admin-cat-list'); if(catList) {
+        catList.innerHTML = '';
+        catalogData.forEach(c => catList.innerHTML += `<div class="admin-list-item"><span>${c.name} (${c.cost})</span><div class="admin-list-actions"><button onclick="editCatItem('${c.id}')" class="btn-edit">Edit</button><button onclick="deleteCatItem('${c.id}')" class="btn-danger">Del</button></div></div>`);
+    }
+
+    renderAdminRequests();
+
+    const qList = document.getElementById('admin-queue-manage-list'); if(qList) {
+        qList.innerHTML = '';
+        queueData.forEach(q => {
+            // Robust ID handling for mixed local/firebase data
+            const safeId = q.id ? `'${q.id}'` : null;
+            // Fallback for legacy local data without IDs (though initialization adds them now)
+            // If no ID, we can't reliably update, so button might fail silently in local mode unless we re-index.
+            // Assuming init loop added IDs.
+            if (safeId) {
+                qList.innerHTML += `
+                <div class="admin-list-item" style="display:block;">
+                    <div style="display:flex; justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div>
+                    <div style="color:#aaa; font-size:0.8rem;">${q.item} ${q.details ? ' | ' + q.details : ''}</div>
+                    <div style="margin-top:5px;">
+                        <button onclick="updateQueueStatus(${safeId}, 'Pending')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#555;">Pending</button>
+                        <button onclick="updateQueueStatus(${safeId}, 'Printing')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#9b59b6;">Printing</button>
+                        <button onclick="updateQueueStatus(${safeId}, 'Ready!')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#2ecc71;">Ready</button>
+                        <button onclick="updateQueueStatus(${safeId}, 'Picked Up')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#1abc9c;">Done</button>
+                    </div>
+                </div>`;
+            }
+        });
     }
 }
 
@@ -226,128 +452,82 @@ function renderJams() {
     });
 }
 
-// --- ADMIN LISTS ---
-function renderAdminLists() {
-    const nList = document.getElementById('admin-news-list'); if(nList) {
-        nList.innerHTML = '';
-        newsData.forEach((n) => nList.innerHTML += `<div class="admin-list-item"><span>${n.title}</span><div class="admin-list-actions"><button onclick="openNewsModal('${n.id}')" class="btn-edit">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-danger">Del</button></div></div>`);
-    }
-    // ... other lists logic is identical, ensuring IDs are passed as strings ...
-    const catList = document.getElementById('admin-cat-list'); if(catList) {
-        catList.innerHTML = '';
-        catalogData.forEach((c) => catList.innerHTML += `<div class="admin-list-item"><span>${c.name}</span><div class="admin-list-actions"><button onclick="editCatItem('${c.id}')" class="btn-edit">Edit</button><button onclick="deleteCatItem('${c.id}')" class="btn-danger">Del</button></div></div>`);
-    }
-    
-    // Queue Manage
-    const qList = document.getElementById('admin-queue-manage-list'); if(qList) {
-        qList.innerHTML = '';
-        queueData.forEach((q) => {
-            const safeId = q.id ? `'${q.id}'` : null; // Handle local vs firebase IDs
-            // For local testing, we might need index if IDs aren't set. 
-            // Ideally use ID everywhere.
-            const callId = safeId || `'${queueData.indexOf(q)}'`; // Fallback
-            
-            qList.innerHTML += `
-            <div class="admin-list-item" style="display:block;">
-                <div style="display:flex; justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div>
-                <div style="color:#aaa; font-size:0.8rem;">${q.item}</div>
-                <div style="margin-top:5px;">
-                     <button onclick="updateQueueStatus(${callId}, 'Printing')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#9b59b6;">Print</button>
-                     <button onclick="updateQueueStatus(${callId}, 'Ready!')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#2ecc71;">Ready</button>
-                     <button onclick="updateQueueStatus(${callId}, 'Picked Up')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#1abc9c;">Done</button>
-                </div>
-            </div>`;
-        });
-    }
+function renderAdminRequests() {
+     const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = '';
+     if(requestsData.length === 0) c.innerHTML = '<p style="color:#666; padding:10px;">No pending requests.</p>';
+     requestsData.forEach(r => {
+         c.innerHTML += `
+         <div class="req-item">
+            <div><strong>${r.name}</strong> - ${r.item}<br><span style="color:#aaa; font-size:0.7rem;">${r.details}</span></div>
+            <div class="req-actions">
+                <button onclick="approveRequest('${r.id}')" style="background:#27ae60; color:white; border:none;">ADD</button>
+                <button onclick="deleteRequest('${r.id}')" class="btn-danger">X</button>
+            </div>
+         </div>`;
+     });
 }
-
-// --- QUEUE LOGIC ---
-function updateQueueStatus(id, status) {
-    if(db) {
-        if(status === 'Picked Up') db.collection("queue").doc(id).delete();
-        else db.collection("queue").doc(id).update({status: status});
-    } else {
-        // Local Mode (id might be index string '0')
-        const idx = parseInt(id);
-        if(!isNaN(idx) && queueData[idx]) {
-            if(status === 'Picked Up') queueData.splice(idx, 1);
-            else queueData[idx].status = status;
+function approveRequest(id) {
+    const r = requestsData.find(x => x.id === id);
+    if(r) {
+        if(db) {
+            db.collection("queue").add({name:r.name, item:r.item, status:"Pending", details:r.details, createdAt:Date.now()});
+            db.collection("requests").doc(id).delete();
+        } else {
+            queueData.push({id:"local_"+Date.now(), name:r.name, item:r.item, status:"Pending", details:r.details});
+            requestsData = requestsData.filter(x => x.id !== id);
+            saveLocal('cn_requests', requestsData);
             saveLocal('cn_queue', queueData);
-            renderQueue(); renderAdminLists();
+            renderAdminRequests(); renderQueue();
         }
     }
 }
-
-// --- UI LOGIC ---
-function filterCatalog(t, btn) { currentTier=t; document.querySelectorAll('.tier-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCatalog(); }
-function showTab(id, el) {
-    document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
-    el.classList.add('active');
+function deleteRequest(id) { 
+    if(db) db.collection("requests").doc(id).delete(); 
+    else { requestsData=requestsData.filter(x=>x.id!==id); saveLocal('cn_requests',requestsData); renderAdminRequests(); }
 }
 
-function handleLogoClick() {
-     clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
-     if(clickCount === 3) { clickCount = 0; document.getElementById('admin-auth-modal').style.display = 'flex'; }
-}
-function closeAdminAuthModal() { document.getElementById('admin-auth-modal').style.display = 'none'; }
-function submitAdminAuth() {
-    if(document.getElementById('admin-auth-input').value === "@2633Ninjas") { 
-        document.getElementById('admin-auth-input').value = ''; 
-        closeAdminAuthModal(); 
-        document.getElementById('admin-view').classList.add('active'); 
-        showAdminSection('admin-home', document.querySelector('.admin-nav-btn')); 
-    } else {
-        alert("Access Denied");
+// QUEUE Logic
+function updateQueueStatus(id, status) {
+    if(db) { if(status === 'Picked Up') db.collection("queue").doc(id).delete(); else db.collection("queue").doc(id).update({status: status}); }
+    else { 
+        const idx = queueData.findIndex(x => x.id === id);
+        if(idx > -1) { if(status === 'Picked Up') queueData.splice(idx, 1); else queueData[idx].status = status; saveLocal('cn_queue', queueData); renderQueue(); renderAdminLists(); }
     }
 }
+
+// HELPER UTILS
+function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
+
+function initRequest(id) { currentRequestItem=catalogData.find(x=>x.id===id); document.getElementById('req-item-name').innerText=currentRequestItem.name; document.getElementById('req-modal').style.display='flex'; }
+function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
+function submitRequest() { const n=document.getElementById('req-ninja-name').value; if(!n) return showAlert("Error","Name Required"); const d="Standard"; const req={name:n, item:currentRequestItem.name, details:d, time:new Date().toLocaleString()}; if(db) db.collection("requests").add(req); else { requestsData.push({id:"local_"+Date.now(), ...req}); saveLocal('cn_requests',requestsData); } closeReqModal(); showAlert("Success", "Request Sent!"); }
+
+function handleLogoClick() { clickCount++; clearTimeout(clickTimer); clickTimer=setTimeout(()=>{clickCount=0},2000); if(clickCount===3) { clickCount=0; document.getElementById('admin-auth-modal').style.display='flex'; document.getElementById('admin-auth-input').focus(); } }
+function closeAdminAuthModal() { document.getElementById('admin-auth-modal').style.display='none'; }
+function submitAdminAuth() { if(document.getElementById('admin-auth-input').value==="@2633Ninjas"){ document.getElementById('admin-auth-input').value=''; closeAdminAuthModal(); document.getElementById('admin-view').classList.add('active'); showAdminSection('admin-home', document.querySelector('.admin-nav-btn')); } else { showAlert("Error", "Access Denied"); } }
 function exitAdmin() { document.getElementById('admin-view').classList.remove('active'); }
-
-function showAdminSection(id, btn) {
-    document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderAdminLists();
-}
-
-function refreshAll() {
-    renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists();
-}
-
-// REQUESTS
-function initRequest(id) { 
-    currentRequestItem = catalogData.find(x => x.id === id);
-    document.getElementById('req-item-name').innerText = currentRequestItem.name; 
-    document.getElementById('req-modal').style.display = 'flex'; 
-}
-function closeReqModal() { document.getElementById('req-modal').style.display = 'none'; }
-function submitRequest() {
-    const name = document.getElementById('req-ninja-name').value;
-    if(!name) return alert("Name required");
-    
-    const req = {
-        name, item: currentRequestItem.name, details: "Standard", time: new Date().toLocaleString()
-    };
-
-    if(db) db.collection("requests").add(req);
-    else {
-        requestsData.push({id: "local_" + Date.now(), ...req});
-        saveLocal('cn_requests', requestsData);
-    }
-    closeReqModal(); alert("Sent!");
-}
-
-// JAMS
-function openJamModal(id) {
-    const j = jamsData.find(x=>x.id===id); if(!j) return;
-    document.getElementById('modal-title').innerText=j.title;
-    document.getElementById('modal-desc').innerText=`Details for ${j.title}`; // Simplified
-    document.getElementById('modal-deadline').innerText=j.deadline;
-    document.getElementById('jam-modal').style.display='flex';
-}
+function showTab(id,el){ document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active')); el.classList.add('active'); }
+function filterCatalog(t,btn){ currentTier=t; document.querySelectorAll('.tier-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCatalog(); }
+function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
 function closeJamModal() { document.getElementById('jam-modal').style.display='none'; }
+function openGitHubUpload() { if (GITHUB_REPO_URL.includes("github.com")) window.open(GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main", '_blank'); else showAlert("Error", "Configure GITHUB_REPO_URL"); }
 
-// START
+// ADMIN LB
+function adminSearchNinja() { const q=document.getElementById('admin-lb-search').value.toLowerCase(); const r=document.getElementById('admin-lb-results'); r.innerHTML=''; if(q.length<2) return; const m=leaderboardData.filter(n=>n.name.toLowerCase().includes(q)); m.forEach(x=>r.innerHTML+=`<div class="admin-list-item" style="cursor:pointer;" onclick="selectNinja('${x.id}','${x.name}',${x.points})">${x.name} (${x.points})</div>`); }
+function selectNinja(id,n,p) { editingNinjaId=id; document.getElementById('admin-lb-edit').style.display='block'; document.getElementById('admin-lb-name').innerText=n; document.getElementById('admin-lb-current').innerText=p; }
+function adminUpdatePoints() { 
+    if(!editingNinjaId) return; 
+    const adj=parseInt(document.getElementById('admin-lb-adjust').value); 
+    const cur=parseInt(document.getElementById('admin-lb-current').innerText); 
+    const newT=cur+adj; 
+    if(db) db.collection("leaderboard").doc(editingNinjaId).update({points:newT}); 
+    else { const idx=leaderboardData.findIndex(x=>x.id===editingNinjaId); if(idx>-1) leaderboardData[idx].points=newT; saveLocal('cn_leaderboard',leaderboardData); }
+    document.getElementById('admin-lb-current').innerText=newT; 
+    document.getElementById('admin-lb-adjust').value=''; 
+    showAlert("Success", "Points Updated & Copied!");
+    navigator.clipboard.writeText(newT);
+}
+
+// INIT
 subscribeToData();
