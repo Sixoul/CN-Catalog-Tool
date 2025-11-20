@@ -1,263 +1,284 @@
-// --- CONFIGURATION ---
-const QUEUE_CSV_URL = ""; 
-const ROSTER_CSV_URL = "";
-// ** IMPORTANT: Replace with your actual GitHub Repo URL to use the upload helper **
-const GITHUB_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME"; 
-
-const FILAMENT_COLORS = ["Jade White", "Light Gray", "Orange", "Sunflower Yellow", "Mistletoe Green", "Cocoa Brown", "Red", "Cyan", "Cobalt Blue", "Purple", "Blue Grey", "Hot Pink", "Black", "Matte Ivory White", "Matte Lilac Purple", "Matte Mandarin Orange", "Matte Plum", "Matte Dark Red", "Matte Grass Green", "Matte Dark Blue", "Matte Ash Gray", "Matte Charcoal", "Glow in Dark Blue", "Silk Blue Hawaii", "Silk+ Gold", "Metal Iridium Gold", "Metal Copper Brown", "Metal Iron Gray"];
-
-// --- DATA ---
-const defaultNews = [{ title: "Minecraft Parents Night Out", date: "Nov 22 // Survival Mode", badge: "COMING SOON" }, { title: "Winter Belt Ceremony", date: "Dec 15 // 4:00 PM", badge: "MARK CALENDAR" }, { title: "Holiday Camp: Roblox Tycoons", date: "Dec 20-23", badge: "CAMPS" }, { title: "Dojo Closed: Christmas", date: "Dec 25", badge: "INFO" }];
-const defaultJams = [{ id: "winter_jam", title: "Winter Wonderland Jam", deadline: "2025-12-20", type: "game", platform: "Scratch/MakeCode", reqs: ["Must include snow/ice", "Original artwork encouraged", "Teams of 2 allowed"], status: "active", submissions: [{ name: "Alex P.", project: "Snowball Fight", rank: null }, { name: "Sarah M.", project: "Penguin Slide", rank: null }] }, { id: "tinkercad_bridge", title: "Tinkercad Bridge Challenge", deadline: "2025-11-15", type: "3d", platform: "Tinkercad", reqs: ["Must span 10cm", "Support 500g weight", "No infill > 20%"], status: "waiting", submissions: [{ name: "Mikey", project: "Truss Bridge", rank: null }, { name: "Donny", project: "Arch Design", rank: null }] }, { id: "spooky_scratch", title: "Spooky Scratch Contest", deadline: "2025-10-31", type: "game", platform: "Scratch", reqs: ["Scary theme", "Sound effects required"], status: "results", submissions: [{ name: "Leo D.", project: "Haunted Mansion", rank: 1 }, { name: "Mia K.", project: "Ghost Hunter", rank: 2 }, { name: "Sam T.", project: "Zombie Run", rank: 3 }] }];
-const defaultRules = [{ title: "Respect Equipment", desc: "Treat keyboards and mice gently.", penalty: "-1 Coin" }, { title: "No Food/Drink", desc: "Keep snacks in the lobby area.", penalty: "-1 Coin" }, { title: "Clean Station", desc: "Push in chair and tidy up.", penalty: "-1 Coin" }, { title: "No Running", desc: "Walk in the Dojo at all times.", penalty: "-1 Coin" }, { title: "Be Helpful", desc: "Help other Ninjas debug code.", penalty: "" }, { title: "Ask for Help", desc: "Raise your hand for a Sensei.", penalty: "" }];
-const defaultCoins = [{ task: "Wear Ninja Shirt", val: "+1", type: "silver" }, { task: "Clean Station", val: "+1", type: "silver" }, { task: "Help a Ninja", val: "+2", type: "silver" }, { task: "Complete a Belt", val: "+5", type: "gold" }, { task: "Bring a Friend", val: "+5", type: "gold" }, { task: "Mastery Project", val: "+10", type: "obsidian" }, { task: "Black Belt Test", val: "+20", type: "obsidian" }];
-const defaultCatalog = [{ name: "Ninja Star", cost: "50 Coins", tier: "tier1", icon: "fa-star", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Ninja+Star" }, { name: "Key Chain", cost: "75 Coins", tier: "tier1", icon: "fa-key", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Key+Chain" }, { name: "Whistle", cost: "100 Coins", tier: "tier1", icon: "fa-bullhorn", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Whistle" }, { name: "Flexi-Rex", cost: "150 Coins", tier: "tier2", icon: "fa-dragon", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Flexi-Rex" }, { name: "Among Us", cost: "200 Coins", tier: "tier2", icon: "fa-robot", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Among+Us" }, { name: "Minecraft Pickaxe", cost: "250 Coins", tier: "tier2", icon: "fa-hammer", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Pickaxe" }, { name: "Medium Custom Print", cost: "200 Coins", tier: "tier2", icon: "fa-cube", type: "custom" }, { name: "Controller Stand", cost: "350 Coins", tier: "tier3", icon: "fa-gamepad", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Controller+Stand" }, { name: "Headphone Stand", cost: "400 Coins", tier: "tier3", icon: "fa-headphones", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Headphone+Stand" }, { name: "Dice Tower", cost: "450 Coins", tier: "tier3", icon: "fa-dice-d20", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Dice+Tower" }, { name: "Long Custom Print", cost: "400 Coins", tier: "tier3", icon: "fa-cubes", type: "custom" }, { name: "Katana", cost: "500 Coins", tier: "tier4", icon: "fa-khanda", type: "variation", options: ["Demon Slayer", "Traditional", "Sci-Fi"], image: "https://via.placeholder.com/300x200?text=Demon+Slayer+Katana", variationImages: { "Demon Slayer": "https://via.placeholder.com/300x200?text=Demon+Slayer+Katana", "Traditional": "https://via.placeholder.com/300x200?text=Traditional+Katana", "Sci-Fi": "https://via.placeholder.com/300x200?text=Sci-Fi+Katana" } }, { name: "Master Sword", cost: "550 Coins", tier: "tier4", icon: "fa-shield-halved", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Master+Sword" }, { name: "Multi-Color Custom", cost: "600 Coins", tier: "tier4", icon: "fa-palette", type: "custom_multi" }];
-const mockLeaderboard = [{ name: "Asher Cullin", points: 1250, belt: "Blue" }, { name: "Colton Wong", points: 1100, belt: "Green" }, { name: "Elliot Koshimizu", points: 950, belt: "Orange" }, { name: "Charlize Phung", points: 800, belt: "Yellow" }, { name: "Ryder Nguyen", points: 750, belt: "Yellow" }, { name: "Adam Feldman", points: 600, belt: "White" }, { name: "Nicholas Lapinta", points: 500, belt: "White" }, { name: "Harper Segura", points: 450, belt: "White" }, { name: "Lucas Lee", points: 300, belt: "White" }, { name: "Nikki Voong", points: 200, belt: "White" }];
-const mockQueue = [{ name: "Asher C.", item: "Katana (Demon Slayer)", status: "Printing", details: "Color: Black" }, { name: "Colton W.", item: "Flexi-Rex (Red)", status: "Ready!" }, { name: "Elliot K.", item: "Among Us (Blue)", status: "Waiting to Print" }, { name: "Charlize P.", item: "Custom Print", status: "Waiting for Coins" }, { name: "Ryder N.", item: "Ninja Star", status: "Pending" }];
-const mockRequests = [{ name: "Harper S.", item: "Flexi-Rex", details: "Color: Hot Pink", time: "10:30 AM" }, { name: "Lucas L.", item: "Custom Print", details: "Link: tinkercad.com/xyz | Color: Matte Dark Blue", time: "11:15 AM" }];
-
-let newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews;
-let jamsData = JSON.parse(localStorage.getItem('cn_jams')) || defaultJams;
-let rulesData = JSON.parse(localStorage.getItem('cn_rules')) || defaultRules;
-let coinsData = JSON.parse(localStorage.getItem('cn_coins')) || defaultCoins;
-let catalogData = JSON.parse(localStorage.getItem('cn_catalog')) || defaultCatalog;
-let requestsData = JSON.parse(localStorage.getItem('cn_requests')) || mockRequests;
-let queueData = mockQueue; 
-let leaderboardData = mockLeaderboard;
-
-let currentTier = 'tier1';
-let currentRequestItem = null;
-let clickCount = 0, clickTimer;
-let editingCatIdx = -1;
-let editingNinja = null;
-
-// --- DYNAMIC COIN FORMATTER ---
-function formatCoinBreakdown(valStr) {
-    if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`;
-    const num = parseInt(valStr.replace(/\D/g, '')) || 0;
-    if(num === 0) return `<span class="coin-val silver">0</span>`;
-    let html = '';
-    const obsidian = Math.floor(num / 25);
-    let rem = num % 25;
-    const gold = Math.floor(rem / 5);
-    const silver = rem % 5;
-    if(obsidian > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsidian}</span>`;
-    if(gold > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${gold}</span>`;
-    if(silver > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silver}</span>`;
-    return html;
-}
-
-// --- ADMIN UI LOGIC ---
-function showAdminSection(id, btn) {
-    document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderAdminLists();
-}
-
-function renderAdminLists() {
-    const nList = document.getElementById('admin-news-list'); nList.innerHTML = '';
-    newsData.forEach((n, i) => nList.innerHTML += `<div class="admin-list-item"><span>${n.title}</span><div class="admin-list-actions"><button onclick="editNews(${i})" class="btn-edit">Edit</button><button onclick="deleteNews(${i})" class="btn-danger">Del</button></div></div>`);
+:root {
+    --bg-dark: #0e1025;
+    --bg-sidebar: #090a18;
+    --card-bg: #161932;
+    --text-main: #ffffff;
+    --text-muted: #8b9bb4;
     
-    const rList = document.getElementById('admin-rules-list'); rList.innerHTML = '';
-    rulesData.forEach((r, i) => rList.innerHTML += `<div class="admin-list-item"><span>${r.title}</span><div class="admin-list-actions"><button onclick="editRule(${i})" class="btn-edit">Edit</button><button onclick="deleteRule(${i})" class="btn-danger">Del</button></div></div>`);
+    --color-home: #2393CD;
+    --color-games: #2ecc71;
+    --color-jams: #f1c40f;
+    --color-catalog: #9b59b6;
+    --color-queue: #e67e22;
+    --color-impact: #1abc9c;
+    --color-academies: #e74c3c;
+    --color-leaderboard: #e74c3c;
+    --color-admin: #c0392b;
 
-    const cList = document.getElementById('admin-coins-list'); cList.innerHTML = '';
-    coinsData.forEach((c, i) => cList.innerHTML += `<div class="admin-list-item"><span>${c.task} (${c.val})</span><div class="admin-list-actions"><button onclick="editCoin(${i})" class="btn-edit">Edit</button><button onclick="deleteCoin(${i})" class="btn-danger">Del</button></div></div>`);
+    --coin-silver: #bdc3c7;
+    --coin-gold: #f1c40f;
+    --coin-obsidian: #8e44ad; 
 
-    const catList = document.getElementById('admin-cat-list'); catList.innerHTML = '';
-    catalogData.forEach((c, i) => catList.innerHTML += `<div class="admin-list-item"><span>${c.name} (${c.cost})</span><div class="admin-list-actions"><button onclick="editCatItem(${i})" class="btn-edit">Edit</button><button onclick="deleteCatItem(${i})" class="btn-danger">Del</button></div></div>`);
-
-    renderAdminRequests();
-
-    const qList = document.getElementById('admin-queue-manage-list'); qList.innerHTML = '';
-    queueData.forEach((q, i) => {
-        qList.innerHTML += `
-        <div class="admin-list-item" style="display:block;">
-            <div style="display:flex; justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div>
-            <div style="color:#aaa; font-size:0.8rem;">${q.item} ${q.details ? ' | ' + q.details : ''}</div>
-            <div style="margin-top:5px;">
-                <button onclick="updateQueueStatus(${i}, 'Pending')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#555;">Pending</button>
-                <button onclick="updateQueueStatus(${i}, 'Printing')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#9b59b6;">Printing</button>
-                <button onclick="updateQueueStatus(${i}, 'Ready!')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#2ecc71;">Ready</button>
-                <button onclick="updateQueueStatus(${i}, 'Picked Up')" class="admin-btn" style="width:auto; padding:2px 5px; font-size:0.7rem; background:#3498db;">Done</button>
-            </div>
-        </div>`;
-    });
+    --belt-white: #ffffff;
+    --belt-yellow: #f1c40f;
+    --belt-orange: #e67e22;
+    --belt-green: #2ecc71;
+    --belt-blue: #3498db;
+    --belt-purple: #9b59b6;
+    --belt-brown: #795548;
+    --belt-red: #e74c3c;
+    --belt-black: #333333;
 }
 
-// --- ADMIN CRUD ---
-function addNews() { const t=prompt("Title:"); const d=prompt("Date:"); const b=prompt("Badge:"); if(t){newsData.unshift({title:t,date:d,badge:b}); saveData(); renderAdminLists();}}
-function editNews(i) { const t=prompt("Title:",newsData[i].title); const d=prompt("Date:",newsData[i].date); const b=prompt("Badge:",newsData[i].badge); if(t){newsData[i]={title:t,date:d,badge:b}; saveData(); renderAdminLists();}}
-function deleteNews(i) { newsData.splice(i,1); saveData(); renderAdminLists(); }
+* { box-sizing: border-box; }
 
-function addRule() { const t=prompt("Title:"); const d=prompt("Desc:"); const p=prompt("Penalty:"); if(t){rulesData.push({title:t,desc:d,penalty:p}); saveData(); renderAdminLists();}}
-function editRule(i) { const t=prompt("Title:",rulesData[i].title); const d=prompt("Desc:",rulesData[i].desc); const p=prompt("Penalty:",rulesData[i].penalty); if(t){rulesData[i]={title:t,desc:d,penalty:p}; saveData(); renderAdminLists();}}
-function deleteRule(i) { rulesData.splice(i,1); saveData(); renderAdminLists(); }
-
-function addCoin() { const t=prompt("Task:"); const v=prompt("Value (e.g. +5):"); if(t){coinsData.push({task:t,val:v}); saveData(); renderAdminLists();}}
-function editCoin(i) { const t=prompt("Task:",coinsData[i].task); const v=prompt("Value:",coinsData[i].val); if(t){coinsData[i]={task:t,val:v}; saveData(); renderAdminLists();}}
-function deleteCoin(i) { coinsData.splice(i,1); saveData(); renderAdminLists(); }
-
-// CATALOG
-function showAddCatModal() { editingCatIdx=-1; document.getElementById('ce-name').value=''; document.getElementById('ce-cost').value=''; document.getElementById('ce-img').value=''; document.getElementById('cat-edit-modal').style.display='flex'; }
-function editCatItem(i) { editingCatIdx=i; const x=catalogData[i]; document.getElementById('ce-name').value=x.name; document.getElementById('ce-cost').value=x.cost; document.getElementById('ce-tier').value=x.tier; document.getElementById('ce-img').value=x.image||''; document.getElementById('cat-edit-modal').style.display='flex'; }
-function saveCatItem() {
-    const n=document.getElementById('ce-name').value; const c=document.getElementById('ce-cost').value; const t=document.getElementById('ce-tier').value; const im=document.getElementById('ce-img').value;
-    if(n) { const ob={name:n,cost:c,tier:t,icon:'fa-cube',type:'standard',image:im}; if(editingCatIdx>-1) catalogData[editingCatIdx]=ob; else catalogData.push(ob); saveData(); document.getElementById('cat-edit-modal').style.display='none'; renderAdminLists(); }
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
 }
-function deleteCatItem(i) { if(confirm("Del?")) { catalogData.splice(i,1); saveData(); renderAdminLists(); } }
-function closeCatModal() { document.getElementById('cat-edit-modal').style.display='none'; }
 
-// NEW: Upload Helper Function
-function openGitHubUpload() {
-    if (GITHUB_REPO_URL.includes("github.com")) {
-        // Construct upload URL: repo + /upload/main
-        const uploadUrl = GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main"; 
-        window.open(uploadUrl, '_blank');
-    } else {
-        alert("Please configure the GITHUB_REPO_URL in script.js first.");
+/* --- SIDEBAR --- */
+.sidebar {
+    width: 90px;
+    background-color: var(--bg-sidebar);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10px;
+    border-right: 1px solid #1f2235;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.logo-container {
+    width: 60px; height: 60px; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 50%; transition: 0.3s;
+    user-select: none; 
+}
+.cn-logo { font-size: 2rem; color: #fff; }
+
+.nav-item {
+    width: 100%; padding: 15px 5px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: var(--text-muted);
+    cursor: pointer; transition: 0.2s; border-left: 4px solid transparent;
+    text-decoration: none; text-align: center;
+}
+.nav-item i { font-size: 1.3rem; margin-bottom: 6px; }
+.nav-item span { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; line-height: 1.1; }
+.nav-item:hover { background-color: rgba(255,255,255,0.03); color: white; }
+
+.nav-item.home-theme.active { color: var(--color-home); border-left-color: var(--color-home); background: linear-gradient(90deg, rgba(35,147,205,0.1) 0%, transparent 100%); }
+.nav-item.games-theme.active { color: var(--color-games); border-left-color: var(--color-games); background: linear-gradient(90deg, rgba(46,204,113,0.1) 0%, transparent 100%); }
+.nav-item.jams-theme.active { color: var(--color-jams); border-left-color: var(--color-jams); background: linear-gradient(90deg, rgba(241,196,15,0.1) 0%, transparent 100%); }
+.nav-item.catalog-theme.active { color: var(--color-catalog); border-left-color: var(--color-catalog); background: linear-gradient(90deg, rgba(155,89,182,0.1) 0%, transparent 100%); }
+.nav-item.queue-theme.active { color: var(--color-queue); border-left-color: var(--color-queue); background: linear-gradient(90deg, rgba(230,126,34,0.1) 0%, transparent 100%); }
+.nav-item.lb-theme.active { color: var(--color-leaderboard); border-left-color: var(--color-leaderboard); background: linear-gradient(90deg, rgba(231,76,60,0.1) 0%, transparent 100%); }
+
+.nav-spacer { flex-grow: 1; }
+.nav-link-ext { width: 100%; padding: 15px 0; display: flex; flex-direction: column; align-items: center; text-decoration: none; opacity: 0.7; transition: 0.3s; margin-bottom: 5px; }
+.nav-link-ext:hover { opacity: 1; transform: scale(1.05); }
+.impact-link { color: var(--color-impact); }
+.academies-link { color: var(--color-academies); }
+
+/* --- MAIN CONTENT --- */
+.main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(circle at top right, #1c1f3f 0%, #0e1025 60%); position: relative; }
+header { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+.welcome-section h1 { margin: 0; font-size: 1.8rem; font-weight: 600; }
+.welcome-section p { margin: 5px 0 0; color: var(--text-muted); font-size: 0.9rem; }
+.location-badge { margin-top: 10px; display: inline-flex; align-items: center; color: var(--text-main); font-weight: 600; }
+.location-badge i { margin-right: 8px; color: var(--color-home); }
+.content-area { flex: 1; padding: 0 40px 40px 40px; overflow-y: auto; }
+
+.section-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+.tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- SCROLL & GRID --- */
+.home-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 25px; align-items: start; height: calc(100vh - 160px); }
+.news-column { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.scroll-container { overflow-y: auto; padding-right: 10px; scrollbar-width: thin; scrollbar-color: #2a2e45 #161932; }
+.scroll-container::-webkit-scrollbar { width: 6px; }
+.scroll-container::-webkit-scrollbar-track { background: #161932; border-radius: 3px; }
+.scroll-container::-webkit-scrollbar-thumb { background: #2a2e45; border-radius: 3px; }
+.scroll-container::-webkit-scrollbar-thumb:hover { background: var(--color-home); }
+
+#news-feed { max-height: 35vh; margin-bottom: 20px; }
+#rules-feed { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-height: 35vh; }
+
+.list-card { background-color: var(--card-bg); border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid transparent; transition: 0.2s; }
+.list-card:hover { transform: translateX(5px); background-color: #1b1e3a; }
+.card-info h3 { margin: 0 0 5px 0; font-size: 1rem; color: white; }
+.card-info p { margin: 0; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.status-badge { font-size: 0.7rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; }
+
+.coins-column { height: 100%; }
+.coin-panel { background-color: var(--card-bg); border-radius: 8px; padding: 20px; border-top: 4px solid var(--color-jams); box-shadow: 0 4px 15px rgba(0,0,0,0.2); height: 100%; overflow-y: auto; }
+.coin-list { list-style: none; padding: 0; margin: 0; }
+.coin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; color: #ccc; }
+.coin-val { font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; display: inline-block; text-align: center; min-width: 24px; }
+.coin-val.silver { color: var(--coin-silver); border: 1px solid var(--coin-silver); background: rgba(189, 195, 199, 0.1); }
+.coin-val.gold { color: var(--coin-gold); border: 1px solid var(--coin-gold); background: rgba(241, 196, 15, 0.1); }
+.coin-val.obsidian { color: white; border: 1px solid var(--coin-obsidian); background: linear-gradient(135deg, #1a0b2e 0%, #000 100%); box-shadow: 0 0 8px var(--coin-obsidian); text-shadow: 0 0 3px var(--coin-obsidian); }
+
+.tier-tabs { display: flex; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; }
+.tier-btn { background: var(--card-bg); border: none; color: var(--text-muted); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+.tier-btn:hover { background: #2a2e45; color: white; }
+.tier-btn.active { background: var(--color-catalog); color: white; box-shadow: 0 0 10px rgba(155,89,182,0.4); }
+.store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.store-card { background-color: var(--card-bg); border-radius: 12px; padding: 20px; display: flex; align-items: center; transition: 0.3s; border: 1px solid transparent; }
+.store-card:hover { transform: translateY(-5px); border-color: var(--color-catalog); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.store-icon-circle { width: 60px; height: 60px; border-radius: 50%; background: #0e1025; border: 2px solid var(--color-catalog); display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; overflow: hidden; }
+.store-icon-circle i { font-size: 1.5rem; color: white; }
+.store-icon-circle img { width: 100%; height: 100%; object-fit: cover; } 
+.store-info { flex-grow: 1; }
+.store-info h4 { margin: 0 0 5px 0; font-size: 1rem; color: white; font-weight: 600; }
+.store-info p { margin: 0; font-size: 0.8rem; color: var(--color-games); display: flex; align-items: center; }
+.store-action { margin-left: 10px; }
+.btn-req { background: var(--color-catalog); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; transition: 0.2s; }
+.btn-req:hover { background: #8e44ad; }
+
+.queue-list { display: flex; flex-direction: column; gap: 15px; }
+.queue-card { background-color: var(--card-bg); border-radius: 4px; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #444; transition: 0.2s; }
+.queue-card:hover { background-color: #1b1e3a; }
+.q-left { display: flex; align-items: center; gap: 20px; }
+.q-number { width: 40px; height: 40px; background: #0e1025; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #aaa; border: 2px solid #333; }
+.q-info h3 { margin: 0; font-size: 1.1rem; color: white; }
+.q-info p { margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.q-status { font-weight: bold; font-size: 0.8rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+.status-waiting-coins { color: #f39c12; border-left-color: #f39c12; }
+.status-pending { color: #95a5a6; border-left-color: #95a5a6; }
+.status-waiting-print { color: #3498db; border-left-color: #3498db; }
+.status-printing { color: #9b59b6; border-left-color: #9b59b6; }
+.status-ready { color: #2ecc71; border-left-color: #2ecc71; }
+.printing-anim { animation: pulse 2s infinite; }
+
+.lb-container { padding-top: 20px; }
+.lb-top-3 { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-bottom: 40px; }
+.lb-card { background: var(--card-bg); width: 200px; padding: 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; position: relative; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: 0.3s; }
+.lb-card:hover { transform: translateY(-10px); }
+.lb-card.rank-1 { height: 260px; border-color: gold; background: linear-gradient(180deg, #161932 0%, rgba(255,215,0,0.1) 100%); z-index: 2; }
+.lb-card.rank-1 .lb-badge { background: gold; color: black; }
+.lb-card.rank-1 .lb-icon { border-color: gold; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
+.lb-card.rank-2 { height: 230px; border-color: silver; }
+.lb-card.rank-2 .lb-badge { background: silver; color: black; }
+.lb-card.rank-2 .lb-icon { border-color: silver; }
+.lb-card.rank-3 { height: 210px; border-color: #cd7f32; }
+.lb-card.rank-3 .lb-badge { background: #cd7f32; color: black; }
+.lb-card.rank-3 .lb-icon { border-color: #cd7f32; }
+.lb-badge { position: absolute; top: -15px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
+.lb-icon { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #444; margin-bottom: 15px; background: #0e1025; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; position: relative; }
+.lb-icon i { z-index: 2; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+.lb-name { font-weight: bold; font-size: 1.1rem; text-align: center; margin-bottom: 5px; color: white; }
+.lb-points { font-size: 0.9rem; color: var(--color-games); font-weight: bold; text-transform: uppercase; }
+.lb-list { max-width: 800px; margin: 0 auto; }
+.lb-row { display: flex; align-items: center; padding: 10px 25px; background: var(--card-bg); margin-bottom: 10px; border-radius: 8px; border-left: 4px solid transparent; transition: 0.2s; }
+.lb-row:hover { background: #1e2240; transform: translateX(5px); }
+.lb-row-rank { font-weight: bold; color: #666; width: 40px; font-size: 1.1rem; }
+.lb-row-belt { width: 35px; height: 35px; border-radius: 50%; background: #111; margin-right: 15px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; }
+.lb-row-belt i { font-size: 1.2rem; }
+.lb-row-name { flex-grow: 1; font-weight: 600; color: white; }
+.lb-row-points { font-weight: bold; color: var(--color-games); }
+
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.modal-content { background: var(--bg-dark); width: 90%; max-width: 600px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 40px rgba(0,0,0,0.7); }
+.modal-header { padding: 20px 30px; background: #161932; border-bottom: 2px solid var(--color-catalog); display: flex; justify-content: space-between; align-items: center; }
+.modal-body { padding: 30px; overflow-y: auto; flex-grow: 1; }
+.req-img-container { width: 100%; height: 200px; background: #111; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #333; position: relative; }
+.req-img-container img { width: 100%; height: 100%; object-fit: contain; }
+.req-img-container i { font-size: 4rem; color: #333; }
+.req-gallery { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; justify-content: center; }
+.req-thumb { width: 60px; height: 60px; border: 2px solid #444; border-radius: 6px; cursor: pointer; overflow: hidden; flex-shrink: 0; transition: 0.2s; opacity: 0.6; }
+.req-thumb:hover, .req-thumb.active { border-color: var(--color-catalog); opacity: 1; }
+.req-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.sub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 20px; }
+.sub-card { background: #1a1d3a; border: 1px solid #2a2e45; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; gap: 5px; }
+.sub-name { font-weight: 600; font-size: 1rem; color: white; }
+.sub-project { font-size: 0.8rem; color: #888; }
+
+/* Admin (Desktop) */
+#admin-view { display: none; background: radial-gradient(circle at top right, #1c1f3f 0%, #0e1025 60%); height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 99999; flex-direction: column; }
+#admin-view.active { display: flex; }
+.admin-top-bar { width: 100%; background-color: var(--color-admin); color: white; text-align: center; padding: 8px; font-weight: 700; letter-spacing: 1px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 101; flex-shrink: 0; }
+.admin-layout { display: flex; flex: 1; overflow: hidden; }
+.admin-nav { width: 250px; background: rgba(0,0,0,0.5); border-right: 1px solid #34495e; padding-top: 20px; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+.admin-nav-btn { padding: 15px 20px; color: #aaa; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-weight: 600; }
+.admin-nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+.admin-nav-btn.active { background: rgba(192, 57, 43, 0.1); color: white; border-left-color: var(--color-admin); }
+.admin-nav-btn i { width: 25px; text-align: center; margin-right: 10px; }
+.admin-content { flex: 1; padding: 30px; overflow-y: auto; background: rgba(0,0,0,0.1); }
+.admin-section { display: none; animation: fadeIn 0.3s; }
+.admin-section.active { display: block; }
+.admin-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid #34495e; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+.admin-card h3 { margin-top: 0; color: white; border-bottom: 1px solid #34495e; padding-bottom: 10px; font-size: 1.1rem; display: flex; justify-content: space-between; }
+.admin-input { width: 100%; padding: 10px; margin-bottom: 10px; background: #0e1025; border: 1px solid #34495e; color: white; border-radius: 6px; font-family: inherit; }
+.admin-btn { width: 100%; padding: 10px; cursor: pointer; font-weight: bold; border: none; border-radius: 6px; margin-top: 5px; transition: 0.2s; }
+.admin-btn:hover { filter: brightness(1.1); }
+.btn-add { background: var(--color-games); color: white; }
+.btn-warn { background: var(--color-queue); color: white; }
+.btn-danger { background: var(--color-admin); color: white; }
+.btn-edit { background: #f39c12; color: black; width:auto; padding:5px 10px; margin-right: 5px; }
+.btn-sync { background: #2980b9; color: white; text-decoration: none; display: block; text-align: center; margin-bottom: 10px; border-radius: 6px; padding: 10px; font-weight: bold; }
+.req-list { max-height: 400px; overflow-y: auto; }
+.req-item { background: #0e1025; padding: 10px; margin-bottom: 8px; border: 1px solid #34495e; border-radius: 6px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+.req-actions button { padding: 4px 8px; font-size: 0.7rem; margin-left: 5px; cursor: pointer; border-radius: 4px; }
+.mobile-admin-trigger { display: none; font-size: 1.5rem; color: #444; cursor: pointer; margin-right: 10px; }
+
+/* --- MOBILE RESPONSIVENESS --- */
+@media (max-width: 768px) {
+    body { flex-direction: column; }
+    
+    /* Sidebar becomes Bottom Nav */
+    .sidebar {
+        position: fixed;
+        bottom: 0; left: 0;
+        width: 100%; height: 70px;
+        flex-direction: row;
+        justify-content: space-around;
+        background-color: #090a18;
+        border-right: none;
+        border-top: 1px solid #1f2235;
+        padding-top: 0;
+        z-index: 1000;
     }
+    
+    .nav-item { padding: 0; height: 100%; border-left: none; border-top: 4px solid transparent; }
+    .nav-item.active { border-left: none; border-top-width: 4px; background: transparent; }
+    .nav-item i { font-size: 1.4rem; margin-bottom: 3px; }
+    .nav-item span { font-size: 0.6rem; }
+    
+    /* Hide Desktop Elements */
+    .desktop-only { display: none !important; }
+    
+    /* Show Mobile Admin Trigger */
+    .mobile-admin-trigger { display: block; }
+    
+    /* Adjust Main Content */
+    .main-wrapper { height: calc(100vh - 70px); } /* Leave room for nav */
+    .content-area { padding: 20px; }
+    header { padding: 15px 20px; }
+    
+    /* Grid Adjustments */
+    .home-grid { grid-template-columns: 1fr; gap: 20px; height: auto; }
+    #news-feed, #rules-feed { max-height: none; }
+    .news-column { height: auto; overflow: visible; }
+    
+    .scroll-container { overflow-y: visible; }
+    
+    /* Adjust Queue & Leaderboard */
+    .queue-list { height: auto !important; padding-bottom: 20px; }
+    .lb-container { height: auto !important; padding-bottom: 20px; }
+    
+    /* Modals */
+    .modal-content { width: 95%; max-height: 90vh; }
+    .lb-card { width: 140px; padding: 10px; }
+    .lb-icon { width: 60px; height: 60px; font-size: 1.8rem; }
+    .lb-top-3 { gap: 10px; }
 }
-
-// QUEUE & REQ
-function approveRequest(i) {
-    const r = requestsData[i];
-    queueData.push({ name: r.name, item: r.item, status: "Pending", details: r.details });
-    requestsData.splice(i, 1);
-    saveData();
-    renderAdminLists();
-}
-function updateQueueStatus(i, status) { queueData[i].status = status; saveData(); renderAdminLists(); renderQueue(); }
-
-function renderAdminRequests() {
-     const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = '';
-     if(requestsData.length === 0) c.innerHTML = '<p style="color:#666; padding:10px;">No pending requests.</p>';
-     requestsData.forEach((r,i) => {
-         c.innerHTML += `
-         <div class="req-item">
-            <div><strong>${r.name}</strong> - ${r.item}<br><span style="color:#aaa; font-size:0.7rem;">${r.details}</span></div>
-            <div class="req-actions">
-                <button onclick="approveRequest(${i})" style="background:#27ae60; color:white; border:none;">ADD</button>
-                <button onclick="deleteRequest(${i})" class="btn-danger">X</button>
-            </div>
-         </div>`;
-     });
-}
-function deleteRequest(i) { requestsData.splice(i,1); saveData(); renderAdminRequests(); }
-
-// --- RENDERERS ---
-function renderNews() { const c=document.getElementById('news-feed'); c.innerHTML=''; newsData.forEach(i=>{ c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge}></div></div>`;}); }
-function renderRules() { const c=document.getElementById('rules-feed'); c.innerHTML=''; rulesData.forEach(r=>{ const b=r.penalty?`<div class="status-badge" style="color:#e74c3c; border:1px solid #e74c3c;">${r.penalty}</div>`:''; c.innerHTML+=`<div class="list-card pending"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div>`;}); }
-function renderCoins() { const c=document.getElementById('coin-feed'); c.innerHTML=''; coinsData.forEach(i=>{ c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`;}); }
-
-function renderCatalog() {
-    const c = document.getElementById('catalog-feed'); c.innerHTML='';
-    const f = catalogData.filter(i => i.tier === currentTier);
-    if(f.length === 0) c.innerHTML = '<p style="color:#666;">No items.</p>';
-    else f.forEach(i => {
-        const idx = catalogData.indexOf(i);
-        let iconOrImg = `<i class="fa-solid ${i.icon}"></i>`;
-        if (i.image && i.image.length > 5) iconOrImg = `<img src="${i.image}" alt="${i.name}">`;
-        c.innerHTML += `<div class="store-card"><div class="store-icon-circle">${iconOrImg}</div><div class="store-info"><h4>${i.name}</h4><p>${i.cost}</p></div><div class="store-action"><button class="btn-req" onclick="initRequest(${idx})">Request</button></div></div>`;
-    });
-}
-
-function renderQueue() {
-     const c = document.getElementById('queue-list'); c.innerHTML='';
-     const q = queueData.filter(i => i.status.toLowerCase() !== 'picked up');
-     if(q.length===0) c.innerHTML='<p style="color:#666;text-align:center;">Empty Queue.</p>';
-     else q.forEach((i,x) => {
-         let s = i.status.toLowerCase(), cl = 'status-pending', icon = 'fa-clock', style = '';
-         if(s.includes('ready')) { cl='status-ready'; icon='fa-check'; style='border-left-color:#2ecc71'; }
-         else if(s.includes('printing')) { cl='status-printing printing-anim'; icon='fa-print'; style='border-left-color:#9b59b6'; }
-         else if(s.includes('waiting to print')) { cl='status-waiting-print'; icon='fa-hourglass'; style='border-left-color:#3498db'; }
-         c.innerHTML += `<div class="queue-card" style="${style}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${i.name}</h3><p>${i.item}</p></div></div><div class="q-status ${cl}">${i.status} <i class="fa-solid ${icon}"></i></div></div>`;
-     });
-}
-
-// --- LEADERBOARD ADMIN ACTIONS ---
-function adminSearchNinja() {
-    const q = document.getElementById('admin-lb-search').value.toLowerCase();
-    const resDiv = document.getElementById('admin-lb-results');
-    resDiv.innerHTML = '';
-    if(q.length < 2) return;
-
-    const matches = leaderboardData.filter(n => n.name.toLowerCase().includes(q));
-    matches.forEach(m => {
-        resDiv.innerHTML += `<div class="admin-list-item" style="cursor:pointer;" onclick="selectNinja('${m.name}', ${m.points})">${m.name} (${m.points})</div>`;
-    });
-}
-function selectNinja(name, points) {
-    editingNinja = leaderboardData.find(n => n.name === name);
-    document.getElementById('admin-lb-edit').style.display = 'block';
-    document.getElementById('admin-lb-name').innerText = name;
-    document.getElementById('admin-lb-current').innerText = points;
-}
-function adminUpdatePoints() {
-    if(!editingNinja) return;
-    const adj = parseInt(document.getElementById('admin-lb-adjust').value);
-    if(!isNaN(adj)) {
-        editingNinja.points += adj;
-        navigator.clipboard.writeText(editingNinja.points);
-        alert(`Updated locally to ${editingNinja.points}.\n\nNew total copied to clipboard!\nPaste into Google Sheet.`);
-        saveData();
-        document.getElementById('admin-lb-current').innerText = editingNinja.points;
-        document.getElementById('admin-lb-adjust').value = '';
-    }
-}
-
-// --- UTILS & AUTH ---
-function saveData() {
-    localStorage.setItem('cn_news', JSON.stringify(newsData));
-    localStorage.setItem('cn_jams', JSON.stringify(jamsData));
-    localStorage.setItem('cn_rules', JSON.stringify(rulesData));
-    localStorage.setItem('cn_coins', JSON.stringify(coinsData));
-    localStorage.setItem('cn_catalog', JSON.stringify(catalogData));
-    localStorage.setItem('cn_requests', JSON.stringify(requestsData));
-    refreshAll();
-}
-function resetData(t) { if(confirm("Reset?")) { if(t==='news') newsData=defaultNews; saveData(); } }
-function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); fetchQueue(); fetchLeaderboard(); renderAdminRequests(); }
-
-function initRequest(idx) { currentRequestItem = catalogData[idx]; document.getElementById('req-item-name').innerText = currentRequestItem.name; document.getElementById('req-modal').style.display = 'flex'; }
-function closeReqModal() { document.getElementById('req-modal').style.display = 'none'; }
-function submitRequest() {
-    const name = document.getElementById('req-ninja-name').value;
-    if(!name) return alert("Name required");
-    let details = "";
-    if(document.getElementById('req-color')) details += "Color: " + document.getElementById('req-color').value;
-    requestsData.push({name, item: currentRequestItem.name, details: details || "Standard", time: new Date().toLocaleString()});
-    saveData(); closeReqModal(); alert("Sent!");
-}
-
-function handleLogoClick() {
-     clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
-     if(clickCount === 3) { clickCount = 0; document.getElementById('admin-auth-modal').style.display = 'flex'; }
-}
-function closeAdminAuthModal() { document.getElementById('admin-auth-modal').style.display = 'none'; }
-function submitAdminAuth() {
-    if(checkPass(document.getElementById('admin-auth-input').value)) { 
-        document.getElementById('admin-auth-input').value = ''; // CLEARED
-        closeAdminAuthModal(); 
-        document.getElementById('admin-view').classList.add('active'); 
-        showAdminSection('admin-home', document.querySelector('.admin-nav-btn')); 
-    }
-    else alert("Denied");
-}
-function checkPass(p) { const c=[64,50,54,51,51,78,105,110,106,97,115]; if(p.length!==c.length)return false; for(let i=0;i<p.length;i++)if(p.charCodeAt(i)!==c[i])return false; return true; }
-function exitAdmin() { document.getElementById('admin-view').classList.remove('active'); }
-function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
-function filterCatalog(t, btn) { currentTier=t; document.querySelectorAll('.tier-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCatalog(); }
-
-// Placeholders for consistency
-function getBeltColor(b) { return 'var(--belt-white)'; }
-function renderLeaderboard() {}
-function renderJams() {}
-async function fetchQueue() { if(!QUEUE_CSV_URL) renderQueue(); }
-async function fetchLeaderboard() {}
-
-// Init
-refreshAll();
-setInterval(fetchQueue, 30000);
