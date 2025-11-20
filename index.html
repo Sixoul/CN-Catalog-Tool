@@ -92,12 +92,14 @@
                 <div class="admin-nav-btn" onclick="toggleUserView()" style="color: var(--color-home); border-top: 1px solid #34495e;"><i class="fa-solid fa-eye"></i> 👀 User View</div>
                 <div class="admin-nav-btn" onclick="logout()" style="color: #e74c3c;"><i class="fa-solid fa-door-open"></i> Logout</div>
             </div>
+
             <div class="admin-content">
                 <div id="admin-home" class="admin-section active">
                     <div class="admin-card"><h3>📢 Manage News <button class="btn-add" onclick="openNewsModal()">+ Add</button></h3><div id="admin-news-list"></div></div>
                     <div class="admin-card"><h3>⚠️ Manage Rules <button class="btn-add" onclick="openRulesModal()">+ Add</button></h3><div id="admin-rules-list"></div></div>
                     <div class="admin-card"><h3>💰 Coin Tasks <button class="btn-add" onclick="openCoinModal()">+ Add</button></h3><div id="admin-coins-list"></div></div>
                 </div>
+
                 <div id="admin-lb" class="admin-section">
                     <div class="admin-card"><h3>➕ Add New Ninja</h3><div style="display:flex; gap:10px;"><input type="text" id="admin-lb-add-name" class="admin-input" placeholder="Ninja Name" style="margin-bottom:0; flex:1;" onkeydown="if(event.key==='Enter') adminAddNinja()"><button class="btn-add" onclick="adminAddNinja()" style="width:auto;">ADD</button></div></div>
                     <div class="admin-card"><h3>🔍 Student Point Manager</h3><input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()"><div id="admin-lb-results" style="margin-bottom: 15px;"></div><div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px;"><h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);">Student Name</h4><p>Current: <span id="admin-lb-current">0</span> pts</p><input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)" onkeydown="if(event.key==='Enter') adminUpdatePoints()"><button class="admin-btn btn-add" onclick="adminUpdatePoints()">CALCULATE & COPY</button></div></div>
