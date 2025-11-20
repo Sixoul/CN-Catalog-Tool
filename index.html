@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     
-    <!-- FIREBASE SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- FIREBASE SDKs (REQUIRED FOR DATABASE) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -139,6 +139,8 @@
                     </div>
 
                     <div class="admin-content">
+                        
+                        <!-- ADMIN HOME -->
                         <div id="admin-home" class="admin-section active">
                             <div class="admin-card">
                                 <h3>📢 Manage News <button class="btn-add" onclick="addNews()" style="width:auto; padding:5px 10px;">+ Add</button></h3>
@@ -154,26 +156,28 @@
                             </div>
                         </div>
 
+                        <!-- ADMIN LEADERBOARD -->
                         <div id="admin-lb" class="admin-section">
                             <div class="admin-card">
-                                <h3>☁️ Data Sync (Import from ClassDojo CSV)</h3>
-                                <p style="color:#aaa; font-size:0.8rem;">Paste ClassDojo/Sheet CSV data here to overwrite the leaderboard.</p>
-                                <textarea id="csv-import-area" class="admin-input" style="height:100px;" placeholder="Paste CSV here (Name, Points, Belt...)"></textarea>
-                                <button class="btn-sync" onclick="importLeaderboardCSV()" style="width:100%">IMPORT & SYNC</button>
-                            </div>
-                            <div class="admin-card">
-                                <h3>🔍 Quick Point Adjust</h3>
+                                <h3>🔍 Student Point Manager</h3>
                                 <input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()">
                                 <div id="admin-lb-results" style="margin-bottom: 15px;"></div>
                                 <div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px;">
                                     <h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);">Student Name</h4>
                                     <p>Current: <span id="admin-lb-current">0</span> pts</p>
                                     <input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)">
-                                    <button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button>
+                                    <button class="admin-btn btn-add" onclick="adminUpdatePoints()">CALCULATE & COPY</button>
                                 </div>
+                            </div>
+                            <div class="admin-card">
+                                <h3>☁️ Data Sync (Import)</h3>
+                                <p style="color:#aaa; font-size:0.8rem;">Paste CSV data here to overwrite the leaderboard.</p>
+                                <textarea id="csv-import-area" class="admin-input" style="height:100px;" placeholder="Paste CSV here..."></textarea>
+                                <button class="btn-sync" onclick="importLeaderboardCSV()" style="width:100%">IMPORT & SYNC</button>
                             </div>
                         </div>
 
+                        <!-- ADMIN CATALOG -->
                         <div id="admin-cat" class="admin-section">
                             <div class="admin-card">
                                 <h3>🛍️ Manage Catalog <button class="btn-add" onclick="showAddCatModal()" style="width:auto; padding:5px 10px;">+ Add</button></h3>
@@ -181,6 +185,7 @@
                             </div>
                         </div>
 
+                        <!-- ADMIN QUEUE -->
                         <div id="admin-queue" class="admin-section">
                             <div class="admin-card" style="border-color: var(--color-catalog);">
                                 <h3>📩 Incoming Requests</h3>
@@ -197,7 +202,7 @@
         </div>
     </div>
 
-    <!-- MODALS (Catalog, Auth, Request, Jam) -->
+    <!-- MODALS -->
     <div id="cat-edit-modal" class="modal-overlay">
         <div class="modal-content" style="max-width:500px; height:auto;">
             <div class="modal-header"><h2 style="color:white; margin:0;">Edit Item</h2><button onclick="closeCatModal()" style="background:none; border:none; color:white; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button></div>
@@ -211,7 +216,7 @@
         </div>
     </div>
 
-    <div id="admin-auth-modal" class="modal-overlay"><div class="modal-content" style="max-width:400px; height:auto;"><div class="modal-header" style="border-bottom-color: var(--color-admin);"><h2 style="margin:0; color: white;">Login</h2><button onclick="closeAdminAuthModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body" style="text-align: center;"><input type="password" id="admin-auth-input" class="admin-input" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" placeholder="••••••••" onkeydown="if(event.key==='Enter') submitAdminAuth()"><button onclick="submitAdminAuth()" class="btn-blue" style="width:100%; background: var(--color-admin); margin-top: 10px;">UNLOCK</button></div></div></div>
+    <div id="admin-auth-modal" class="modal-overlay"><div class="modal-content" style="max-width:400px; height:auto;"><div class="modal-header" style="border-bottom-color: var(--color-admin);"><h2 style="margin:0; color: white;">Sensei Login</h2><button onclick="closeAdminAuthModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body" style="text-align: center;"><input type="password" id="admin-auth-input" class="admin-input" style="text-align: center; letter-spacing: 5px; font-size: 1.2rem;" placeholder="••••••••" onkeydown="if(event.key==='Enter') submitAdminAuth()"><button onclick="submitAdminAuth()" class="btn-blue" style="width:100%; background: var(--color-admin); margin-top: 10px;">UNLOCK</button></div></div></div>
     <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"></div><div id="req-gallery" class="req-gallery" style="display:none;"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3><input type="text" id="req-ninja-name" class="admin-input" placeholder="Ninja Name"><div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SEND</button></div></div></div>
     <div id="jam-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 id="modal-title" style="margin:0; color: white;">Contest</h2><button onclick="closeJamModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="modal-status-banner" style="padding:10px; background:#222; color:#aaa; text-align:center; border-radius:4px; margin-bottom:20px; font-weight:bold;">STATUS</div><div style="display:flex; gap:20px;"><div style="flex:1;"><h3 style="color: var(--color-jams);">Details</h3><p id="modal-desc" style="color:#ccc;"></p><p style="color:#888; font-size:0.9rem;">Deadline: <span id="modal-deadline" style="color:white;"></span></p></div><div style="flex:1;"><h3 style="color: var(--color-jams);">Reqs</h3><ul id="modal-reqs" style="color:#ccc; padding-left:20px;"></ul></div></div><div id="jam-submit-area" style="margin-top:20px;"></div><div style="margin-top:30px;"><h3 id="modal-subs-title" style="border-bottom:1px solid #444; padding-bottom:10px; color:white;">Submissions</h3><div id="modal-subs-grid" class="sub-grid"></div></div></div></div></div>
 
