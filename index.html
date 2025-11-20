@@ -8,14 +8,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     
-    <!-- FIREBASE SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-    <!-- LOGIN VIEW -->
     <div id="login-view">
         <div class="bg-circle circle-1"></div>
         <div class="bg-circle circle-2"></div>
@@ -25,9 +23,8 @@
             <div class="login-logo"><i class="fa-solid fa-user-ninja"></i></div>
             <div class="login-title">CODE NINJAS DASHBOARD<br><span style="font-size:1rem; font-weight:300;">CERRITOS</span></div>
             
-            <div id="login-error-msg" class="login-error">User not found in roster</div>
+            <div id="login-error-msg" class="login-error">User not found or Incorrect Password</div>
 
-            <!-- Ninja Login Form -->
             <div id="ninja-login-form">
                 <p style="color:white; margin-bottom:10px;">Ready to Code?</p>
                 <input type="text" id="login-username" class="login-input" placeholder="Enter Ninja Name" onkeydown="if(event.key==='Enter') attemptNinjaLogin()">
@@ -35,7 +32,6 @@
                 <div class="login-toggle" onclick="toggleAdminLogin()">Log in as Sensei (Admin)</div>
             </div>
 
-            <!-- Admin Login Form -->
             <div id="admin-login-form" style="display:none;">
                 <p style="color:white; margin-bottom:10px;">Sensei Access</p>
                 <input type="email" id="admin-email" class="login-input" placeholder="Email">
@@ -46,7 +42,6 @@
         </div>
     </div>
 
-    <!-- MAIN APP -->
     <div id="main-app" style="display:none; height:100%; width:100%; overflow:hidden; display:flex;">
         <nav class="sidebar">
             <div id="admin-login-btn" class="logo-container desktop-only" style="cursor: default;">
@@ -95,7 +90,6 @@
 
             <div class="content-area">
                 
-                <!-- HOME TAB -->
                 <div id="home" class="tab-content active">
                     <div class="home-grid">
                         <div class="news-column">
@@ -118,20 +112,17 @@
                     </div>
                 </div>
 
-                <!-- GAMES TAB -->
                 <div id="games" class="tab-content">
                     <div class="section-title">🎮 Games of the Week</div>
-                    <div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Roblox: Obby Creator</h3><p>Build Complexity: Low // Fun: High</p></div><button class="btn-blue" style="background-color: var(--color-games);">LAUNCH</button></div>
+                    <div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Roblox: Obby Creator</h3><p>Build Complexity: Low // Fun: High</p></div><button class="btn-blue" style="background-color: var(--color-games); color:white; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">LAUNCH</button></div>
                     <div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Minecraft: Creative Server</h3><p>IP: 192.168.1.X</p></div><div class="status-badge" style="color: var(--color-games)">ONLINE ></div></div>
                 </div>
 
-                <!-- JAMS TAB -->
                 <div id="jams" class="tab-content">
                     <div class="section-title">🏆 Active Contests & Jams</div>
                     <div id="jams-feed"></div>
                 </div>
 
-                <!-- CATALOG TAB -->
                 <div id="catalog" class="tab-content">
                     <div class="section-title">🖨️ 3D Print Prize Catalog</div>
                     <div class="tier-tabs">
@@ -147,13 +138,11 @@
                     </div>
                 </div>
 
-                <!-- QUEUE TAB -->
                 <div id="queue" class="tab-content">
                     <div class="section-title"><span>⏳ Print Queue Status</span><span style="font-size: 0.8rem; color: var(--text-muted)">LIVE UPDATES ></span></div>
                     <div id="queue-list" class="queue-list scroll-container" style="height: calc(100vh - 200px);"></div>
                 </div>
 
-                <!-- LEADERBOARD TAB -->
                 <div id="leaderboard" class="tab-content">
                     <div class="section-title">
                         <span>📈 Ninja Leaderboard</span>
@@ -167,12 +156,10 @@
         </div>
     </div>
 
-    <!-- FLOATING ADMIN TOGGLE -->
     <div id="floating-admin-toggle" class="floating-admin-btn" onclick="restoreAdminView()">
         <i class="fa-solid fa-wrench"></i>
     </div>
 
-    <!-- ADMIN VIEW -->
     <div id="admin-view">
         <div class="admin-top-bar"><i class="fa-solid fa-wrench"></i> SENSEI ADMIN VIEW</div>
         <div class="admin-layout">
@@ -188,7 +175,6 @@
 
             <div class="admin-content">
                 
-                <!-- ADMIN HOME -->
                 <div id="admin-home" class="admin-section active">
                     <div class="admin-card">
                         <h3>📢 Manage News <button class="btn-add" onclick="openNewsModal()">+ Add</button></h3>
@@ -204,7 +190,6 @@
                     </div>
                 </div>
 
-                <!-- ADMIN LEADERBOARD -->
                 <div id="admin-lb" class="admin-section">
                     <div class="admin-card">
                         <h3>➕ Add New Ninja</h3>
@@ -233,7 +218,6 @@
                     </div>
                 </div>
 
-                <!-- ADMIN CATALOG -->
                 <div id="admin-cat" class="admin-section">
                     <div class="admin-card">
                         <h3>🛍️ Manage Catalog Items <button class="btn-add" onclick="showAddCatModal()" style="width:auto; padding:5px 10px;">+ Add New</button></h3>
@@ -242,7 +226,6 @@
                     </div>
                 </div>
 
-                <!-- ADMIN QUEUE -->
                 <div id="admin-queue" class="admin-section">
                     <div class="admin-card" style="border-color: var(--color-home);"><h3>📊 Interest Tracker <span style="font-size:0.8rem; color:#aaa; font-weight:normal;">(Standard Items)</span></h3><div id="admin-interest-list" class="req-list" style="max-height: 150px;"></div></div>
                     <div class="admin-card" style="border-color: var(--color-catalog);"><h3>📩 Incoming Premium Requests</h3><div id="admin-requests-list" class="req-list"></div></div>
@@ -256,7 +239,6 @@
         </div>
     </div>
 
-    <!-- MODALS -->
     <div id="cat-edit-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px; max-height: 90vh;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Item</h2><button onclick="closeCatModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="ce-name" class="admin-input" placeholder="Name" onkeydown="if(event.key==='Enter') saveCatItem()"><input type="text" id="ce-cost" class="admin-input" placeholder="Cost" onkeydown="if(event.key==='Enter') saveCatItem()"><select id="ce-tier" class="admin-input"><option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option></select><select id="ce-type" class="admin-input" onchange="toggleCatOptions(this.value)"><option value="standard">Standard (Counter)</option><option value="premium_custom">Custom Print</option><option value="premium_variant">Variation</option><option value="custom_multi">Multi-Color</option></select><div id="ce-options-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem;">Variations (Comma Separated):</label><input type="text" id="ce-options" class="admin-input" placeholder="Red, Blue, Green" onkeyup="renderVariationInputs()"><div id="ce-variation-images"></div></div><label style="color:#aaa; font-size:0.8rem;">Main Image URL:</label><input type="text" id="ce-img" class="admin-input" placeholder="https://..."><div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem;"><input type="checkbox" id="ce-visible" checked> Visible</label></div><div style="display:flex;gap:10px;"><button onclick="openGitHubUpload()" class="admin-btn" style="background:#333;">Upload Helper</button><button onclick="saveCatItem()" class="admin-btn btn-add">SAVE</button></div></div></div></div>
     <div id="news-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit News</h2><button onclick="closeNewsModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="news-input-title" class="admin-input" placeholder="Title" onkeydown="if(event.key==='Enter') saveNews()"><input type="text" id="news-input-date" class="admin-input" placeholder="Details" onkeydown="if(event.key==='Enter') saveNews()"><input type="text" id="news-input-badge" class="admin-input" placeholder="Badge" onkeydown="if(event.key==='Enter') saveNews()"><button onclick="saveNews()" class="admin-btn btn-add">SAVE</button></div></div></div>
     <div id="rules-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Rule</h2><button onclick="closeRulesModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="rule-input-title" class="admin-input" placeholder="Title" onkeydown="if(event.key==='Enter') saveRule()"><input type="text" id="rule-input-desc" class="admin-input" placeholder="Desc" onkeydown="if(event.key==='Enter') saveRule()"><input type="text" id="rule-input-penalty" class="admin-input" placeholder="Penalty" onkeydown="if(event.key==='Enter') saveRule()"><button onclick="saveRule()" class="admin-btn btn-add">SAVE</button></div></div></div>
@@ -266,6 +248,6 @@
     <div id="confirm-modal" class="modal-overlay" style="z-index: 300000;"><div class="modal-content" style="max-width:400px; height:auto; border-color: #e74c3c;"><div class="modal-header" style="border-bottom-color: #e74c3c;"><h2 style="margin:0; color:white;">Confirm Action</h2></div><div class="modal-body" style="text-align:center;"><p id="confirm-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Are you sure?</p><div style="display:flex; gap:10px;"><button id="confirm-yes-btn" class="btn-blue" style="background:#e74c3c; width:50%;">YES</button><button onclick="document.getElementById('confirm-modal').style.display='none'" class="btn-blue" style="background:#555; width:50%;">NO</button></div></div></div></div>
     <div id="alert-modal" class="modal-overlay" style="z-index: 300000;"><div class="modal-content" style="max-width:400px; height:auto; border-color: var(--color-games);"><div class="modal-header" style="border-bottom-color: var(--color-games);"><h2 id="alert-title" style="margin:0; color:white;">Notice</h2></div><div class="modal-body" style="text-align:center;"><p id="alert-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Message</p><button onclick="document.getElementById('alert-modal').style.display='none'" class="btn-blue" style="background:var(--color-games); width:100%;">OK</button></div></div></div>
 
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
