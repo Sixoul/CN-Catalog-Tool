@@ -1,76 +1,20 @@
 // --- CONFIGURATION ---
 const QUEUE_CSV_URL = ""; 
 const ROSTER_CSV_URL = "";
+// ** IMPORTANT: Replace with your actual GitHub Repo URL to use the upload helper **
+const GITHUB_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME"; 
+
 const FILAMENT_COLORS = ["Jade White", "Light Gray", "Orange", "Sunflower Yellow", "Mistletoe Green", "Cocoa Brown", "Red", "Cyan", "Cobalt Blue", "Purple", "Blue Grey", "Hot Pink", "Black", "Matte Ivory White", "Matte Lilac Purple", "Matte Mandarin Orange", "Matte Plum", "Matte Dark Red", "Matte Grass Green", "Matte Dark Blue", "Matte Ash Gray", "Matte Charcoal", "Glow in Dark Blue", "Silk Blue Hawaii", "Silk+ Gold", "Metal Iridium Gold", "Metal Copper Brown", "Metal Iron Gray"];
 
-// --- MOCK DATA (Populated as requested) ---
-const defaultNews = [
-    { title: "Minecraft Parents Night Out", date: "Nov 22 // Survival Mode", badge: "COMING SOON" }, 
-    { title: "Winter Belt Ceremony", date: "Dec 15 // 4:00 PM", badge: "MARK CALENDAR" }, 
-    { title: "Holiday Camp: Roblox Tycoons", date: "Dec 20-23", badge: "CAMPS" }, 
-    { title: "Dojo Closed: Christmas", date: "Dec 25", badge: "INFO" }
-];
-const defaultJams = [
-    { id: "winter_jam", title: "Winter Wonderland Jam", deadline: "2025-12-20", type: "game", platform: "Scratch/MakeCode", reqs: ["Must include snow/ice", "Original artwork encouraged", "Teams of 2 allowed"], status: "active", submissions: [{ name: "Alex P.", project: "Snowball Fight", rank: null }, { name: "Sarah M.", project: "Penguin Slide", rank: null }] }, 
-    { id: "tinkercad_bridge", title: "Tinkercad Bridge Challenge", deadline: "2025-11-15", type: "3d", platform: "Tinkercad", reqs: ["Must span 10cm", "Support 500g weight", "No infill > 20%"], status: "waiting", submissions: [{ name: "Mikey", project: "Truss Bridge", rank: null }, { name: "Donny", project: "Arch Design", rank: null }] }, 
-    { id: "spooky_scratch", title: "Spooky Scratch Contest", deadline: "2025-10-31", type: "game", platform: "Scratch", reqs: ["Scary theme", "Sound effects required"], status: "results", submissions: [{ name: "Leo D.", project: "Haunted Mansion", rank: 1 }, { name: "Mia K.", project: "Ghost Hunter", rank: 2 }, { name: "Sam T.", project: "Zombie Run", rank: 3 }] }
-];
-const defaultRules = [
-    { title: "Respect Equipment", desc: "Treat keyboards and mice gently.", penalty: "-1 Coin" }, 
-    { title: "No Food/Drink", desc: "Keep snacks in the lobby area.", penalty: "-1 Coin" }, 
-    { title: "Clean Station", desc: "Push in chair and tidy up.", penalty: "-1 Coin" }, 
-    { title: "No Running", desc: "Walk in the Dojo at all times.", penalty: "-1 Coin" }, 
-    { title: "Be Helpful", desc: "Help other Ninjas debug code.", penalty: "" }, 
-    { title: "Ask for Help", desc: "Raise your hand for a Sensei.", penalty: "" }
-];
-const defaultCoins = [
-    { task: "Wear Ninja Shirt", val: "+1", type: "silver" }, 
-    { task: "Clean Station", val: "+1", type: "silver" }, 
-    { task: "Help a Ninja", val: "+2", type: "silver" }, 
-    { task: "Complete a Belt", val: "+5", type: "gold" }, 
-    { task: "Bring a Friend", val: "+5", type: "gold" }, 
-    { task: "Mastery Project", val: "+10", type: "obsidian" }, 
-    { task: "Black Belt Test", val: "+20", type: "obsidian" }
-];
-const defaultCatalog = [
-    { name: "Ninja Star", cost: "50 Coins", tier: "tier1", icon: "fa-star", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Ninja+Star" }, 
-    { name: "Key Chain", cost: "75 Coins", tier: "tier1", icon: "fa-key", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Key+Chain" }, 
-    { name: "Whistle", cost: "100 Coins", tier: "tier1", icon: "fa-bullhorn", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Whistle" }, 
-    { name: "Flexi-Rex", cost: "150 Coins", tier: "tier2", icon: "fa-dragon", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Flexi-Rex" }, 
-    { name: "Among Us", cost: "200 Coins", tier: "tier2", icon: "fa-robot", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Among+Us" }, 
-    { name: "Minecraft Pickaxe", cost: "250 Coins", tier: "tier2", icon: "fa-hammer", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Pickaxe" }, 
-    { name: "Medium Custom Print", cost: "200 Coins", tier: "tier2", icon: "fa-cube", type: "custom" }, 
-    { name: "Controller Stand", cost: "350 Coins", tier: "tier3", icon: "fa-gamepad", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Controller+Stand" }, 
-    { name: "Headphone Stand", cost: "400 Coins", tier: "tier3", icon: "fa-headphones", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Headphone+Stand" }, 
-    { name: "Dice Tower", cost: "450 Coins", tier: "tier3", icon: "fa-dice-d20", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Dice+Tower" }, 
-    { name: "Long Custom Print", cost: "400 Coins", tier: "tier3", icon: "fa-cubes", type: "custom" }, 
-    { name: "Katana", cost: "500 Coins", tier: "tier4", icon: "fa-khanda", type: "variation", options: ["Demon Slayer", "Traditional", "Sci-Fi"], image: "https://via.placeholder.com/300x200?text=Demon+Slayer+Katana", variationImages: { "Demon Slayer": "https://via.placeholder.com/300x200?text=Demon+Slayer+Katana", "Traditional": "https://via.placeholder.com/300x200?text=Traditional+Katana", "Sci-Fi": "https://via.placeholder.com/300x200?text=Sci-Fi+Katana" } }, 
-    { name: "Master Sword", cost: "550 Coins", tier: "tier4", icon: "fa-shield-halved", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Master+Sword" }, 
-    { name: "Multi-Color Custom", cost: "600 Coins", tier: "tier4", icon: "fa-palette", type: "custom_multi" }
-];
-const mockLeaderboard = [
-    { name: "Asher Cullin", points: 1250, belt: "Blue" }, 
-    { name: "Colton Wong", points: 1100, belt: "Green" }, 
-    { name: "Elliot Koshimizu", points: 950, belt: "Orange" }, 
-    { name: "Charlize Phung", points: 800, belt: "Yellow" }, 
-    { name: "Ryder Nguyen", points: 750, belt: "Yellow" }, 
-    { name: "Adam Feldman", points: 600, belt: "White" }, 
-    { name: "Nicholas Lapinta", points: 500, belt: "White" }, 
-    { name: "Harper Segura", points: 450, belt: "White" }, 
-    { name: "Lucas Lee", points: 300, belt: "White" }, 
-    { name: "Nikki Voong", points: 200, belt: "White" }
-];
-const mockQueue = [
-     { name: "Asher C.", item: "Katana (Demon Slayer)", status: "Printing", details: "Color: Black" }, 
-     { name: "Colton W.", item: "Flexi-Rex (Red)", status: "Ready!" }, 
-     { name: "Elliot K.", item: "Among Us (Blue)", status: "Waiting to Print" }, 
-     { name: "Charlize P.", item: "Custom Print", status: "Waiting for Coins" }, 
-     { name: "Ryder N.", item: "Ninja Star", status: "Pending" }
-];
-const mockRequests = [
-    { name: "Harper S.", item: "Flexi-Rex", details: "Color: Hot Pink", time: "10:30 AM" }, 
-    { name: "Lucas L.", item: "Custom Print", details: "Link: tinkercad.com/xyz | Color: Matte Dark Blue", time: "11:15 AM" }
-];
+// --- DATA ---
+const defaultNews = [{ title: "Minecraft Parents Night Out", date: "Nov 22 // Survival Mode", badge: "COMING SOON" }, { title: "Winter Belt Ceremony", date: "Dec 15 // 4:00 PM", badge: "MARK CALENDAR" }, { title: "Holiday Camp: Roblox Tycoons", date: "Dec 20-23", badge: "CAMPS" }, { title: "Dojo Closed: Christmas", date: "Dec 25", badge: "INFO" }];
+const defaultJams = [{ id: "winter_jam", title: "Winter Wonderland Jam", deadline: "2025-12-20", type: "game", platform: "Scratch/MakeCode", reqs: ["Must include snow/ice", "Original artwork encouraged", "Teams of 2 allowed"], status: "active", submissions: [{ name: "Alex P.", project: "Snowball Fight", rank: null }, { name: "Sarah M.", project: "Penguin Slide", rank: null }] }, { id: "tinkercad_bridge", title: "Tinkercad Bridge Challenge", deadline: "2025-11-15", type: "3d", platform: "Tinkercad", reqs: ["Must span 10cm", "Support 500g weight", "No infill > 20%"], status: "waiting", submissions: [{ name: "Mikey", project: "Truss Bridge", rank: null }, { name: "Donny", project: "Arch Design", rank: null }] }, { id: "spooky_scratch", title: "Spooky Scratch Contest", deadline: "2025-10-31", type: "game", platform: "Scratch", reqs: ["Scary theme", "Sound effects required"], status: "results", submissions: [{ name: "Leo D.", project: "Haunted Mansion", rank: 1 }, { name: "Mia K.", project: "Ghost Hunter", rank: 2 }, { name: "Sam T.", project: "Zombie Run", rank: 3 }] }];
+const defaultRules = [{ title: "Respect Equipment", desc: "Treat keyboards and mice gently.", penalty: "-1 Coin" }, { title: "No Food/Drink", desc: "Keep snacks in the lobby area.", penalty: "-1 Coin" }, { title: "Clean Station", desc: "Push in chair and tidy up.", penalty: "-1 Coin" }, { title: "No Running", desc: "Walk in the Dojo at all times.", penalty: "-1 Coin" }, { title: "Be Helpful", desc: "Help other Ninjas debug code.", penalty: "" }, { title: "Ask for Help", desc: "Raise your hand for a Sensei.", penalty: "" }];
+const defaultCoins = [{ task: "Wear Ninja Shirt", val: "+1", type: "silver" }, { task: "Clean Station", val: "+1", type: "silver" }, { task: "Help a Ninja", val: "+2", type: "silver" }, { task: "Complete a Belt", val: "+5", type: "gold" }, { task: "Bring a Friend", val: "+5", type: "gold" }, { task: "Mastery Project", val: "+10", type: "obsidian" }, { task: "Black Belt Test", val: "+20", type: "obsidian" }];
+const defaultCatalog = [{ name: "Ninja Star", cost: "50 Coins", tier: "tier1", icon: "fa-star", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Ninja+Star" }, { name: "Key Chain", cost: "75 Coins", tier: "tier1", icon: "fa-key", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Key+Chain" }, { name: "Whistle", cost: "100 Coins", tier: "tier1", icon: "fa-bullhorn", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Whistle" }, { name: "Flexi-Rex", cost: "150 Coins", tier: "tier2", icon: "fa-dragon", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Flexi-Rex" }, { name: "Among Us", cost: "200 Coins", tier: "tier2", icon: "fa-robot", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Among+Us" }, { name: "Minecraft Pickaxe", cost: "250 Coins", tier: "tier2", icon: "fa-hammer", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Pickaxe" }, { name: "Medium Custom Print", cost: "200 Coins", tier: "tier2", icon: "fa-cube", type: "custom" }, { name: "Controller Stand", cost: "350 Coins", tier: "tier3", icon: "fa-gamepad", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Controller+Stand" }, { name: "Headphone Stand", cost: "400 Coins", tier: "tier3", icon: "fa-headphones", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Headphone+Stand" }, { name: "Dice Tower", cost: "450 Coins", tier: "tier3", icon: "fa-dice-d20", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Dice+Tower" }, { name: "Long Custom Print", cost: "400 Coins", tier: "tier3", icon: "fa-cubes", type: "custom" }, { name: "Katana", cost: "500 Coins", tier: "tier4", icon: "fa-khanda", type: "variation", options: ["Demon Slayer", "Traditional", "Sci-Fi"], image: "https://via.placeholder.com/300x200?text=Demon+Slayer+Katana", variationImages: { "Demon Slayer": "https://via.placeholder.com/300x200?text=Demon+Slayer+Katana", "Traditional": "https://via.placeholder.com/300x200?text=Traditional+Katana", "Sci-Fi": "https://via.placeholder.com/300x200?text=Sci-Fi+Katana" } }, { name: "Master Sword", cost: "550 Coins", tier: "tier4", icon: "fa-shield-halved", type: "standard", image: "https://via.placeholder.com/300x200.png?text=Master+Sword" }, { name: "Multi-Color Custom", cost: "600 Coins", tier: "tier4", icon: "fa-palette", type: "custom_multi" }];
+const mockLeaderboard = [{ name: "Asher Cullin", points: 1250, belt: "Blue" }, { name: "Colton Wong", points: 1100, belt: "Green" }, { name: "Elliot Koshimizu", points: 950, belt: "Orange" }, { name: "Charlize Phung", points: 800, belt: "Yellow" }, { name: "Ryder Nguyen", points: 750, belt: "Yellow" }, { name: "Adam Feldman", points: 600, belt: "White" }, { name: "Nicholas Lapinta", points: 500, belt: "White" }, { name: "Harper Segura", points: 450, belt: "White" }, { name: "Lucas Lee", points: 300, belt: "White" }, { name: "Nikki Voong", points: 200, belt: "White" }];
+const mockQueue = [{ name: "Asher C.", item: "Katana (Demon Slayer)", status: "Printing", details: "Color: Black" }, { name: "Colton W.", item: "Flexi-Rex (Red)", status: "Ready!" }, { name: "Elliot K.", item: "Among Us (Blue)", status: "Waiting to Print" }, { name: "Charlize P.", item: "Custom Print", status: "Waiting for Coins" }, { name: "Ryder N.", item: "Ninja Star", status: "Pending" }];
+const mockRequests = [{ name: "Harper S.", item: "Flexi-Rex", details: "Color: Hot Pink", time: "10:30 AM" }, { name: "Lucas L.", item: "Custom Print", details: "Link: tinkercad.com/xyz | Color: Matte Dark Blue", time: "11:15 AM" }];
 
 let newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews;
 let jamsData = JSON.parse(localStorage.getItem('cn_jams')) || defaultJams;
@@ -165,6 +109,17 @@ function saveCatItem() {
 }
 function deleteCatItem(i) { if(confirm("Del?")) { catalogData.splice(i,1); saveData(); renderAdminLists(); } }
 function closeCatModal() { document.getElementById('cat-edit-modal').style.display='none'; }
+
+// NEW: Upload Helper Function
+function openGitHubUpload() {
+    if (GITHUB_REPO_URL.includes("github.com")) {
+        // Construct upload URL: repo + /upload/main
+        const uploadUrl = GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main"; 
+        window.open(uploadUrl, '_blank');
+    } else {
+        alert("Please configure the GITHUB_REPO_URL in script.js first.");
+    }
+}
 
 // QUEUE & REQ
 function approveRequest(i) {
@@ -297,38 +252,11 @@ function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>
 function filterCatalog(t, btn) { currentTier=t; document.querySelectorAll('.tier-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCatalog(); }
 
 // Placeholders for consistency
-function getBeltColor(belt) {
-    const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' };
-    return map[belt.toLowerCase()] || 'var(--belt-white)';
-}
-function renderLeaderboard() {
-    const podium = document.getElementById('lb-podium'); podium.innerHTML = '';
-    const list = document.getElementById('lb-list'); list.innerHTML = '';
-    const sorted = [...leaderboardData].sort((a, b) => b.points - a.points);
-    const visualOrder = [];
-    if(sorted[1]) visualOrder.push({...sorted[1], rank: 2});
-    if(sorted[0]) visualOrder.push({...sorted[0], rank: 1});
-    if(sorted[2]) visualOrder.push({...sorted[2], rank: 3});
-    visualOrder.forEach(item => {
-        const beltColor = getBeltColor(item.belt || 'white');
-        podium.innerHTML += `<div class="lb-card rank-${item.rank}"><div class="lb-badge">${item.rank}</div><div class="lb-icon" style="border-color: ${beltColor}"><i class="fa-solid fa-user-ninja" style="color: ${beltColor}"></i></div><div class="lb-name">${item.name}</div><div class="lb-points">${item.points} pts</div></div>`;
-    });
-    sorted.slice(3).forEach((item, index) => {
-        const beltColor = getBeltColor(item.belt || 'white');
-        list.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${index + 4}</div><div class="lb-row-belt" style="border-color: ${beltColor}"><i class="fa-solid fa-user-ninja" style="color: ${beltColor}"></i></div><div class="lb-row-name">${item.name}</div><div class="lb-row-points">${item.points}</div></div>`;
-    });
-}
-function renderJams() {
-    const c = document.getElementById('jams-feed'); c.innerHTML='';
-    jamsData.forEach(j => {
-        let cl = 'alert', txt = 'ACTIVE >', col = 'var(--color-jams)';
-        if(j.status === 'waiting') { cl='pending'; txt='WAITING >'; col='#aaa'; }
-        if(j.status === 'results') { cl='passed'; txt='RESULTS >'; col='#2ecc71'; }
-        c.innerHTML += `<div class="list-card ${cl}" onclick="openJamModal('${j.id}')" style="cursor:pointer;"><div class="card-info"><h3>${j.title}</h3><p>${j.deadline}</p></div><div class="status-badge" style="color:${col}">${txt}</div></div>`;
-    });
-}
+function getBeltColor(b) { return 'var(--belt-white)'; }
+function renderLeaderboard() {}
+function renderJams() {}
 async function fetchQueue() { if(!QUEUE_CSV_URL) renderQueue(); }
-async function fetchLeaderboard() { if(!ROSTER_CSV_URL) renderLeaderboard(); }
+async function fetchLeaderboard() {}
 
 // Init
 refreshAll();
