@@ -1,5 +1,4 @@
 // --- FIREBASE CONFIGURATION ---
-// REPLACE WITH YOUR CONFIG FROM FIREBASE CONSOLE
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
   authDomain: "codeninjas-dashboard.firebaseapp.com",
@@ -9,7 +8,7 @@ const firebaseConfig = {
   appId: "1:71590347120:web:5f53a55cd7ffc280fd8fb5"
 };
 
-// Initialize Firebase if available
+// Initialize Firebase
 let db = null;
 let auth = null;
 try {
@@ -35,9 +34,9 @@ let editingCatId = null;
 let editingId = null;
 let editingNinjaId = null;
 let showHistory = false;
-let currentUser = null; // Track logged in ninja
+let currentUser = null; 
 
-// --- MOCK DATA (Fallback) ---
+// --- MOCK DATA ---
 const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge: "SOON" }];
 const defaultRules = [{ id: "r1", title: "Respect", desc: "Respect equipment.", penalty: "-1 Coin" }];
 const defaultCoins = [{ id: "c1", task: "Uniform", val: "+1", type: "silver" }];
@@ -46,11 +45,12 @@ const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "
 
 // --- INIT & AUTH ---
 window.onload = function() {
-    // Check if we have a user session
     const savedUser = localStorage.getItem('cn_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
         enterDashboard();
+        // If user was Admin and refreshed, offer admin view again
+        if(currentUser.isAdmin) document.getElementById('floating-admin-toggle').style.display = 'flex';
     } else {
         document.getElementById('login-view').style.display = 'flex';
         document.getElementById('main-app').style.display = 'none';
@@ -73,18 +73,13 @@ function toggleAdminLogin() {
 function attemptNinjaLogin() {
     const name = document.getElementById('login-username').value.trim();
     if (!name) return;
-
-    // Check roster
     const ninja = leaderboardData.find(n => n.name.toLowerCase() === name.toLowerCase());
-    
     if (ninja) {
         currentUser = ninja;
         localStorage.setItem('cn_user', JSON.stringify(ninja));
         enterDashboard();
     } else {
-        const err = document.getElementById('login-error-msg');
-        err.style.display = 'block';
-        err.innerText = "Ninja not found. Ask Sensei to update roster.";
+        document.getElementById('login-error-msg').style.display = 'block';
     }
 }
 
@@ -96,33 +91,36 @@ function attemptAdminLogin() {
         auth.signInWithEmailAndPassword(email, pass)
             .then(() => {
                 currentUser = { name: "Sensei", isAdmin: true };
+                localStorage.setItem('cn_user', JSON.stringify(currentUser));
                 enterDashboard();
-                // Auto-open admin view
-                document.getElementById('admin-view').style.display = 'flex';
+                // Auto open
+                document.getElementById('admin-view').classList.add('active');
+                document.getElementById('floating-admin-toggle').style.display = 'flex';
+                showAdminSection('admin-home', document.getElementById('nav-admin-home'));
             })
             .catch(error => {
-                const err = document.getElementById('login-error-msg');
-                err.style.display = 'block';
-                err.innerText = "Invalid Credentials";
+                console.error(error);
+                document.getElementById('login-error-msg').style.display = 'block';
             });
     } else {
-        // Demo fallback
+        // Demo Mode Fallback
         if(pass === "@2633Ninjas") {
             currentUser = { name: "Sensei", isAdmin: true };
+            localStorage.setItem('cn_user', JSON.stringify(currentUser));
             enterDashboard();
-            document.getElementById('admin-view').style.display = 'flex';
+            document.getElementById('admin-view').classList.add('active');
+            document.getElementById('floating-admin-toggle').style.display = 'flex';
+            showAdminSection('admin-home', document.getElementById('nav-admin-home'));
         } else {
-             const err = document.getElementById('login-error-msg');
-             err.style.display = 'block';
-             err.innerText = "Invalid Credentials (Demo)";
+             document.getElementById('login-error-msg').style.display = 'block';
         }
     }
 }
 
 function enterDashboard() {
     document.getElementById('login-view').style.display = 'none';
-    document.getElementById('main-app').style.display = 'flex'; // Use flex to keep sidebar structure
-    document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; // First name
+    document.getElementById('main-app').style.display = 'flex'; 
+    document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0];
     refreshAll();
 }
 
@@ -133,7 +131,22 @@ function logout() {
     location.reload();
 }
 
-// --- DATA ---
+// --- ADMIN VIEW TOGGLE ---
+function toggleUserView() {
+    // Hide Admin Panel
+    document.getElementById('admin-view').classList.remove('active');
+    // Show Floating Button
+    document.getElementById('floating-admin-toggle').style.display = 'flex';
+}
+
+function restoreAdminView() {
+    document.getElementById('admin-view').classList.add('active');
+    // Hide floating button while in admin
+    // Optional: keep it visible or hide. Let's keep it visible as a "hot key" or hide to reduce clutter
+    // document.getElementById('floating-admin-toggle').style.display = 'none'; 
+}
+
+// --- DATA SYNC ---
 function subscribeToData() {
     if (db) {
         db.collection("news").orderBy("createdAt", "desc").onSnapshot(snap => { newsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderNews(); renderAdminLists(); });
@@ -151,12 +164,27 @@ function subscribeToData() {
         catalogData = JSON.parse(localStorage.getItem('cn_catalog')) || defaultCatalog;
         queueData = JSON.parse(localStorage.getItem('cn_queue')) || mockQueue;
         leaderboardData = JSON.parse(localStorage.getItem('cn_leaderboard')) || mockLeaderboard;
-        jamsData = JSON.parse(localStorage.getItem('cn_jams')) || defaultJams;
         refreshAll();
     }
 }
 
-// --- RENDERERS (Consolidated) ---
+// --- ADMIN UI LOGIC (FIXED) ---
+function showAdminSection(id, btn) {
+    // Hide all
+    document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active'));
+    
+    // Show target (Check if exists first to avoid error)
+    const target = document.getElementById(id);
+    if(target) target.classList.add('active');
+
+    // Update Nav State
+    document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    
+    renderAdminLists();
+}
+
+// --- RENDERERS ---
 function renderNews() { const c = document.getElementById('news-feed'); if(c) { c.innerHTML=''; newsData.forEach(i=>c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); } }
 function renderRules() { const c = document.getElementById('rules-feed'); if(c) { c.innerHTML=''; rulesData.forEach(r=>c.innerHTML+=`<div class="list-card pending"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${r.penalty?`<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>`:''}</div>`); } }
 function renderCoins() { const c = document.getElementById('coin-feed'); if(c) { c.innerHTML=''; coinsData.forEach(i=>c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); } }
@@ -165,18 +193,15 @@ function renderQueue() { const c=document.getElementById('queue-list'); if(c) { 
 function renderLeaderboard() { const p=document.getElementById('lb-podium'); const l=document.getElementById('lb-list'); if(!p)return; p.innerHTML=''; l.innerHTML=''; const s=[...leaderboardData].sort((a,b)=>b.points-a.points); const v=[]; if(s[1])v.push({...s[1],rank:2}); if(s[0])v.push({...s[0],rank:1}); if(s[2])v.push({...s[2],rank:3}); v.forEach(i=>{ p.innerHTML+=`<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid fa-user-ninja" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${i.name}</div><div class="lb-points">${i.points} pts</div></div>`; }); s.slice(3).forEach((i,x)=>{ l.innerHTML+=`<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid fa-user-ninja" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${i.name}</div><div class="lb-row-points">${i.points}</div></div>`; }); renderAdminLbPreview(); }
 function renderJams() { const c = document.getElementById('jams-feed'); if(!c) return; c.innerHTML=''; jamsData.forEach(j => { let cl = 'alert', txt = 'ACTIVE >', col = 'var(--color-jams)'; if(j.status === 'waiting') { cl='pending'; txt='WAITING >'; col='#aaa'; } if(j.status === 'results') { cl='passed'; txt='RESULTS >'; col='#2ecc71'; } c.innerHTML += `<div class="list-card ${cl}" onclick="openJamModal('${j.id}')" style="cursor:pointer;"><div class="card-info"><h3>${j.title}</h3><p>${j.deadline}</p></div><div class="status-badge" style="color:${col}">${txt}</div></div>`; }); }
 
-// --- ADMIN LIST RENDERER ---
+// --- ADMIN LISTS ---
 function renderAdminLists() {
     const nList = document.getElementById('admin-news-list'); if(nList) { nList.innerHTML=''; newsData.forEach(n => nList.innerHTML+=`<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i></button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button></div>`); }
     const rList = document.getElementById('admin-rules-list'); if(rList) { rList.innerHTML=''; rulesData.forEach(r => { const b=r.penalty?`<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>`:''; rList.innerHTML+=`<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i></button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button></div>`; }); }
     const cList = document.getElementById('admin-coins-list'); if(cList) { cList.innerHTML=''; coinsData.forEach(c => cList.innerHTML+=`<div class="admin-list-wrapper"><div style="flex-grow:1; background:#161932; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;"><span style="color:white; font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12; color:black;"><i class="fa-solid fa-pen"></i></button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button></div>`); }
-    
     const catList = document.getElementById('admin-cat-list'); if(catList) {
         catList.innerHTML='';
-        // Interest Tracker
         const st = catalogData.filter(c => c.type==='standard');
         if(st.length>0) { catList.innerHTML+=`<div class="admin-tier-header">Interest</div>`; st.forEach(s=>catList.innerHTML+=`<div class="interest-item"><span>${s.name}</span><span class="interest-count">${s.interest||0}</span></div>`); }
-        // Grid
         const tiers=['tier1','tier2','tier3','tier4'];
         tiers.forEach(t => {
             catList.innerHTML+=`<div class="admin-tier-header">${t.toUpperCase()}</div>`;
@@ -200,7 +225,20 @@ function renderAdminLists() {
     renderAdminLbPreview();
 }
 
-// --- CRUD/LOGIC ---
+// --- UTILS & HELPERS ---
+function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+function formatCoinBreakdown(valStr) { if(!valStr) return ''; if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`; const num = parseInt(valStr.replace(/\D/g, '')) || 0; if(num === 0) return `<span class="coin-val silver">0</span>`; let html = ''; const obsidian = Math.floor(num / 25); let rem = num % 25; const gold = Math.floor(rem / 5); const silver = rem % 5; if(obsidian > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsidian}</span>`; if(gold > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${gold}</span>`; if(silver > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silver}</span>`; return html; }
+function getBeltColor(belt) { const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)'; }
+function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
+function filterCatalog(t, btn) { currentTier=t; document.querySelectorAll('.tier-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCatalog(); }
+function initRequest(id) { currentRequestItem=catalogData.find(x=>x.id===id); document.getElementById('req-item-name').innerText=currentRequestItem.name; document.getElementById('req-modal').style.display='flex'; }
+function closeReqModal() { document.getElementById('req-modal').style.display = 'none'; }
+function submitRequest() { const name = document.getElementById('req-ninja-name').value; if(!name) return showAlert("Error","Name required"); let details = "Standard"; if(document.getElementById('req-color')) details = "Color: " + document.getElementById('req-color').value; const req={name, item: currentRequestItem.name, details, time: new Date().toLocaleString(), createdAt:Date.now()}; if(db) db.collection("requests").add(req); else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); } closeReqModal(); showAlert("Success", "Sent!"); }
+function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
+function closeJamModal() { document.getElementById('jam-modal').style.display = 'none'; }
+function openGitHubUpload() { if (GITHUB_REPO_URL.includes("github.com")) window.open(GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main", '_blank'); else showAlert("Error", "Configure GITHUB_REPO_URL"); }
+
+// CRUD & MODALS
 function openNewsModal(id=null) { editingId=id; if(id){const i=newsData.find(n=>n.id===id); document.getElementById('news-input-title').value=i.title; document.getElementById('news-input-date').value=i.date; document.getElementById('news-input-badge').value=i.badge;}else{document.getElementById('news-input-title').value='';document.getElementById('news-input-date').value='';document.getElementById('news-input-badge').value='';} document.getElementById('news-modal').style.display='flex'; }
 function closeNewsModal() { document.getElementById('news-modal').style.display = 'none'; }
 function saveNews() { const t=document.getElementById('news-input-title').value; const d=document.getElementById('news-input-date').value; const b=document.getElementById('news-input-badge').value; if(t){ if(db){ if(editingId) db.collection("news").doc(editingId).update({title:t,date:d,badge:b}); else db.collection("news").add({title:t,date:d,badge:b,createdAt:Date.now()}); } else { if(editingId){const idx=newsData.findIndex(n=>n.id===editingId); newsData[idx]={id:editingId,title:t,date:d,badge:b};} else {newsData.unshift({id:"l"+Date.now(),title:t,date:d,badge:b});} saveLocal('cn_news',newsData); renderNews(); renderAdminLists(); } closeNewsModal(); showAlert("Success", "News saved!"); } }
@@ -218,7 +256,7 @@ function deleteCoin(id) { showConfirm("Delete?", () => { if(db) db.collection("c
 
 function showAddCatModal() { editingCatId=null; document.getElementById('ce-name').value=''; document.getElementById('ce-cost').value=''; document.getElementById('ce-img').value=''; document.getElementById('ce-visible').checked=true; document.getElementById('cat-edit-modal').style.display='flex'; }
 function editCatItem(id) { editingCatId=id; const i=catalogData.find(x=>x.id===id); if(!i)return; document.getElementById('ce-name').value=i.name; document.getElementById('ce-cost').value=i.cost; document.getElementById('ce-tier').value=i.tier; document.getElementById('ce-img').value=i.image||''; document.getElementById('ce-visible').checked=i.visible!==false; document.getElementById('cat-edit-modal').style.display='flex'; }
-function saveCatItem() { const n=document.getElementById('ce-name').value; const c=document.getElementById('ce-cost').value; const t=document.getElementById('ce-tier').value; const im=document.getElementById('ce-img').value; const vis=document.getElementById('ce-visible').checked; if(n){ const d={name:n,cost:c,tier:t,icon:'fa-cube',type:'standard',image:im,visible:vis}; if(db){ if(editingCatId) db.collection("catalog").doc(editingCatId).update(d); else db.collection("catalog").add({...d,createdAt:Date.now()}); } else { if(editingCatId){ const idx=catalogData.findIndex(x=>x.id===editingCatId); if(idx>-1) catalogData[idx]={id:editingCatId,...d}; } else { catalogData.push({id:"local_"+Date.now(),...d}); } saveLocal('cn_catalog',catalogData); renderCatalog(); renderAdminLists(); } closeCatModal(); } }
+function saveCatItem() { const n=document.getElementById('ce-name').value; const c=document.getElementById('ce-cost').value; const t=document.getElementById('ce-tier').value; const im=document.getElementById('ce-img').value; const vis=document.getElementById('ce-visible').checked; const type = document.getElementById('ce-type').value; const opts = document.getElementById('ce-options').value.split(','); if(n){ const d={name:n,cost:c,tier:t,icon:'fa-cube',type:type,image:im,visible:vis, options:opts}; if(db){ if(editingCatId) db.collection("catalog").doc(editingCatId).update(d); else db.collection("catalog").add({...d,createdAt:Date.now()}); } else { if(editingCatId){ const idx=catalogData.findIndex(x=>x.id===editingCatId); if(idx>-1) catalogData[idx]={id:editingCatId,...d}; } else { catalogData.push({id:"local_"+Date.now(),...d}); } saveLocal('cn_catalog',catalogData); renderCatalog(); renderAdminLists(); } closeCatModal(); } }
 function deleteCatItem(id) { if(confirm("Delete?")) { if(db) db.collection("catalog").doc(id).delete(); else { catalogData=catalogData.filter(x=>x.id!==id); saveLocal('cn_catalog',catalogData); renderCatalog(); renderAdminLists(); } } }
 function closeCatModal() { document.getElementById('cat-edit-modal').style.display='none'; }
 function toggleCatOptions(v) { document.getElementById('ce-options-container').style.display = v === 'premium_variant' ? 'block' : 'none'; }
@@ -243,33 +281,11 @@ function selectNinja(id,n,p) { editingNinjaId=id; document.getElementById('admin
 function adminUpdatePoints() { if(!editingNinjaId)return; const adj=parseInt(document.getElementById('admin-lb-adjust').value); const cur=parseInt(document.getElementById('admin-lb-current').innerText); const newT=cur+adj; if(db) db.collection("leaderboard").doc(editingNinjaId).update({points:newT}); else { const idx=leaderboardData.findIndex(x=>x.id===editingNinjaId); if(idx>-1) leaderboardData[idx].points=newT; saveLocal('cn_leaderboard',leaderboardData); } document.getElementById('admin-lb-current').innerText=newT; document.getElementById('admin-lb-adjust').value=''; showAlert("Success","Updated!"); navigator.clipboard.writeText(newT); }
 function adminAddNinja() { const name=document.getElementById('admin-lb-add-name').value; if(name){ if(db) db.collection("leaderboard").add({name,points:0,belt:"White"}); else { leaderboardData.push({id:"local_"+Date.now(),name,points:0,belt:"White"}); saveLocal('cn_leaderboard',leaderboardData); renderLeaderboard(); renderAdminLbPreview(); } document.getElementById('admin-lb-add-name').value=''; showAlert("Success","Added!"); } }
 function renderAdminLbPreview() { const p=document.getElementById('admin-lb-preview-list'); if(p) { p.innerHTML=''; const s=[...leaderboardData].sort((a,b)=>b.points-a.points).slice(0,5); s.forEach((n,i)=>p.innerHTML+=`<div class="req-item"><div>#${i+1} <strong>${n.name}</strong></div><div>${n.points}</div></div>`); } }
-
 function approveRequest(id) { const r = requestsData.find(x => x.id === id); if(r) { if(db) { db.collection("queue").add({name:r.name, item:r.item, status:"Waiting for Payment", details:r.details, createdAt:Date.now()}); db.collection("requests").doc(id).delete(); } else { queueData.push({id:"local_"+Date.now(),name:r.name,item:r.item,status:"Waiting for Payment",details:r.details}); requestsData=requestsData.filter(x=>x.id!==id); saveLocal('cn_requests',requestsData); saveLocal('cn_queue',queueData); renderAdminRequests(); renderQueue(); } } }
 function deleteRequest(id) { if(db) db.collection("requests").doc(id).delete(); else { requestsData=requestsData.filter(x=>x.id!==id); saveLocal('cn_requests',requestsData); renderAdminRequests(); } }
 function updateQueueStatus(id, s) { if(db){ if(s==='Picked Up') db.collection("queue").doc(id).update({status:s}); else db.collection("queue").doc(id).update({status:s}); } else { let idx=-1; if(typeof id==='string' && id.startsWith('local_')) idx=queueData.findIndex(x=>x.id===id); else idx=parseInt(id); if(idx>-1 && queueData[idx]){ queueData[idx].status=s; saveLocal('cn_queue',queueData); renderQueue(); renderAdminLists(); } } }
 function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; if(requestsData.length === 0) c.innerHTML = '<p style="color:#666; padding:10px;">No pending requests.</p>'; requestsData.forEach((r) => { c.innerHTML += `<div class="req-item"><div><strong>${r.name}</strong> - ${r.item}<br><span style="color:#aaa; font-size:0.7rem;">${r.details}</span></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#27ae60; color:white; border:none;">ADD</button><button onclick="deleteRequest('${r.id}')" class="btn-danger">X</button></div></div>`; }); }
 function importLeaderboardCSV() { const csv = document.getElementById('csv-import-area').value; if(!csv) return showAlert("Error", "Paste CSV"); const lines = csv.split('\n'); const batch = db.batch(); lines.forEach(l => { const c = l.split(','); if(c.length >= 2) { const r = db.collection("leaderboard").doc(); batch.set(r, { name: c[0].trim(), points: parseInt(c[1].trim()) || 0, belt: c[2]?c[2].trim():'White' }); } }); batch.commit().then(() => showAlert("Success", "Imported!")); }
-
-// --- UTILS & AUTH ---
-function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
-function formatCoinBreakdown(valStr) { if(!valStr) return ''; if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`; const num = parseInt(valStr.replace(/\D/g, '')) || 0; if(num === 0) return `<span class="coin-val silver">0</span>`; let html = ''; const obsidian = Math.floor(num / 25); let rem = num % 25; const gold = Math.floor(rem / 5); const silver = rem % 5; if(obsidian > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsidian}</span>`; if(gold > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${gold}</span>`; if(silver > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silver}</span>`; return html; }
-function getBeltColor(belt) { const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)'; }
-function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
-function handleLogoClick() {
-    // Only allow desktop logo to trigger admin
-    if(window.innerWidth < 768) return;
-    clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
-    if(clickCount === 3) { clickCount = 0; document.getElementById('admin-auth-modal').style.display = 'flex'; document.getElementById('admin-auth-input').focus(); }
-}
-function closeAdminAuthModal() { document.getElementById('admin-auth-modal').style.display = 'none'; }
-function submitAdminAuth() { if(document.getElementById('admin-auth-input').value==="@2633Ninjas"){ document.getElementById('admin-auth-input').value=''; closeAdminAuthModal(); currentUser = {name:"Sensei", isAdmin:true}; enterDashboard(); document.getElementById('admin-view').style.display='flex'; } else { showAlert("Error", "Denied"); } }
-function exitAdmin() { document.getElementById('admin-view').style.display='none'; }
-function filterCatalog(t, btn) { currentTier=t; document.querySelectorAll('.tier-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderCatalog(); }
-function initRequest(id) { currentRequestItem=catalogData.find(x=>x.id===id); if(!currentRequestItem)return; document.getElementById('req-item-name').innerText=currentRequestItem.name; document.getElementById('req-modal').style.display='flex'; }
-function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
-function submitRequest() { const name = document.getElementById('req-ninja-name').value; if(!name) return showAlert("Error","Name required"); let details = "Standard"; if(document.getElementById('req-color')) details = "Color: " + document.getElementById('req-color').value; const req={name, item: currentRequestItem.name, details, time: new Date().toLocaleString(), createdAt:Date.now()}; if(db) db.collection("requests").add(req); else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); } closeReqModal(); showAlert("Success", "Sent!"); }
-function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
-function closeJamModal() { document.getElementById('jam-modal').style.display='none'; }
 function showAlert(t,m) { document.getElementById('alert-title').innerText=t; document.getElementById('alert-msg').innerText=m; document.getElementById('alert-modal').style.display='flex'; }
 function showConfirm(m,cb) { document.getElementById('confirm-msg').innerText=m; const b=document.getElementById('confirm-yes-btn'); const n=b.cloneNode(true); b.parentNode.replaceChild(n,b); n.onclick=()=>{document.getElementById('confirm-modal').style.display='none';cb();}; document.getElementById('confirm-modal').style.display='flex'; }
 function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
