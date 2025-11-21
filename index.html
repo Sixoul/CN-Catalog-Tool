@@ -168,7 +168,7 @@
     </div>
 
     <!-- FLOATING ADMIN TOGGLE -->
-    <div id="floating-admin-toggle" class="floating-admin-btn" onclick="restoreAdminView()">
+    <div id="floating-admin-toggle" class="floating-admin-btn" onclick="toggleAdminViewMode()">
         <i class="fa-solid fa-wrench"></i>
     </div>
 
@@ -182,7 +182,6 @@
                 <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)"><i class="fa-solid fa-cube"></i> Catalog</div>
                 <div id="nav-admin-queue" class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)"><i class="fa-solid fa-list"></i> Queue & Reqs</div>
                 <div style="flex-grow:1;"></div>
-                <div class="admin-nav-btn" onclick="toggleUserView()" style="color: var(--color-home); border-top: 1px solid #34495e;"><i class="fa-solid fa-eye"></i> 👀 User View</div>
                 <div class="admin-nav-btn" onclick="logout()" style="color: #e74c3c;"><i class="fa-solid fa-door-open"></i> Logout</div>
             </div>
 
@@ -246,7 +245,7 @@
                 <div id="admin-queue" class="admin-section">
                     <div class="admin-card" style="border-color: var(--color-home);">
                         <h3>📊 Interest Tracker <span style="font-size:0.8rem; color:#aaa; font-weight:normal;">(Standard Items)</span></h3>
-                        <!-- UPDATED CONTAINER: Removed class="req-list" and max-height -->
+                        <!-- Horizontal container for interest squares -->
                         <div id="admin-interest-list"></div>
                     </div>
                     
