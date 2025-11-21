@@ -389,6 +389,23 @@ function renderJams() {
     }); 
 }
 
+// --- ADMIN VIEW TOGGLE ---
+// Renamed from toggleUserView to handle bidirectional toggle
+function toggleAdminViewMode() { 
+    const adminView = document.getElementById('admin-view');
+    const floatingBtn = document.getElementById('floating-admin-toggle');
+    
+    if (adminView.classList.contains('active')) {
+        // Switch to User View
+        adminView.classList.remove('active');
+        floatingBtn.style.display = 'flex'; // Ensure button stays visible
+    } else {
+        // Switch to Admin View
+        adminView.classList.add('active');
+        floatingBtn.style.display = 'flex'; // Ensure button stays visible
+    }
+}
+
 // --- ADMIN LISTS ---
 function renderAdminLists() {
     // 1. Render News
@@ -415,31 +432,29 @@ function renderAdminLists() {
         coinsData.forEach(c => cList.innerHTML += `<div class="admin-list-wrapper"><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); 
     }
     
-    // 4. Render Interest Tracker (MOVED TO QUEUE SECTION)
+    // 4. Render Interest Tracker (MATCHING REFERENCE IMAGE STYLE)
     const intList = document.getElementById('admin-interest-list');
     if(intList) {
         intList.innerHTML = '';
-        const st = catalogData.filter(c => c.type === 'standard');
+        
+        // Filter items that have interest > 0
+        const st = catalogData.filter(c => c.type === 'standard' && (c.interest || 0) > 0);
         
         if(st.length === 0) {
-            intList.innerHTML = '<p style="color:#666; padding:10px; font-size:0.9rem;">No interest recorded yet.</p>';
+            intList.innerHTML = '<p style="color:#666; width:100%; text-align:center; padding:20px; font-size:0.9rem;">No active interest right now.</p>';
         } else {
             // Sort by highest interest
-            st.sort((a, b) => (b.interest || 0) - (a.interest || 0));
+            st.sort((a, b) => b.interest - a.interest);
             
             st.forEach(s => {
-                // Only show items that actually have interest > 0, or show all? 
-                // Showing all allows you to see everything, but let's highlight those with interest.
-                const count = s.interest || 0;
-                const countStyle = count > 0 ? 'background:var(--color-home); color:white;' : 'background:#333; color:#666;';
+                let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`;
                 
                 intList.innerHTML += `
-                <div class="interest-item">
-                    <span style="color:white;">${s.name}</span>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span class="interest-count" style="${countStyle}">${count} Requests</span>
-                        <button onclick="resetInterest('${s.id}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer; font-size:0.7rem; padding:4px 8px; font-weight:bold;">Clear</button>
-                    </div>
+                <div class="interest-card">
+                    <div class="interest-visual">${img}</div>
+                    <h4>${s.name}</h4>
+                    <div class="interest-count-badge">${s.interest} Requests</div>
+                    <button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button>
                 </div>`;
             });
         }
@@ -751,6 +766,7 @@ function loginAsAdmin() {
     document.getElementById('admin-view').classList.add('active');
 }
 
+// Updated enterDashboard to handle button display state
 function enterDashboard() { 
     document.getElementById('login-view').style.display = 'none'; 
     document.getElementById('main-app').style.display = 'flex'; 
@@ -772,9 +788,19 @@ function logout() {
     location.reload(); 
 }
 
-function toggleUserView() { 
-    document.getElementById('admin-view').classList.remove('active'); 
-    document.getElementById('floating-admin-toggle').style.display = 'flex'; 
+function toggleAdminViewMode() { 
+    const adminView = document.getElementById('admin-view');
+    const floatingBtn = document.getElementById('floating-admin-toggle');
+    
+    if (adminView.classList.contains('active')) {
+        // Switch to User View
+        adminView.classList.remove('active');
+        floatingBtn.style.display = 'flex'; 
+    } else {
+        // Switch to Admin View
+        adminView.classList.add('active');
+        floatingBtn.style.display = 'flex'; 
+    }
 }
 
 function restoreAdminView() { 
