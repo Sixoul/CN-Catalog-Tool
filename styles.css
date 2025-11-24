@@ -262,6 +262,19 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
     z-index: 2;
 }
 
+/* NEW LOGIN UPDATE BADGE */
+.login-version-badge {
+    display: none;
+    background: #2ecc71;
+    color: black;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    animation: fadeIn 0.5s ease;
+}
+
 .login-logo { font-size: 3rem; color: white; margin-bottom: 10px; }
 .login-title { color: white; font-size: 1.5rem; font-weight: 600; margin-bottom: 30px; letter-spacing: 1px; }
 

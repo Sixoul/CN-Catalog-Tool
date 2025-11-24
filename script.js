@@ -5,7 +5,10 @@
  * UI Rendering, and Admin Functions.
  */
 
-// --- FIREBASE CONFIGURATION ---
+// --- CONFIGURATION ---
+// UPDATE THIS VERSION NUMBER TO TRIGGER THE WELCOME MESSAGE
+const APP_VERSION = "2.5";
+
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
   authDomain: "codeninjas-dashboard.firebaseapp.com",
@@ -63,7 +66,24 @@ const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "
 
 // --- INITIALIZATION ---
 window.onload = function() {
-    // 1. Initialize Firebase
+    // 1. VERSION CHECK (DEBUG TOOL)
+    const storedVer = localStorage.getItem('cn_app_version');
+    const msgEl = document.getElementById('login-version-msg');
+    
+    if (storedVer !== APP_VERSION) {
+        // New version detected!
+        if(msgEl) {
+            msgEl.innerText = `🚀 Update Detected! Welcome to v${APP_VERSION}`;
+            msgEl.style.display = 'block';
+        }
+        // Update local storage so message doesn't show on next refresh
+        localStorage.setItem('cn_app_version', APP_VERSION);
+    } else {
+        // Same version, hide message
+        if(msgEl) msgEl.style.display = 'none';
+    }
+
+    // 2. Initialize Firebase
     try {
         if (typeof firebase !== 'undefined') {
             firebase.initializeApp(firebaseConfig);
@@ -75,7 +95,7 @@ window.onload = function() {
         console.log("Demo Mode (No Firebase):", e);
     }
 
-    // 2. Check Login State
+    // 3. Check Login State
     const savedUser = localStorage.getItem('cn_user');
     if (savedUser) {
         try {
@@ -90,7 +110,7 @@ window.onload = function() {
         document.getElementById('main-app').style.display = 'none';
     }
 
-    // 3. Load Data
+    // 4. Load Data
     subscribeToData();
 };
 
@@ -101,11 +121,8 @@ function subscribeToData() {
         // Firebase Listeners
         db.collection("news").orderBy("createdAt", "desc").onSnapshot(snap => { newsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderNews(); renderAdminLists(); });
         db.collection("rules").orderBy("createdAt", "asc").onSnapshot(snap => { rulesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderRules(); renderAdminLists(); });
-        // Coins: no orderBy in DB so we can manually sort in UI if needed, or use local order logic
+        // Coins: no orderBy in DB so we can manually sort in UI if needed
         db.collection("coins").onSnapshot(snap => { 
-            // If we haven't loaded coins yet, take them all. 
-            // If we have, we might be reordering locally, so be careful with overwrites. 
-            // For simplicity, we accept DB state always.
             coinsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
             // Optional: Sort by an 'order' field if you add one later.
             coinsData.sort((a, b) => (a.order || 0) - (b.order || 0));
