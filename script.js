@@ -63,6 +63,45 @@ const defaultCoins = [{ id: "c1", task: "Wear Uniform", val: "+1", type: "silver
 const defaultCatalog = [{ id: "cat1", name: "Star", cost: "50 Coins", tier: "tier1", icon: "fa-star", type: "standard", visible: true }];
 const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "Blue" }];
 
+// --- HELPER FUNCTIONS ---
+
+function formatName(name) {
+    if (!name) return 'Ninja';
+    // Returns "John D." format
+    const parts = name.trim().split(' ');
+    if (parts.length > 1) {
+        return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+    }
+    return parts[0];
+}
+
+function getBeltColor(belt) {
+    if (!belt) return '#ffffff'; // Default to white
+    const colors = {
+        'white': '#ffffff',
+        'yellow': '#f1c40f',
+        'orange': '#e67e22',
+        'green': '#2ecc71',
+        'blue': '#3498db',
+        'purple': '#9b59b6',
+        'brown': '#795548',
+        'red': '#e74c3c',
+        'black': '#333333'
+    };
+    return colors[belt.toLowerCase()] || '#ffffff';
+}
+
+function getIconClass(belt) {
+    // Returns a specific icon based on belt, or a generic one
+    // You can customize this map if you want specific icons for belts
+    return 'fa-user-ninja'; 
+}
+
+function formatCoinBreakdown(val) {
+    // Generates the visual badge for the coin value
+    // Defaulting to 'silver' style since type isn't always passed
+    return `<span class="coin-val silver">${val}</span>`;
+}
 
 // --- INITIALIZATION ---
 window.onload = function() {
@@ -220,9 +259,14 @@ function enterDashboard() {
     document.getElementById('login-view').style.display = 'none'; 
     document.getElementById('main-app').style.display = 'flex'; 
     
-    if(currentUser && currentUser.name) {
-        document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; 
-    }
+    if (currentUser && currentUser.name) {
+    // Get first name
+    let firstName = currentUser.name.split(' ')[0];
+    // Capitalize first letter, lower case the rest
+    firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+    
+    document.getElementById('current-user-name').innerText = firstName;
+}
     
     if(currentUser && currentUser.isAdmin) {
         document.getElementById('floating-admin-toggle').style.display = 'flex';
