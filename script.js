@@ -233,6 +233,27 @@ function enterDashboard() {
     refreshAll(); 
 }
 
+// --- NAVIGATION LOGIC ---
+function showTab(tabId, btn) {
+    // 1. Hide all tab contents
+    const contents = document.querySelectorAll('.tab-content');
+    contents.forEach(c => c.classList.remove('active'));
+
+    // 2. Remove 'active' class from all nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(n => n.classList.remove('active'));
+
+    // 3. Show the selected tab content
+    const activeContent = document.getElementById(tabId);
+    if (activeContent) {
+        activeContent.classList.add('active');
+    }
+
+    // 4. Highlight the clicked nav button
+    if (btn) {
+        btn.classList.add('active');
+    }
+}
 
 // --- USER VIEW RENDERERS ---
 
