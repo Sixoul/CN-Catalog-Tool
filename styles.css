@@ -382,10 +382,36 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 
 /* ARROW BUTTONS FOR COINS */
 .btn-arrow {
-    background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer; padding: 2px;
+    background: rgba(255, 255, 255, 0.05); /* Subtle background */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #8b9bb4; /* Muted blue-grey */
+    font-size: 0.8rem; /* Smaller, cleaner icon size */
+    cursor: pointer;
+    padding: 4px 0; /* Vertical padding */
+    width: 24px;    /* Fixed width for alignment */
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    margin: 1px 0; /* Tiny gap between up/down */
 }
-.btn-arrow:hover { color: white; transform: scale(1.2); }
-.btn-arrow-placeholder { width: 20px; height: 20px; display: block; }
+
+.btn-arrow:hover { 
+    background: var(--color-home); 
+    color: white; 
+    border-color: var(--color-home);
+    transform: translateY(-1px); /* slight lift instead of scale */
+}
+
+/* Hide the placeholder completely so spacing remains consistent */
+.btn-arrow-placeholder { 
+    width: 24px; 
+    height: 24px; 
+    display: block; 
+    margin: 1px 0;
+}
 
 /* ADMIN CATALOG */
 .admin-tier-header {

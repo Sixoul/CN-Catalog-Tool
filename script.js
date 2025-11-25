@@ -431,13 +431,18 @@ function renderAdminLists() {
     if(cList){ 
         cList.innerHTML=''; 
         coinsData.forEach((c, index) => {
-            // Arrows
-            const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>';
-            const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>';
+            // UPDATED: Using Font Awesome Chevrons
+            const upBtn = index > 0 
+                ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow"><i class="fa-solid fa-chevron-up"></i></button>` 
+                : '<span class="btn-arrow-placeholder"></span>';
+                
+            const downBtn = index < coinsData.length - 1 
+                ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow"><i class="fa-solid fa-chevron-down"></i></button>` 
+                : '<span class="btn-arrow-placeholder"></span>';
 
             cList.innerHTML += `
             <div class="admin-list-wrapper">
-                <div style="display:flex; flex-direction:column; margin-right:5px;">
+                <div style="display:flex; flex-direction:column; align-items:center; margin-right:8px;">
                     ${upBtn}
                     ${downBtn}
                 </div>
@@ -445,8 +450,10 @@ function renderAdminLists() {
                     <span style="color:white;font-weight:bold;">${c.task}</span>
                     <div>${formatCoinBreakdown(c.val)}</div>
                 </div>
-                <button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button>
-                <button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button>
+                <div style="display:flex; gap: 5px; margin-left: 5px;">
+                    <button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button>
+                    <button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button>
+                </div>
             </div>`; 
         }); 
     }
