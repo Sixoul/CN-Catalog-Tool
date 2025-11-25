@@ -37,7 +37,23 @@ body {
     padding: 0;
     display: flex;
     height: 100vh;
-    overflow: hidden;
+    overflow: hidden; /* Prevent full page scrolling */
+}
+
+/* --- SCROLLBARS (THIN & SLEEK) --- */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent; 
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1); 
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-home); 
 }
 
 /* --- SIDEBAR --- */
@@ -92,27 +108,40 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .welcome-section p { margin: 5px 0 0; color: var(--text-muted); font-size: 0.9rem; }
 .location-badge { margin-top: 10px; display: inline-flex; align-items: center; color: var(--text-main); font-weight: 600; }
 .location-badge i { margin-right: 8px; color: var(--color-home); }
-.content-area { flex: 1; padding: 0 40px 40px 40px; overflow-y: auto; }
 
-.section-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-.tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+/* UPDATED: Content Area shouldn't scroll body */
+.content-area { 
+    flex: 1; 
+    padding: 0 40px 40px 40px; 
+    overflow-y: hidden; /* Hide generic scrollbar */
+    display: flex;
+    flex-direction: column;
+}
+
+.section-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+
+/* TABS: Allow content inside tabs to scroll */
+.tab-content { 
+    display: none; 
+    animation: fadeIn 0.3s ease-in-out; 
+    height: 100%; 
+    overflow-y: auto; /* Enable scrolling for content */
+    padding-right: 10px; /* Space for custom scrollbar */
+}
 .tab-content.active { display: block; }
+
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* --- SCROLL & GRID --- */
-.home-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 25px; align-items: start; height: calc(100vh - 160px); }
+.home-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 25px; align-items: start; height: 100%; }
 .news-column { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
 .scroll-container { 
-    overflow-y: auto; padding-right: 10px; 
-    scrollbar-width: thin; scrollbar-color: #2a2e45 #161932;
+    overflow-y: auto; 
+    padding-right: 5px; 
 }
-.scroll-container::-webkit-scrollbar { width: 6px; }
-.scroll-container::-webkit-scrollbar-track { background: #161932; border-radius: 3px; }
-.scroll-container::-webkit-scrollbar-thumb { background: #2a2e45; border-radius: 3px; }
-.scroll-container::-webkit-scrollbar-thumb:hover { background: var(--color-home); }
 
 #news-feed { max-height: 35vh; margin-bottom: 20px; }
-/* UPDATED: Removed grid here to allow headers */
 #rules-feed { max-height: 35vh; } 
 .rules-group-header { width: 100%; margin: 20px 0 10px 0; color: var(--color-home); border-bottom: 1px solid #333; padding-bottom: 5px; }
 .rules-group-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
@@ -136,11 +165,11 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .coin-val.obsidian { color: white; border: 1px solid var(--coin-obsidian); background: linear-gradient(135deg, #1a0b2e 0%, #000 100%); box-shadow: 0 0 8px var(--coin-obsidian); text-shadow: 0 0 3px var(--coin-obsidian); }
 
 /* --- CATALOG / STORE --- */
-.tier-tabs { display: flex; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; }
+.tier-tabs { display: flex; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
 .tier-btn { background: var(--card-bg); border: none; color: var(--text-muted); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.3s; }
 .tier-btn:hover { background: #2a2e45; color: white; }
 .tier-btn.active { background: var(--color-catalog); color: white; box-shadow: 0 0 10px rgba(155,89,182,0.4); }
-.store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding-bottom: 20px; }
 .store-card { background-color: var(--card-bg); border-radius: 12px; padding: 20px; display: flex; align-items: center; transition: 0.3s; border: 1px solid transparent; }
 .store-card:hover { transform: translateY(-5px); border-color: var(--color-catalog); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 .store-icon-circle { width: 60px; height: 60px; border-radius: 50%; background: #0e1025; border: 2px solid var(--color-catalog); display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; overflow: hidden; }
@@ -382,36 +411,10 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 
 /* ARROW BUTTONS FOR COINS */
 .btn-arrow {
-    background: rgba(255, 255, 255, 0.05); /* Subtle background */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    color: #8b9bb4; /* Muted blue-grey */
-    font-size: 0.8rem; /* Smaller, cleaner icon size */
-    cursor: pointer;
-    padding: 4px 0; /* Vertical padding */
-    width: 24px;    /* Fixed width for alignment */
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    margin: 1px 0; /* Tiny gap between up/down */
+    background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer; padding: 2px;
 }
-
-.btn-arrow:hover { 
-    background: var(--color-home); 
-    color: white; 
-    border-color: var(--color-home);
-    transform: translateY(-1px); /* slight lift instead of scale */
-}
-
-/* Hide the placeholder completely so spacing remains consistent */
-.btn-arrow-placeholder { 
-    width: 24px; 
-    height: 24px; 
-    display: block; 
-    margin: 1px 0;
-}
+.btn-arrow:hover { color: white; transform: scale(1.2); }
+.btn-arrow-placeholder { width: 20px; height: 20px; display: block; }
 
 /* ADMIN CATALOG */
 .admin-tier-header {
@@ -512,9 +515,9 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
     position: relative;
     
     /* Square Shape */
-    min-width: 160px;
-    width: 160px;
-    height: 180px; /* Slight extra height for button */
+    min-width: 120px;
+    width: 120px;
+    height: 140px; /* Adjusted height for smaller card */
     flex-shrink: 0;
     justify-content: space-between;
     transition: transform 0.2s;
@@ -527,8 +530,8 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 }
 
 .interest-visual {
-    width: 50px; 
-    height: 50px;
+    width: 35px; 
+    height: 35px;
     border-radius: 50%;
     background: #161932;
     display: flex;
