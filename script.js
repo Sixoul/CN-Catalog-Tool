@@ -1,12 +1,11 @@
 /**
  * CODE NINJAS DASHBOARD LOGIC
  * -----------------------------------------
- * Handles Authentication, Data (Firebase/Local),
- * UI Rendering, and Admin Functions.
+ * Fixed & Reorganized to prevent ReferenceErrors.
  */
 
-// --- CONFIGURATION ---
-const APP_VERSION = "2.6";
+// --- 1. CONFIGURATION & CONSTANTS ---
+const APP_VERSION = "2.7";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -17,32 +16,6 @@ const firebaseConfig = {
   appId: "1:71590347120:web:5f53a55cd7ffc280fd8fb5"
 };
 
-// --- GLOBAL STATE ---
-let db = null;
-let auth = null;
-let currentUser = null;
-
-// Data Stores
-let newsData = [];
-let jamsData = [];
-let rulesData = [];
-let coinsData = [];
-let catalogData = [];
-let requestsData = [];
-let queueData = [];
-let leaderboardData = [];
-
-// UI State
-let currentTier = 'tier1';
-let currentRequestItem = null;
-let editingCatId = null;
-let editingId = null;
-let editingNinjaId = null;
-let showHistory = false;
-let clickCount = 0;
-let clickTimer;
-
-// Constants
 const GITHUB_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME"; 
 const FILAMENT_COLORS = [
     "Jade White", "Light Gray", "Orange", "Sunflower Yellow", "Mistletoe Green", "Cocoa Brown", 
@@ -55,17 +28,111 @@ const FILAMENT_COLORS = [
     "Burgundy Red"
 ];
 
-// Mock Data (Fallback)
+// Mock Data
 const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge: "SOON" }];
 const defaultRules = [{ id: "r1", title: "General", desc: "Respect the Dojo equipment.", penalty: "-1 Coin" }];
 const defaultCoins = [{ id: "c1", task: "Wear Uniform", val: "+1", type: "silver" }];
 const defaultCatalog = [{ id: "cat1", name: "Star", cost: "50 Coins", tier: "tier1", icon: "fa-star", type: "standard", visible: true }];
 const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "Blue" }];
 
+// --- 2. GLOBAL STATE ---
+let db = null;
+let auth = null;
+let currentUser = null;
 
-// --- INITIALIZATION ---
+let newsData = [], jamsData = [], rulesData = [], coinsData = [], catalogData = [], requestsData = [], queueData = [], leaderboardData = [];
+let currentTier = 'tier1';
+let currentRequestItem = null;
+let editingCatId = null;
+let editingId = null;
+let editingNinjaId = null;
+let showHistory = false;
+let clickCount = 0;
+let clickTimer;
+
+// --- 3. HELPER FUNCTIONS (Defined first to avoid ReferenceErrors) ---
+
+function formatName(name) {
+    if (!name) return 'Ninja';
+    const clean = name.replace(/\./g, ' '); 
+    const parts = clean.split(' ').filter(p => p.length > 0);
+    if (parts.length === 0) return 'Ninja';
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+    
+    const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+    const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+    return `${first} ${lastInitial}.`;
+}
+
+function formatCoinBreakdown(valStr) {
+    if(!valStr) return '';
+    if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`;
+    const num = parseInt(valStr.replace(/\D/g, '')) || 0;
+    if(num === 0) return `<span class="coin-val silver">0</span>`;
+    
+    let html = '';
+    const obsidian = Math.floor(num / 25);
+    let rem = num % 25;
+    const gold = Math.floor(rem / 5);
+    const silver = rem % 5;
+    
+    if(obsidian > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsidian}</span>`;
+    if(gold > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${gold}</span>`;
+    if(silver > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silver}</span>`;
+    return html;
+}
+
+function getBeltColor(belt) {
+    const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' };
+    return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)';
+}
+
+function getIconClass(belt) {
+    const b = (belt||'white').toLowerCase();
+    if(b.includes('robot')) return 'fa-robot';
+    if(b.includes('ai')) return 'fa-microchip';
+    if(b.includes('jr')) return 'fa-child';
+    return 'fa-user-ninja';
+}
+
+function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+function showAlert(t, m) { 
+    document.getElementById('alert-title').innerText = t; 
+    document.getElementById('alert-msg').innerText = m; 
+    document.getElementById('alert-modal').style.display = 'flex'; 
+}
+
+function showConfirm(m, cb) { 
+    document.getElementById('confirm-msg').innerText = m; 
+    const b = document.getElementById('confirm-yes-btn'); 
+    const n = b.cloneNode(true); 
+    b.parentNode.replaceChild(n, b); 
+    n.onclick = () => { 
+        document.getElementById('confirm-modal').style.display = 'none'; 
+        cb(); 
+    }; 
+    document.getElementById('confirm-modal').style.display = 'flex'; 
+}
+
+function openGitHubUpload() { 
+    if (GITHUB_REPO_URL.includes("github.com")) {
+        window.open(GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main", '_blank');
+    } else {
+        showAlert("Error", "Configure GITHUB_REPO_URL");
+    }
+}
+
+function showTab(id, el) { 
+    document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); 
+    document.getElementById(id).classList.add('active'); 
+    document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); 
+    el.classList.add('active'); 
+}
+
+// --- 4. INITIALIZATION ---
 window.onload = function() {
-    // 1. VERSION CHECK
+    // Version Check
     const storedVer = localStorage.getItem('cn_app_version');
     const msgEl = document.getElementById('login-version-msg');
     if (storedVer !== APP_VERSION) {
@@ -78,7 +145,7 @@ window.onload = function() {
         if(msgEl) msgEl.style.display = 'none';
     }
 
-    // 2. Initialize Firebase
+    // Initialize Firebase
     try {
         if (typeof firebase !== 'undefined') {
             firebase.initializeApp(firebaseConfig);
@@ -90,14 +157,14 @@ window.onload = function() {
         console.log("Demo Mode (No Firebase):", e);
     }
 
-    // 3. Check Login State
+    // Check Login
     const savedUser = localStorage.getItem('cn_user');
     if (savedUser) {
         try {
             currentUser = JSON.parse(savedUser);
             enterDashboard();
         } catch (e) {
-            console.error("Error parsing saved user", e);
+            console.error("Error parsing user", e);
             localStorage.removeItem('cn_user');
         }
     } else {
@@ -105,12 +172,10 @@ window.onload = function() {
         document.getElementById('main-app').style.display = 'none';
     }
 
-    // 4. Load Data
     subscribeToData();
 };
 
-
-// --- DATA SYNC ---
+// --- 5. DATA SYNC ---
 function subscribeToData() {
     if (db) {
         db.collection("news").orderBy("createdAt", "desc").onSnapshot(snap => { newsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderNews(); renderAdminLists(); });
@@ -118,8 +183,7 @@ function subscribeToData() {
         db.collection("coins").onSnapshot(snap => { 
             coinsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
             coinsData.sort((a, b) => (a.order || 0) - (b.order || 0));
-            renderCoins(); 
-            renderAdminLists(); 
+            renderCoins(); renderAdminLists(); 
         });
         db.collection("catalog").onSnapshot(snap => { catalogData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderCatalog(); renderAdminLists(); });
         db.collection("requests").orderBy("time", "desc").onSnapshot(snap => { requestsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderAdminRequests(); });
@@ -127,7 +191,6 @@ function subscribeToData() {
         db.collection("leaderboard").onSnapshot(snap => { leaderboardData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderLeaderboard(); });
         db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); });
     } else {
-        // Local Storage Fallback
         newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews;
         rulesData = JSON.parse(localStorage.getItem('cn_rules')) || defaultRules;
         coinsData = JSON.parse(localStorage.getItem('cn_coins')) || defaultCoins;
@@ -139,7 +202,7 @@ function subscribeToData() {
     }
 }
 
-// --- AUTHENTICATION ---
+// --- 6. AUTHENTICATION ---
 function toggleAdminLogin() { 
     const n = document.getElementById('ninja-login-form');
     const a = document.getElementById('admin-login-form');
@@ -171,13 +234,6 @@ function loginAsAdmin() {
     document.getElementById('admin-view').classList.add('active');
 }
 
-function logout() { 
-    localStorage.removeItem('cn_user'); 
-    currentUser = null; 
-    if(auth) auth.signOut(); 
-    location.reload(); 
-}
-
 function enterDashboard() { 
     document.getElementById('login-view').style.display = 'none'; 
     document.getElementById('main-app').style.display = 'flex'; 
@@ -187,8 +243,35 @@ function enterDashboard() {
     refreshAll(); 
 }
 
+function logout() { 
+    localStorage.removeItem('cn_user'); 
+    currentUser = null; 
+    if(auth) auth.signOut(); 
+    location.reload(); 
+}
 
-// --- USER VIEW RENDERERS ---
+function toggleAdminViewMode() { 
+    const v = document.getElementById('admin-view'); 
+    const b = document.getElementById('floating-admin-toggle');
+    if (v.classList.contains('active')) { v.classList.remove('active'); b.style.display = 'flex'; } 
+    else { v.classList.add('active'); b.style.display = 'flex'; }
+}
+
+function showAdminSection(id, btn) { 
+    document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); 
+    document.getElementById(id).classList.add('active'); 
+    document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); 
+    btn.classList.add('active'); 
+    renderAdminLists(); 
+}
+
+function handleLogoClick() { 
+    if(window.innerWidth < 768) return; 
+    clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); 
+    if(clickCount === 3) { clickCount = 0; toggleAdminLogin(); } 
+}
+
+// --- 7. USER VIEW RENDERERS ---
 function refreshAll() { 
     renderNews(); renderJams(); renderRules(); renderCoins(); 
     renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); 
@@ -235,7 +318,7 @@ function renderCatalog() {
     const c = document.getElementById('catalog-feed'); if(!c) return; c.innerHTML=''; 
     if(!currentTier) currentTier = 'tier1';
     const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false); 
-    if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier.</p>'; 
+    if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available.</p>'; 
     else f.forEach(i => { 
         let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; 
         let act = `onclick="initRequest('${i.id}')"`; 
@@ -259,8 +342,7 @@ function renderQueue() {
 }
 
 function renderLeaderboard() { 
-    const p = document.getElementById('lb-podium'); 
-    const l = document.getElementById('lb-list'); 
+    const p = document.getElementById('lb-podium'); const l = document.getElementById('lb-list'); 
     if(!p || !l) return;
     p.innerHTML = ''; l.innerHTML = ''; 
     const s = [...leaderboardData].sort((a,b) => b.points - a.points); 
@@ -283,15 +365,21 @@ function renderJams() {
     }); 
 }
 
-
-// --- ADMIN RENDERERS & ACTIONS ---
+// --- 8. ADMIN RENDERERS ---
 function renderAdminLists() {
+    // News
     const nList = document.getElementById('admin-news-list'); 
     if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); }
+
+    // Rules
     const rList = document.getElementById('admin-rules-list'); 
     if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); }
+
+    // Coins
     const cList = document.getElementById('admin-coins-list'); 
     if(cList){ cList.innerHTML=''; coinsData.forEach((c, index) => { const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>'; const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>'; cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); }
+    
+    // Interest
     const intList = document.getElementById('admin-interest-list');
     if(intList) {
         intList.innerHTML = '';
@@ -305,84 +393,82 @@ function renderAdminLists() {
             });
         }
     }
+    
+    // Catalog
     const catList = document.getElementById('admin-cat-list'); 
     if(catList){ catList.innerHTML=''; const tiers = ['tier1','tier2','tier3','tier4']; const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; tiers.forEach(t => { catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; let g = `<div class="admin-store-grid">`; catalogData.filter(i => i.tier === t).forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; let h = i.visible === false ? 'hidden' : ''; g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><p style="margin:0;color:#888;font-size:0.8rem;">${i.cost}</p></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`; }); g += `</div>`; catList.innerHTML += g; }); }
-    renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview();
+    
+    renderAdminRequests();
+    renderAdminQueue();
+    renderAdminLbPreview();
 }
 
+function renderAdminRequests() {
+    const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = '';
+    const pending = requestsData.filter(r => !r.archived); 
+    if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No requests.</p>'; return; }
+    pending.forEach(r => {
+        c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog);">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">Approve</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">Del</button></div></div>`;
+    });
+}
+
+function renderAdminQueue() {
+    const qList = document.getElementById('admin-queue-manage-list'); if(!qList) return; qList.innerHTML=''; 
+    queueData.filter(q => q.status !== 'Picked Up').forEach(q => { 
+        const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; 
+        qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span>${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details ? '| '+q.details : ''}</div><div style="margin-top:5px;"><button onclick="updateQueueStatus(${id},'Waiting for Payment')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#e74c3c;">Pay</button><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 5px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; 
+    }); 
+}
+
+function renderAdminLbPreview() {
+    const c = document.getElementById('admin-lb-preview-list'); if(!c) return; c.innerHTML = '';
+    const sorted = [...leaderboardData].sort((a,b) => b.points - a.points);
+    if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; }
+    sorted.forEach((ninja, index) => { c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${ninja.name}</div><div class="admin-lb-points">${ninja.points}</div></div>`; });
+}
+
+// --- 9. CRUD & UTILS ---
 function moveCoin(index, dir) {
     if (index + dir < 0 || index + dir >= coinsData.length) return;
     const temp = coinsData[index]; coinsData[index] = coinsData[index + dir]; coinsData[index + dir] = temp;
     saveLocal('cn_coins', coinsData); renderAdminLists(); renderCoins();
 }
 
-function toggleAdminViewMode() { const v = document.getElementById('admin-view'); const b = document.getElementById('floating-admin-toggle'); if (v.classList.contains('active')) { v.classList.remove('active'); b.style.display = 'flex'; } else { v.classList.add('active'); b.style.display = 'flex'; } }
-function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
-function handleLogoClick() { if(window.innerWidth < 768) return; clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); if(clickCount === 3) { clickCount = 0; toggleAdminLogin(); } }
+function resetInterest(id) { const item = catalogData.find(x => x.id === id); if(!item) return; showConfirm("Reset count for " + item.name + "?", () => { if(db) { db.collection("catalog").doc(id).update({ interest: 0 }); } else { item.interest = 0; saveLocal('cn_catalog', catalogData); renderAdminLists(); } }); }
+function approveRequest(id) { const r = requestsData.find(x => x.id === id); if(!r) return; const qItem = { name: r.name, item: r.item, details: r.details, status: "Waiting for Payment", createdAt: Date.now() }; if(db) { db.collection("queue").add(qItem); db.collection("requests").doc(id).delete(); } else { queueData.push({id: "local_q_"+Date.now(), ...qItem}); requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_queue', queueData); saveLocal('cn_requests', requestsData); refreshAll(); } }
+function deleteRequest(id) { if(db) db.collection("requests").doc(id).delete(); else { requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_requests', requestsData); renderAdminRequests(); } }
+function updateQueueStatus(id, s) { if(db){ if(s==='Picked Up') db.collection("queue").doc(id).delete(); else db.collection("queue").doc(id).update({status:s}); } else { let idx=-1; if(typeof id==='string' && id.startsWith('local_')) idx=queueData.findIndex(x=>x.id===id); else idx=parseInt(id); if(idx>-1 && queueData[idx]){ if(s==='Picked Up') queueData.splice(idx,1); else queueData[idx].status=s; saveLocal('cn_queue',queueData); renderQueue(); renderAdminLists(); } } }
 
-// --- REQUEST LOGIC (FIXED) ---
+function adminSearchNinja() { const q = document.getElementById('admin-lb-search').value.toLowerCase(); const resDiv = document.getElementById('admin-lb-results'); resDiv.innerHTML = ''; if(q.length < 2) return; const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q)); found.slice(0, 5).forEach(n => { resDiv.innerHTML += `<div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">${n.name} <span style="color:var(--color-games); font-weight:bold;">${n.points} pts</span></div>`; }); }
+function selectNinjaToEdit(id) { const n = leaderboardData.find(x => x.id === id); if(!n) return; editingNinjaId = id; document.getElementById('admin-lb-results').innerHTML = ''; document.getElementById('admin-lb-search').value = ''; document.getElementById('admin-lb-edit').style.display = 'block'; document.getElementById('admin-lb-name').innerText = n.name; document.getElementById('admin-lb-current').innerText = n.points; }
+function adminUpdatePoints() { if(!editingNinjaId) return; const val = parseInt(document.getElementById('admin-lb-adjust').value); if(isNaN(val)) return; const n = leaderboardData.find(x => x.id === editingNinjaId); if(!n) return; const newPoints = (n.points || 0) + val; if(db) { db.collection("leaderboard").doc(editingNinjaId).update({ points: newPoints }); } else { const idx = leaderboardData.findIndex(x => x.id === editingNinjaId); leaderboardData[idx].points = newPoints; saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-lb-edit').style.display = 'none'; document.getElementById('admin-lb-adjust').value = ''; showAlert("Success", `Updated ${n.name} to ${newPoints} pts`); }
+function adminAddNinja() { const name = document.getElementById('admin-lb-add-name').value; if(!name) return; const data = { name: name, points: 0, belt: 'White' }; if(db) { db.collection("leaderboard").add(data); } else { leaderboardData.push({id: "local_n_"+Date.now(), ...data}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-lb-add-name').value = ''; showAlert("Success", "Added " + name); }
+
 function initRequest(id) {
-    console.log("Init request for:", id);
     currentRequestItem = catalogData.find(x => x.id === id);
-    if(!currentRequestItem) { console.error("Item not found"); return; }
-
+    if(!currentRequestItem) return;
     document.getElementById('req-item-name').innerText = currentRequestItem.name;
     const container = document.getElementById('req-dynamic-fields');
     container.innerHTML = ''; 
-
-    const label = document.createElement('label');
-    label.className = 'req-label';
-    label.innerText = 'Select Color:';
-    
-    const select = document.createElement('select');
-    select.id = 'req-color';
-    select.className = 'req-input';
-    
-    const defaultOpt = document.createElement('option');
-    defaultOpt.value = "Surprise Me";
-    defaultOpt.innerText = "-- Select a Color --";
-    select.appendChild(defaultOpt);
-
-    FILAMENT_COLORS.forEach(color => {
-        const opt = document.createElement('option');
-        opt.value = color;
-        opt.innerText = color;
-        select.appendChild(opt);
-    });
-
-    container.appendChild(label);
-    container.appendChild(select);
-
-    if(currentUser && currentUser.name !== "Sensei") {
-        const nameInput = document.getElementById('req-ninja-name');
-        if(nameInput) nameInput.value = currentUser.name;
-    }
-    const modal = document.getElementById('req-modal');
-    if(modal) modal.style.display = 'flex';
+    const label = document.createElement('label'); label.className = 'req-label'; label.innerText = 'Select Color:';
+    const select = document.createElement('select'); select.id = 'req-color'; select.className = 'req-input';
+    const defaultOpt = document.createElement('option'); defaultOpt.value = "Surprise Me"; defaultOpt.innerText = "-- Select a Color --"; select.appendChild(defaultOpt);
+    FILAMENT_COLORS.forEach(color => { const opt = document.createElement('option'); opt.value = color; opt.innerText = color; select.appendChild(opt); });
+    container.appendChild(label); container.appendChild(select);
+    if(currentUser && currentUser.name !== "Sensei") { document.getElementById('req-ninja-name').value = currentUser.name; }
+    document.getElementById('req-modal').style.display = 'flex';
 }
 
 function submitRequest() { 
-    const nameInput = document.getElementById('req-ninja-name');
-    const name = nameInput ? nameInput.value : ''; 
+    const name = document.getElementById('req-ninja-name').value; 
     if(!name) return showAlert("Error","Name required"); 
-    
-    if(!currentRequestItem) return showAlert("Error", "No item selected");
-
     let details = "Standard"; 
     const colorSelect = document.getElementById('req-color');
     if(colorSelect) { details = "Color: " + colorSelect.value; }
-
     const req = { name, item: currentRequestItem.name, details, time: new Date().toLocaleString(), createdAt: Date.now() }; 
-    
-    if(db) { 
-        db.collection("requests").add(req); 
-    } else { 
-        requestsData.push({id: "local_" + Date.now(), ...req}); 
-        saveLocal('cn_requests', requestsData); 
-        renderAdminRequests(); 
-    } 
-    closeReqModal(); 
-    showAlert("Success", "Sent!"); 
+    if(db) { db.collection("requests").add(req); } 
+    else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
+    closeReqModal(); showAlert("Success", "Sent!"); 
 }
 
 function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
@@ -414,12 +500,5 @@ function deleteCatItem(id) { showConfirm("Delete?", () => { if(db) db.collection
 function closeCatModal() { document.getElementById('cat-edit-modal').style.display='none'; }
 function toggleCatOptions(v) { document.getElementById('ce-options-container').style.display = v === 'premium_variant' ? 'block' : 'none'; }
 
-function resetInterest(id) { const item = catalogData.find(x => x.id === id); if(!item) return; showConfirm("Reset count for " + item.name + "?", () => { if(db) { db.collection("catalog").doc(id).update({ interest: 0 }); } else { item.interest = 0; saveLocal('cn_catalog', catalogData); renderAdminLists(); } }); }
-function approveRequest(id) { const r = requestsData.find(x => x.id === id); if(!r) return; const qItem = { name: r.name, item: r.item, details: r.details, status: "Waiting for Payment", createdAt: Date.now() }; if(db) { db.collection("queue").add(qItem); db.collection("requests").doc(id).delete(); } else { queueData.push({id: "local_q_"+Date.now(), ...qItem}); requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_queue', queueData); saveLocal('cn_requests', requestsData); refreshAll(); } }
-function deleteRequest(id) { if(db) db.collection("requests").doc(id).delete(); else { requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_requests', requestsData); renderAdminRequests(); } }
-function updateQueueStatus(id, s) { if(db){ if(s==='Picked Up') db.collection("queue").doc(id).delete(); else db.collection("queue").doc(id).update({status:s}); } else { let idx=-1; if(typeof id==='string' && id.startsWith('local_')) idx=queueData.findIndex(x=>x.id===id); else idx=parseInt(id); if(idx>-1 && queueData[idx]){ if(s==='Picked Up') queueData.splice(idx,1); else queueData[idx].status=s; saveLocal('cn_queue',queueData); renderQueue(); renderAdminLists(); } } }
-
-function adminSearchNinja() { const q = document.getElementById('admin-lb-search').value.toLowerCase(); const resDiv = document.getElementById('admin-lb-results'); resDiv.innerHTML = ''; if(q.length < 2) return; const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q)); found.slice(0, 5).forEach(n => { resDiv.innerHTML += `<div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">${n.name} <span style="color:var(--color-games); font-weight:bold;">${n.points} pts</span></div>`; }); }
-function selectNinjaToEdit(id) { const n = leaderboardData.find(x => x.id === id); if(!n) return; editingNinjaId = id; document.getElementById('admin-lb-results').innerHTML = ''; document.getElementById('admin-lb-search').value = ''; document.getElementById('admin-lb-edit').style.display = 'block'; document.getElementById('admin-lb-name').innerText = n.name; document.getElementById('admin-lb-current').innerText = n.points; }
-function adminUpdatePoints() { if(!editingNinjaId) return; const val = parseInt(document.getElementById('admin-lb-adjust').value); if(isNaN(val)) return; const n = leaderboardData.find(x => x.id === editingNinjaId); if(!n) return; const newPoints = (n.points || 0) + val; if(db) { db.collection("leaderboard").doc(editingNinjaId).update({ points: newPoints }); } else { const idx = leaderboardData.findIndex(x => x.id === editingNinjaId); leaderboardData[idx].points = newPoints; saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-lb-edit').style.display = 'none'; document.getElementById('admin-lb-adjust').value = ''; showAlert("Success", `Updated ${n.name} to ${newPoints} pts`); }
-function adminAddNinja() { const name = document.getElementById('admin-lb-add-name').value; if(!name) return; const data = { name: name, points: 0, belt: 'White' }; if(db) { db.collection("leaderboard").add(data); } else { leaderboardData.push({id: "local_n_"+Date.now(), ...data}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-lb-add-name').value = ''; showAlert("Success", "Added " + name); }
+function toggleHistoryView() { showHistory = !showHistory; const b = document.querySelector('#admin-queue .btn-edit'); if(b) b.innerText = showHistory ? "Hide History" : "History"; const h = document.getElementById('admin-queue-history-list'); if(h) { h.style.display = showHistory ? 'block' : 'none'; renderQueueHistory(); } }
+function renderQueueHistory() { const h = document.getElementById('history-content'); if(!h) return; h.innerHTML = ''; const p = queueData.filter(q => q.status === 'Picked Up'); if(p.length === 0) h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>'; else p.forEach(q => h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`); }
