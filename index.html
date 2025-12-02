@@ -207,11 +207,12 @@
                 </div>
 
                 <div id="ce-options-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;">
-                    <label style="color:white; font-size:0.9rem;">Variation Names (Comma Separated):</label>
-                    <input type="text" id="ce-options" class="admin-input" placeholder="Red, Blue, Green">
+                    <label style="color:white; font-size:0.9rem; margin-bottom:5px; display:block;">Manage Variations:</label>
+                    <div id="ce-variants-list"></div>
+                    <button onclick="addVariantRow()" class="btn-mini" style="background:#444; width:100%; margin-top:5px; padding:8px;">+ Add Variant Row</button>
                 </div>
 
-                <label style="color:#aaa; font-size:0.8rem;">Image URL:</label>
+                <label style="color:#aaa; font-size:0.8rem;">Main Image URL (Default):</label>
                 <input type="text" id="ce-img" class="admin-input" placeholder="https://...">
                 
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">

@@ -1,12 +1,12 @@
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.0 - Prize Catalog & Custom Print Workflow
+ * v4.1 - Enhanced Premium Variants
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.0";
+const APP_VERSION = "4.1";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -47,7 +47,7 @@ let catalogData = [];
 let requestsData = [];
 let queueData = [];
 let leaderboardData = [];
-let filamentData = DEFAULT_FILAMENTS; // In a real app, save/load this from DB
+let filamentData = DEFAULT_FILAMENTS;
 
 let currentTier = 'tier1';
 let currentRequestItem = null;
@@ -57,7 +57,7 @@ let editingNinjaId = null;
 let showHistory = false;
 let clickCount = 0;
 let clickTimer;
-let selectedVariantIdx = 0; // For Premium item selection
+let selectedVariantIdx = 0;
 
 // Mock Data
 const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge: "SOON" }];
@@ -84,21 +84,8 @@ function formatName(name) {
 function formatCostDisplay(costVal) {
     const cost = parseInt(costVal) || 0;
     if (cost === 0) return "Free";
-    
-    // Multiple of 5 -> Obsidian
-    if (cost % 5 === 0) {
-        const obs = cost / 5;
-        return `<span style="color:var(--coin-obsidian); font-weight:bold;">${obs} Obsidian Coin${obs > 1 ? 's' : ''}</span>`;
-    }
-    
-    // More than 5 but not multiple -> Mix
-    if (cost > 5) {
-        const obs = Math.floor(cost / 5);
-        const gold = cost % 5;
-        return `<span style="color:var(--coin-obsidian); font-weight:bold;">${obs} Obsidian</span> <span style="color:var(--coin-gold); font-weight:bold;">${gold} Gold</span>`;
-    }
-    
-    // Less than 5 -> Gold
+    if (cost % 5 === 0) { const obs = cost / 5; return `<span style="color:var(--coin-obsidian); font-weight:bold;">${obs} Obsidian Coin${obs > 1 ? 's' : ''}</span>`; }
+    if (cost > 5) { const obs = Math.floor(cost / 5); const gold = cost % 5; return `<span style="color:var(--coin-obsidian); font-weight:bold;">${obs} Obsidian</span> <span style="color:var(--coin-gold); font-weight:bold;">${gold} Gold</span>`; }
     return `<span style="color:var(--coin-gold); font-weight:bold;">${cost} Gold Coin${cost > 1 ? 's' : ''}</span>`;
 }
 
@@ -107,39 +94,23 @@ function formatCoinBreakdown(valStr) {
     if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`;
     const num = parseInt(valStr.replace(/\D/g, '')) || 0;
     if(num === 0) return `<span class="coin-val silver">0</span>`;
-    
     let html = '';
-    const obsidian = Math.floor(num / 5); // Assuming 5 gold = 1 obsidian for display consistency? Or 25? 
-    // Note: User prompt implied 5 gold = 1 obsidian for catalog costs. 
-    // Standard coin breakdown usually uses 25 for obsidian (black), 5 for gold, 1 for silver.
-    // I will keep the original Coin Feed logic (25/5/1) separate from Catalog Cost logic (5/1).
     const obsVal = Math.floor(num / 25);
     let rem = num % 25;
     const goldVal = Math.floor(rem / 5);
     const silverVal = rem % 5;
-    
     if(obsVal > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsVal}</span>`;
     if(goldVal > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${goldVal}</span>`;
     if(silverVal > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silverVal}</span>`;
     return html;
 }
 
-function getBeltColor(belt) {
-    const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' };
-    return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)';
-}
-function getIconClass(belt) {
-    const b = (belt||'white').toLowerCase();
-    if(b.includes('robot')) return 'fa-robot';
-    if(b.includes('ai')) return 'fa-microchip';
-    if(b.includes('jr')) return 'fa-child';
-    return 'fa-user-ninja';
-}
+function getBeltColor(belt) { const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)'; }
+function getIconClass(belt) { const b = (belt||'white').toLowerCase(); if(b.includes('robot')) return 'fa-robot'; if(b.includes('ai')) return 'fa-microchip'; if(b.includes('jr')) return 'fa-child'; return 'fa-user-ninja'; }
 function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 function showAlert(t, m) { document.getElementById('alert-title').innerText = t; document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
 function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText = m; const b = document.getElementById('confirm-yes-btn'); const n = b.cloneNode(true); b.parentNode.replaceChild(n, b); n.onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; cb(); }; document.getElementById('confirm-modal').style.display = 'flex'; }
 function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
-
 
 /* ==========================================================================
    3. AUTHENTICATION
@@ -150,7 +121,6 @@ function attemptAdminLogin() { const e = document.getElementById('admin-email').
 function loginAsAdmin() { currentUser = { name: "Sensei", isAdmin: true }; localStorage.setItem('cn_user', JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); }
 function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(auth) auth.signOut(); location.reload(); }
 
-
 /* ==========================================================================
    4. RENDERERS (USER VIEW)
    ========================================================================== */
@@ -158,49 +128,21 @@ function enterDashboard() { document.getElementById('login-view').style.display 
 function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
 
 function renderNews() { const c = document.getElementById('news-feed'); if(!c) return; c.innerHTML=''; newsData.forEach(i => c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); }
-
-function renderRules() { 
-    const c = document.getElementById('rules-feed'); if(!c) return; c.innerHTML=''; 
-    const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if(!groups[cat]) groups[cat] = []; groups[cat].push(r); });
-    for (const [category, items] of Object.entries(groups)) { c.innerHTML += `<h3 class="rules-group-header">${category}</h3>`; let gridHtml = `<div class="rules-group-grid">`; items.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${r.desc}</h3></div>${b}</div>`; }); gridHtml += `</div>`; c.innerHTML += gridHtml; }
-}
-
+function renderRules() { const c = document.getElementById('rules-feed'); if(!c) return; c.innerHTML=''; const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if(!groups[cat]) groups[cat] = []; groups[cat].push(r); }); for (const [category, items] of Object.entries(groups)) { c.innerHTML += `<h3 class="rules-group-header">${category}</h3>`; let gridHtml = `<div class="rules-group-grid">`; items.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${r.desc}</h3></div>${b}</div>`; }); gridHtml += `</div>`; c.innerHTML += gridHtml; } }
 function renderCoins() { const c = document.getElementById('coin-feed'); if(!c) return; c.innerHTML=''; coinsData.forEach(i => c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); }
 
 function filterCatalog(tier, btn) { currentTier = tier; document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); renderCatalog(); }
-
 function renderCatalog() { 
     const c = document.getElementById('catalog-feed'); if(!c) return; c.innerHTML=''; 
     if(!currentTier) currentTier = 'tier1';
     const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false); 
-    
     if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier.</p>'; 
     else f.forEach(i => { 
         let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon || 'fa-cube'}"></i>`; 
-        let btnText = "Request";
-        let btnAction = `onclick="initRequest('${i.id}')"`;
-        let catBadge = '';
-
-        if(i.category === 'custom') {
-            btnText = "Custom Print";
-            catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`;
-        } else if(i.category === 'premium') {
-            btnText = "View Options";
-            catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`;
-        }
-
-        c.innerHTML += `
-        <div class="store-card">
-            <div class="store-icon-circle">${img}</div>
-            <div class="store-info">
-                <h4>${i.name} ${catBadge}</h4>
-                <p>${formatCostDisplay(i.cost)}</p>
-                <div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div>
-            </div>
-            <div class="store-action">
-                <button class="btn-req" ${btnAction}>${btnText}</button>
-            </div>
-        </div>`; 
+        let btnText = "Request"; let btnAction = `onclick="initRequest('${i.id}')"`; let catBadge = '';
+        if(i.category === 'custom') { btnText = "Custom Print"; catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`; } 
+        else if(i.category === 'premium') { btnText = "View Options"; catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`; }
+        c.innerHTML += `<div class="store-card"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`; 
     }); 
 }
 
@@ -211,20 +153,17 @@ function renderQueue() {
     else q.forEach((i,x) => { 
         let s = i.status, cl = 'status-pending', icon = 'fa-clock', cc = 'queue-card'; 
         const sLow = s.toLowerCase();
-        
         if(sLow.includes('ready')){ cl='status-ready'; icon='fa-check'; cc+=' ready-pickup'; } 
         else if(sLow.includes('printing')){ cl='status-printing printing-anim'; icon='fa-print'; } 
         else if(sLow.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } 
         else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
         else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; }
-
         c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} <span style="opacity:0.6">| ${i.details}</span></p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; 
     }); 
 }
 
 function renderLeaderboard() { 
-    const p = document.getElementById('lb-podium'); const l = document.getElementById('lb-list'); 
-    if(!p || !l) return; p.innerHTML = ''; l.innerHTML = ''; 
+    const p = document.getElementById('lb-podium'); const l = document.getElementById('lb-list'); if(!p || !l) return; p.innerHTML = ''; l.innerHTML = ''; 
     const s = [...leaderboardData].sort((a,b) => b.points - a.points); 
     const v = []; if(s[1]) v.push({...s[1], rank: 2}); if(s[0]) v.push({...s[0], rank: 1}); if(s[2]) v.push({...s[2], rank: 3}); 
     v.forEach(i => p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`); 
@@ -242,486 +181,148 @@ function renderJams() {
     }); 
 }
 
-
 /* ==========================================================================
    5. RENDERERS (ADMIN VIEW)
    ========================================================================== */
-function renderAdminLists() {
-    renderAdminNews(); renderAdminRules(); renderAdminCoins(); renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview(); renderAdminInterest();
-}
-
+function renderAdminLists() { renderAdminNews(); renderAdminRules(); renderAdminCoins(); renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview(); renderAdminInterest(); }
 function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
 function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
 function renderAdminCoins() { const cList = document.getElementById('admin-coins-list'); if(cList){ cList.innerHTML=''; coinsData.forEach((c, index) => { const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>'; const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>'; cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
-
-function renderAdminInterest() {
-    const intList = document.getElementById('admin-interest-list'); if(!intList) return;
-    intList.innerHTML = '';
-    const st = catalogData.filter(c => c.category === 'standard' && (c.interest || 0) > 0);
-    if(st.length === 0) { intList.innerHTML = '<p style="color:#666; width:100%; text-align:center; padding:20px; font-size:0.9rem;">No active interest.</p>'; } 
-    else {
-        st.sort((a, b) => b.interest - a.interest);
-        st.forEach(s => {
-            let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`;
-            intList.innerHTML += `
-            <div class="interest-card-square">
-                <div class="interest-visual">${img}</div>
-                <div style="width:100%;">
-                    <h4 style="margin:5px 0; color:white; font-size:0.9rem;">${s.name}</h4>
-                    <div class="interest-count-badge">${s.interest} Requests</div>
-                </div>
-                <div style="width:100%;">
-                    <button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button>
-                </div>
-            </div>`;
-        });
-    }
-}
-
-function renderAdminCatalog() { 
-    const catList = document.getElementById('admin-cat-list'); if(!catList) return;
-    catList.innerHTML=''; 
-    const tiers = ['tier1','tier2','tier3','tier4']; 
-    const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; 
-    tiers.forEach(t => { 
-        catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; 
-        let g = `<div class="admin-store-grid">`; 
-        catalogData.filter(i => i.tier === t).forEach(i => { 
-            let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; 
-            let h = i.visible === false ? 'hidden' : ''; 
-            let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : 'STD');
-            g += `<div class="admin-store-card ${h}">
-                    <div class="admin-store-icon">${img}</div>
-                    <div style="flex-grow:1;">
-                        <h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4>
-                        <div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div>
-                    </div>
-                    <div class="admin-store-actions">
-                        <button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button>
-                        <button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button>
-                    </div>
-                  </div>`; 
-        }); 
-        g += `</div>`; 
-        catList.innerHTML += g; 
-    }); 
-}
-
-function renderAdminRequests() {
-    const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = '';
-    // Filter for "Waiting for Payment" items (Custom/Premium flow)
-    const pending = requestsData.filter(r => r.status === 'Waiting for Payment'); 
-    
-    if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No incoming payment requests.</p>'; return; }
-    
-    pending.forEach(r => {
-        c.innerHTML += `
-        <div class="req-item">
-            <div style="flex:1;">
-                <div style="color:white; font-weight:bold;">${r.name}</div>
-                <div style="color:var(--color-catalog); font-weight:600;">${r.item}</div>
-                <div style="color:#888; font-size:0.75rem;">${r.details}</div>
-                <div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div>
-            </div>
-            <div class="req-actions">
-                <button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button>
-                <button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button>
-            </div>
-        </div>`;
-    });
-}
-
-function renderAdminQueue() {
-    const qList = document.getElementById('admin-queue-manage-list'); if(!qList) return; qList.innerHTML=''; 
-    // Show everything except 'Picked Up' (which is history) and 'Waiting for Payment' (which is Incoming)
-    const activeQ = queueData.filter(q => q.status !== 'Picked Up' && q.status !== 'Waiting for Payment');
-    // Sort by payment timestamp if available, else creation
-    activeQ.sort((a,b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt));
-
-    activeQ.forEach(q => { 
-        const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; 
-        qList.innerHTML += `
-        <div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;">
-            <div style="display:flex;justify-content:space-between;">
-                <strong>${q.name}</strong> 
-                <span class="status-badge" style="color:white; background:#333;">${q.status}</span>
-            </div>
-            <div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details ? '| '+q.details : ''}</div>
-            <div style="margin-top:5px; display:flex; gap:5px;">
-                <button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button>
-                <button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button>
-                <button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button>
-                <button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button>
-            </div>
-        </div>`; 
-    }); 
-}
-
+function renderAdminInterest() { const intList = document.getElementById('admin-interest-list'); if(!intList) return; intList.innerHTML = ''; const st = catalogData.filter(c => c.category === 'standard' && (c.interest || 0) > 0); if(st.length === 0) { intList.innerHTML = '<p style="color:#666; width:100%; text-align:center; padding:20px; font-size:0.9rem;">No active interest.</p>'; } else { st.sort((a, b) => b.interest - a.interest); st.forEach(s => { let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`; intList.innerHTML += `<div class="interest-card-square"><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`; }); } }
+function renderAdminCatalog() { const catList = document.getElementById('admin-cat-list'); if(!catList) return; catList.innerHTML=''; const tiers = ['tier1','tier2','tier3','tier4']; const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; tiers.forEach(t => { catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; let g = `<div class="admin-store-grid">`; catalogData.filter(i => i.tier === t).forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; let h = i.visible === false ? 'hidden' : ''; let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : 'STD'); g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`; }); g += `</div>`; catList.innerHTML += g; }); }
+function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; const pending = requestsData.filter(r => r.status === 'Waiting for Payment'); if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No incoming payment requests.</p>'; return; } pending.forEach(r => { c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`; }); }
+function renderAdminQueue() { const qList = document.getElementById('admin-queue-manage-list'); if(!qList) return; qList.innerHTML=''; const activeQ = queueData.filter(q => q.status !== 'Picked Up' && q.status !== 'Waiting for Payment'); activeQ.sort((a,b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt)); activeQ.forEach(q => { const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span class="status-badge" style="color:white; background:#333;">${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details ? '| '+q.details : ''}</div><div style="margin-top:5px; display:flex; gap:5px;"><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; }); }
 function renderAdminLbPreview() { const c = document.getElementById('admin-lb-preview-list'); if(!c) return; c.innerHTML = ''; const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } sorted.forEach((ninja, index) => { c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${ninja.name}</div><div class="admin-lb-points">${ninja.points}</div></div>`; }); }
 
 
 /* ==========================================================================
    6. ACTIONS & LOGIC
    ========================================================================== */
-
-// --- REQUEST LOGIC (NINJA SIDE) ---
 function initRequest(id) {
     currentRequestItem = catalogData.find(x => x.id === id);
     if(!currentRequestItem) return;
-
-    // Check Limits for Standard Items
     if (currentRequestItem.category === 'standard') {
         const today = new Date().toDateString();
         const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] };
-        
-        // Reset if new day
         if (localRec.date !== today) { localRec.date = today; localRec.ids = []; }
-
-        // Check Duplicates
         if (localRec.ids.includes(id)) { showAlert("Notice", "You already requested this today."); return; }
-        // Check Limit (3)
         if (localRec.ids.length >= 3) { showAlert("Limit Reached", "Max 3 requests per day."); return; }
-
-        // If OK, process standard request (Interest Only)
-        incrementInterest(id, localRec);
-        return;
+        incrementInterest(id, localRec); return;
     }
-
-    // Custom & Premium Flow
     document.getElementById('req-item-name').innerText = currentRequestItem.name;
     const container = document.getElementById('req-dynamic-fields');
     const gallery = document.getElementById('req-gallery');
     const mainImg = document.querySelector('#req-img-container img');
     const mainIcon = document.querySelector('#req-img-container i');
-    container.innerHTML = ''; 
-    gallery.innerHTML = '';
-    gallery.style.display = 'none';
-
-    // Image Setup
-    if(currentRequestItem.image) { 
-        mainImg.src = currentRequestItem.image; mainImg.style.display='block'; mainIcon.style.display='none'; 
-    } else { 
-        mainImg.style.display='none'; mainIcon.style.display='block'; 
-    }
-
-    // Setup Form based on Category
+    container.innerHTML = ''; gallery.innerHTML = ''; gallery.style.display = 'none';
+    if(currentRequestItem.image) { mainImg.src = currentRequestItem.image; mainImg.style.display='block'; mainIcon.style.display='none'; } else { mainImg.style.display='none'; mainIcon.style.display='block'; }
+    
     if (currentRequestItem.category === 'custom') {
-        // Tinkercad URL
         const labelUrl = document.createElement('label'); labelUrl.className = 'req-label'; labelUrl.innerText = 'Tinkercad Link:';
         const inputUrl = document.createElement('input'); inputUrl.type='text'; inputUrl.id = 'req-url'; inputUrl.className = 'req-input'; inputUrl.placeholder = "https://www.tinkercad.com/...";
         container.appendChild(labelUrl); container.appendChild(inputUrl);
-
-        // Color Select
         const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:';
+        if(currentRequestItem.colorFee && parseInt(currentRequestItem.colorFee) > 0) labelCol.innerHTML += ` <span style="color:#e74c3c; font-size:0.8rem;">(+${currentRequestItem.colorFee} Gold Fee)</span>`;
         const select = document.createElement('select'); select.id = 'req-color'; select.className = 'req-input';
-        
-        // Add Fee Note if applicable
-        if(currentRequestItem.colorFee && parseInt(currentRequestItem.colorFee) > 0) {
-            labelCol.innerHTML += ` <span style="color:#e74c3c; font-size:0.8rem;">(+${currentRequestItem.colorFee} Gold Fee)</span>`;
-        }
-
         const optRand = document.createElement('option'); optRand.value = "Random"; optRand.innerText = "Random (No Extra Fee)"; select.appendChild(optRand);
-        
-        filamentData.forEach(color => { 
-            const opt = document.createElement('option'); 
-            opt.value = color; 
-            opt.innerText = color; 
-            select.appendChild(opt); 
-        });
+        filamentData.forEach(color => { const opt = document.createElement('option'); opt.value = color; opt.innerText = color; select.appendChild(opt); });
         container.appendChild(labelCol); container.appendChild(select);
-
     } else if (currentRequestItem.category === 'premium') {
-        // Variations
         if (currentRequestItem.variations && currentRequestItem.variations.length > 0) {
             selectedVariantIdx = 0;
             const vars = currentRequestItem.variations;
-            
-            // Initial Image
             if(vars[0].image) mainImg.src = vars[0].image;
-
-            // Dropdown
             const labelVar = document.createElement('label'); labelVar.className = 'req-label'; labelVar.innerText = 'Select Style:';
             const select = document.createElement('select'); select.id = 'req-variant'; select.className = 'req-input';
             select.onchange = (e) => updatePremiumPreview(e.target.selectedIndex);
-            
-            vars.forEach((v, idx) => {
-                const opt = document.createElement('option'); opt.value = idx; opt.innerText = v.name; select.appendChild(opt);
-            });
+            vars.forEach((v, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = v.name; select.appendChild(opt); });
             container.appendChild(labelVar); container.appendChild(select);
-
-            // Gallery
             gallery.style.display = 'flex';
-            vars.forEach((v, idx) => {
-                const thumb = document.createElement('div');
-                thumb.className = idx === 0 ? 'req-thumb active' : 'req-thumb';
-                thumb.onclick = () => { document.getElementById('req-variant').selectedIndex = idx; updatePremiumPreview(idx); };
-                thumb.innerHTML = `<img src="${v.image || ''}">`;
-                gallery.appendChild(thumb);
-            });
+            vars.forEach((v, idx) => { const thumb = document.createElement('div'); thumb.className = idx === 0 ? 'req-thumb active' : 'req-thumb'; thumb.onclick = () => { document.getElementById('req-variant').selectedIndex = idx; updatePremiumPreview(idx); }; thumb.innerHTML = `<img src="${v.image || ''}">`; gallery.appendChild(thumb); });
         }
     }
-
-    // Populate Name if logged in
-    if(currentUser && currentUser.name !== "Sensei") {
-        const nameInput = document.getElementById('req-ninja-name');
-        if(nameInput) nameInput.value = currentUser.name;
-    }
-
+    if(currentUser && currentUser.name !== "Sensei") { const nameInput = document.getElementById('req-ninja-name'); if(nameInput) nameInput.value = currentUser.name; }
     document.getElementById('req-modal').style.display = 'flex';
 }
 
-function updatePremiumPreview(idx) {
-    selectedVariantIdx = idx;
-    const item = currentRequestItem.variations[idx];
-    // Update Main Image
-    const mainImg = document.querySelector('#req-img-container img');
-    if(item.image) mainImg.src = item.image;
-    // Update Thumbs
-    document.querySelectorAll('.req-thumb').forEach((t, i) => {
-        if(i === idx) t.classList.add('active'); else t.classList.remove('active');
-    });
-}
+function updatePremiumPreview(idx) { selectedVariantIdx = idx; const item = currentRequestItem.variations[idx]; const mainImg = document.querySelector('#req-img-container img'); if(item.image) mainImg.src = item.image; document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); }
 
 function submitRequest() { 
-    const nameInput = document.getElementById('req-ninja-name');
-    const name = nameInput ? nameInput.value : ''; 
+    const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
     if(!name) return showAlert("Error","Name required"); 
-    
-    let details = "";
-    let finalItemName = currentRequestItem.name;
-
-    if (currentRequestItem.category === 'custom') {
-        const url = document.getElementById('req-url').value;
-        const color = document.getElementById('req-color').value;
-        if(!url) return showAlert("Error", "Tinkercad Link required");
-        details = `Color: ${color} | Link: ${url}`;
-    } else if (currentRequestItem.category === 'premium') {
-        const v = currentRequestItem.variations[selectedVariantIdx];
-        details = `Variant: ${v.name}`;
-    }
-
-    // Add to Requests Data as 'Waiting for Payment'
-    const req = { 
-        name, 
-        item: finalItemName, 
-        details, 
-        status: "Waiting for Payment", 
-        createdAt: Date.now() 
-    }; 
-    
-    if(db) { db.collection("requests").add(req); } 
-    else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
-    
-    closeReqModal(); 
-    showAlert("Sent!", "Please pay the Sensei to start your print."); 
+    let details = ""; let finalItemName = currentRequestItem.name;
+    if (currentRequestItem.category === 'custom') { const url = document.getElementById('req-url').value; const color = document.getElementById('req-color').value; if(!url) return showAlert("Error", "Tinkercad Link required"); details = `Color: ${color} | Link: ${url}`; } 
+    else if (currentRequestItem.category === 'premium') { const v = currentRequestItem.variations[selectedVariantIdx]; details = `Variant: ${v.name}`; }
+    const req = { name, item: finalItemName, details, status: "Waiting for Payment", createdAt: Date.now() }; 
+    if(db) { db.collection("requests").add(req); } else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
+    closeReqModal(); showAlert("Sent!", "Please pay the Sensei to start your print."); 
 }
-
 function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
-
-// STANDARD ITEM INTEREST
-function incrementInterest(id, localRec) { 
-    const item = catalogData.find(x => x.id === id); if(!item) return; 
-    
-    // Optimistic UI update
-    if(db) { 
-        db.collection("catalog").doc(id).update({ interest: firebase.firestore.FieldValue.increment(1) })
-        .then(() => {
-             // Save local limit record
-            localRec.ids.push(id);
-            localStorage.setItem('cn_std_reqs', JSON.stringify(localRec));
-            showAlert("Requested", "Sensei notified!");
-        }); 
-    } else { 
-        item.interest = (item.interest || 0) + 1; 
-        localRec.ids.push(id);
-        localStorage.setItem('cn_std_reqs', JSON.stringify(localRec));
-        saveLocal('cn_catalog', catalogData); 
-        renderAdminLists(); 
-        showAlert("Requested", "Sensei notified! (Local)"); 
-    } 
-}
-
+function incrementInterest(id, localRec) { const item = catalogData.find(x => x.id === id); if(!item) return; if(db) { db.collection("catalog").doc(id).update({ interest: firebase.firestore.FieldValue.increment(1) }).then(() => { localRec.ids.push(id); localStorage.setItem('cn_std_reqs', JSON.stringify(localRec)); showAlert("Requested", "Sensei notified!"); }); } else { item.interest = (item.interest || 0) + 1; localRec.ids.push(id); localStorage.setItem('cn_std_reqs', JSON.stringify(localRec)); saveLocal('cn_catalog', catalogData); renderAdminLists(); showAlert("Requested", "Sensei notified! (Local)"); } }
 function resetInterest(id) { const item = catalogData.find(x => x.id === id); if(!item) return; showConfirm("Reset count for " + item.name + "?", () => { if(db) { db.collection("catalog").doc(id).update({ interest: 0 }); } else { item.interest = 0; saveLocal('cn_catalog', catalogData); renderAdminLists(); } }); }
-
-// --- ADMIN QUEUE ACTIONS ---
-function approveRequest(id) { 
-    const r = requestsData.find(x => x.id === id); if(!r) return; 
-    // Move from Request (Waiting) to Queue (Pending)
-    const qItem = { 
-        name: r.name, 
-        item: r.item, 
-        details: r.details, 
-        status: "Pending", 
-        createdAt: r.createdAt,
-        paidAt: Date.now() // Track payment time for sorting
-    }; 
-    
-    if(db) { 
-        db.collection("queue").add(qItem); 
-        db.collection("requests").doc(id).delete(); 
-    } else { 
-        queueData.push({id: "local_q_"+Date.now(), ...qItem}); 
-        requestsData = requestsData.filter(x => x.id !== id); 
-        saveLocal('cn_queue', queueData); 
-        saveLocal('cn_requests', requestsData); 
-        refreshAll(); 
-    } 
-}
-
+function approveRequest(id) { const r = requestsData.find(x => x.id === id); if(!r) return; const qItem = { name: r.name, item: r.item, details: r.details, status: "Pending", createdAt: r.createdAt, paidAt: Date.now() }; if(db) { db.collection("queue").add(qItem); db.collection("requests").doc(id).delete(); } else { queueData.push({id: "local_q_"+Date.now(), ...qItem}); requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_queue', queueData); saveLocal('cn_requests', requestsData); refreshAll(); } }
 function deleteRequest(id) { showConfirm("Delete Request?", () => { if(db) db.collection("requests").doc(id).delete(); else { requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_requests', requestsData); renderAdminRequests(); } }); }
+function updateQueueStatus(id, s) { if(db){ if(s==='Picked Up') db.collection("queue").doc(id).update({status:s, pickedUpAt: Date.now()}); else db.collection("queue").doc(id).update({status:s}); } else { let idx=-1; if(typeof id==='string' && id.startsWith('local_')) idx=queueData.findIndex(x=>x.id===id); else idx=parseInt(id); if(idx>-1 && queueData[idx]){ queueData[idx].status = s; if(s === 'Picked Up') queueData[idx].pickedUpAt = Date.now(); saveLocal('cn_queue',queueData); renderQueue(); renderAdminLists(); } } }
 
-function updateQueueStatus(id, s) { 
-    if(db){ 
-        if(s==='Picked Up') db.collection("queue").doc(id).update({status:s, pickedUpAt: Date.now()}); // Keep record, don't delete immediately if you want history in DB
-        else db.collection("queue").doc(id).update({status:s}); 
-    } else { 
-        let idx=-1; if(typeof id==='string' && id.startsWith('local_')) idx=queueData.findIndex(x=>x.id===id); else idx=parseInt(id); 
-        if(idx>-1 && queueData[idx]){ 
-            queueData[idx].status = s; 
-            if(s === 'Picked Up') queueData[idx].pickedUpAt = Date.now();
-            saveLocal('cn_queue',queueData); 
-            renderQueue(); 
-            renderAdminLists(); 
-        } 
-    } 
+// CRUD: CATALOG
+function showAddCatModal() { 
+    editingCatId = null; document.getElementById('cat-modal-title').innerText = "Add Prize"; document.getElementById('ce-name').value=''; document.getElementById('ce-cost').value=''; document.getElementById('ce-img').value=''; document.getElementById('ce-desc').value=''; document.getElementById('ce-visible').checked=true; document.getElementById('ce-category').value='standard'; 
+    document.getElementById('ce-variants-list').innerHTML = ''; // Clear variants
+    toggleCatOptions('standard'); document.getElementById('cat-edit-modal').style.display='flex'; 
 }
 
-// --- CRUD: CATALOG ---
-function showAddCatModal() { 
-    editingCatId = null; 
-    document.getElementById('cat-modal-title').innerText = "Add Prize";
-    document.getElementById('ce-name').value=''; 
-    document.getElementById('ce-cost').value=''; 
-    document.getElementById('ce-img').value=''; 
-    document.getElementById('ce-desc').value='';
-    document.getElementById('ce-visible').checked=true; 
-    document.getElementById('ce-category').value='standard';
-    toggleCatOptions('standard');
-    document.getElementById('cat-edit-modal').style.display='flex'; 
+function addVariantRow(name='', img='') {
+    const div = document.createElement('div'); div.className = 'variant-row';
+    div.innerHTML = `<input type="text" class="admin-input var-name" placeholder="Name" value="${name}" style="margin:0; flex:1;"><input type="text" class="admin-input var-img" placeholder="Image URL" value="${img}" style="margin:0; flex:2;"><button onclick="this.parentElement.remove()" class="btn-mini" style="background:#e74c3c; width:30px;">X</button>`;
+    document.getElementById('ce-variants-list').appendChild(div);
 }
 
 function editCatItem(id) { 
-    editingCatId = id; 
-    const item = catalogData.find(x => x.id === id); if (!item) return; 
-    document.getElementById('cat-modal-title').innerText = "Edit Prize";
-    document.getElementById('ce-name').value = item.name; 
-    document.getElementById('ce-cost').value = item.cost; 
-    document.getElementById('ce-tier').value = item.tier; 
-    document.getElementById('ce-img').value = item.image || ''; 
-    document.getElementById('ce-desc').value = item.desc || '';
-    document.getElementById('ce-visible').checked = item.visible !== false; 
-    
-    const catSelect = document.getElementById('ce-category'); 
-    catSelect.value = item.category || 'standard'; 
-    toggleCatOptions(item.category); 
-
-    // Custom
+    editingCatId = id; const item = catalogData.find(x => x.id === id); if (!item) return; 
+    document.getElementById('cat-modal-title').innerText = "Edit Prize"; document.getElementById('ce-name').value = item.name; document.getElementById('ce-cost').value = item.cost; document.getElementById('ce-tier').value = item.tier; document.getElementById('ce-img').value = item.image || ''; document.getElementById('ce-desc').value = item.desc || ''; document.getElementById('ce-visible').checked = item.visible !== false; 
+    const catSelect = document.getElementById('ce-category'); catSelect.value = item.category || 'standard'; toggleCatOptions(item.category); 
     if(item.colorFee) document.getElementById('ce-color-fee').value = item.colorFee;
-
-    // Premium
-    if (item.variations) {
-        document.getElementById('ce-options').value = item.variations.map(v => v.name).join(', ');
-        // Storing urls is tricky in a simple CSV string input, for now we assume manual JSON edit or simplified flow
-        // For this demo, let's assume the user enters "Red, Blue" and we generate placeholders, 
-        // OR better: Just map the names. We need a way to input images per var.
-        // Simplified: The input "Red, Blue" creates objects {name: "Red", image: ""}. 
-        // Real implementation would need a complex form. 
-        // I'll stick to the "Comma Separated Names" and use the Main Image for all or allow updating via text.
-    }
-
+    
+    // Populate Variants
+    document.getElementById('ce-variants-list').innerHTML = '';
+    if (item.variations) { item.variations.forEach(v => addVariantRow(v.name, v.image)); }
     document.getElementById('cat-edit-modal').style.display='flex'; 
 }
 
 function saveCatItem() { 
-    const n = document.getElementById('ce-name').value; 
-    const c = document.getElementById('ce-cost').value; 
-    const t = document.getElementById('ce-tier').value; 
-    const im = document.getElementById('ce-img').value; 
-    const d = document.getElementById('ce-desc').value;
-    const vis = document.getElementById('ce-visible').checked; 
-    const cat = document.getElementById('ce-category').value; 
-    
-    let variations = []; 
-    let colorFee = 0;
-
+    const n = document.getElementById('ce-name').value; const c = document.getElementById('ce-cost').value; const t = document.getElementById('ce-tier').value; const im = document.getElementById('ce-img').value; const d = document.getElementById('ce-desc').value; const vis = document.getElementById('ce-visible').checked; const cat = document.getElementById('ce-category').value; 
+    let variations = []; let colorFee = 0;
     if (cat === 'premium') { 
-        const optStr = document.getElementById('ce-options').value; 
-        if(optStr) {
-            // Check if existing item has variations to preserve images
-            const existing = editingCatId ? catalogData.find(x=>x.id===editingCatId).variations : [];
-            variations = optStr.split(',').map(s => {
-                const sTrim = s.trim();
-                const existVar = existing ? existing.find(v => v.name === sTrim) : null;
-                return { name: sTrim, image: existVar ? existVar.image : im }; // Default to main image
-            }).filter(s => s.name); 
-        }
+        document.querySelectorAll('#ce-variants-list .variant-row').forEach(row => {
+            const vName = row.querySelector('.var-name').value.trim();
+            const vImg = row.querySelector('.var-img').value.trim();
+            if(vName) variations.push({name: vName, image: vImg});
+        });
     }
-
-    if (cat === 'custom') {
-        colorFee = document.getElementById('ce-color-fee').value;
-    }
-
-    if(n) { 
-        const data = {
-            name:n, cost:c, tier:t, icon:'fa-cube', 
-            category:cat, desc: d, image:im, visible:vis, 
-            variations: variations, colorFee: colorFee
-        }; 
-
-        if(db) { 
-            if(editingCatId) db.collection("catalog").doc(editingCatId).update(data); 
-            else db.collection("catalog").add({...data, createdAt: Date.now(), interest: 0}); 
-        } else { 
-            if(editingCatId) { 
-                const idx = catalogData.findIndex(x => x.id === editingCatId); 
-                if(idx > -1) catalogData[idx] = {id: editingCatId, ...data, interest: catalogData[idx].interest}; 
-            } else { 
-                catalogData.push({id: "local_" + Date.now(), ...data, interest: 0}); 
-            } 
-            saveLocal('cn_catalog', catalogData); 
-            renderCatalog(); 
-            renderAdminLists(); 
-        } 
+    if (cat === 'custom') { colorFee = document.getElementById('ce-color-fee').value; }
+    if(n) { const data = { name:n, cost:c, tier:t, icon:'fa-cube', category:cat, desc: d, image:im, visible:vis, variations: variations, colorFee: colorFee }; 
+        if(db) { if(editingCatId) db.collection("catalog").doc(editingCatId).update(data); else db.collection("catalog").add({...data, createdAt: Date.now(), interest: 0}); } 
+        else { if(editingCatId) { const idx = catalogData.findIndex(x => x.id === editingCatId); if(idx > -1) catalogData[idx] = {id: editingCatId, ...data, interest: catalogData[idx].interest}; } else { catalogData.push({id: "local_" + Date.now(), ...data, interest: 0}); } saveLocal('cn_catalog', catalogData); renderCatalog(); renderAdminLists(); } 
         closeCatModal(); 
     } 
 }
-
 function deleteCatItem(id) { showConfirm("Delete?", () => { if(db) db.collection("catalog").doc(id).delete(); else { catalogData = catalogData.filter(x => x.id !== id); saveLocal('cn_catalog', catalogData); renderCatalog(); renderAdminLists(); } }); }
 function closeCatModal() { document.getElementById('cat-edit-modal').style.display='none'; }
-
-function toggleCatOptions(v) { 
-    document.getElementById('ce-options-container').style.display = v === 'premium' ? 'block' : 'none'; 
-    document.getElementById('ce-custom-container').style.display = v === 'custom' ? 'block' : 'none';
-}
-
-// CRUD: NEWS/RULES/COINS (Existing logic kept compact)
+function toggleCatOptions(v) { document.getElementById('ce-options-container').style.display = v === 'premium' ? 'block' : 'none'; document.getElementById('ce-custom-container').style.display = v === 'custom' ? 'block' : 'none'; }
 function openNewsModal(id=null) { editingId=id; if(id){const i=newsData.find(n=>n.id===id); document.getElementById('news-input-title').value=i.title; document.getElementById('news-input-date').value=i.date; document.getElementById('news-input-badge').value=i.badge;}else{document.getElementById('news-input-title').value='';document.getElementById('news-input-date').value='';document.getElementById('news-input-badge').value='';} document.getElementById('news-modal').style.display='flex'; }
 function closeNewsModal() { document.getElementById('news-modal').style.display = 'none'; }
 function saveNews() { const t=document.getElementById('news-input-title').value; const d=document.getElementById('news-input-date').value; const b=document.getElementById('news-input-badge').value; if(t){ if(db){ if(editingId) db.collection("news").doc(editingId).update({title:t,date:d,badge:b}); else db.collection("news").add({title:t,date:d,badge:b,createdAt:Date.now()}); } else { if(editingId){const idx=newsData.findIndex(n=>n.id===editingId); newsData[idx]={id:editingId,title:t,date:d,badge:b};} else {newsData.unshift({id:"l"+Date.now(),title:t,date:d,badge:b});} saveLocal('cn_news',newsData); renderAdminLists(); renderNews(); } closeNewsModal(); showAlert("Success", "News saved!"); } }
 function deleteNews(id) { showConfirm("Delete?", () => { if(db) db.collection("news").doc(id).delete(); else { newsData = newsData.filter(n => n.id !== id); saveLocal('cn_news', newsData); renderAdminLists(); renderNews(); } }); }
-
 function openRulesModal(id=null) { editingId=id; const ti=document.getElementById('rule-input-title'); const di=document.getElementById('rule-input-desc'); ti.placeholder="Category"; di.placeholder="Rule"; if(id){const i=rulesData.find(r=>r.id===id); ti.value=i.title; di.value=i.desc; document.getElementById('rule-input-penalty').value=i.penalty;}else{ti.value='';di.value='';document.getElementById('rule-input-penalty').value='';} document.getElementById('rules-modal').style.display='flex'; }
 function closeRulesModal() { document.getElementById('rules-modal').style.display='none'; }
 function saveRule() { const title=document.getElementById('rule-input-title').value; const desc=document.getElementById('rule-input-desc').value; const penalty=document.getElementById('rule-input-penalty').value; if(title){ if(db){ if(editingId) db.collection("rules").doc(editingId).update({title,desc,penalty}); else db.collection("rules").add({title,desc,penalty,createdAt:Date.now()}); } else { if(editingId){ const idx=rulesData.findIndex(r=>r.id===editingId); if(idx>-1) rulesData[idx]={id:editingId,title,desc,penalty}; } else { rulesData.push({id:"local_"+Date.now(),title,desc,penalty}); } saveLocal('cn_rules',rulesData); renderAdminLists(); renderRules(); } closeRulesModal(); showAlert("Success", "Rule saved!"); } }
 function deleteRule(id) { showConfirm("Delete?", () => { if(db) db.collection("rules").doc(id).delete(); else { rulesData = rulesData.filter(r => r.id !== id); saveLocal('cn_rules', rulesData); renderAdminLists(); renderRules(); } }); }
-
 function openCoinModal(id=null) { editingId=id; if(id){const i=coinsData.find(c=>c.id===id); document.getElementById('coin-input-task').value=i.task; document.getElementById('coin-input-val').value=i.val;}else{document.getElementById('coin-input-task').value='';document.getElementById('coin-input-val').value='';} document.getElementById('coin-modal').style.display='flex'; }
 function closeCoinModal() { document.getElementById('coin-modal').style.display='none'; }
 function saveCoin() { const task=document.getElementById('coin-input-task').value; const val=document.getElementById('coin-input-val').value; if(task){ if(db){ if(editingId) db.collection("coins").doc(editingId).update({task,val}); else db.collection("coins").add({task,val}); } else { if(editingId){ const idx=coinsData.findIndex(c=>c.id===editingId); if(idx>-1) coinsData[idx]={id:editingId,task,val}; } else { coinsData.push({id:"local_"+Date.now(),task,val}); } saveLocal('cn_coins',coinsData); renderAdminLists(); renderCoins(); } closeCoinModal(); showAlert("Success", "Task saved!"); } }
 function deleteCoin(id) { showConfirm("Delete?", () => { if(db) db.collection("coins").doc(id).delete(); else { coinsData = coinsData.filter(c => c.id !== id); saveLocal('cn_coins', coinsData); renderAdminLists(); renderCoins(); } }); }
 function moveCoin(index, dir) { if (index + dir < 0 || index + dir >= coinsData.length) return; const temp = coinsData[index]; coinsData[index] = coinsData[index + dir]; coinsData[index + dir] = temp; saveLocal('cn_coins', coinsData); renderAdminLists(); renderCoins(); }
-
-// ADMIN UTILS & FILAMENTS
-function manageFilaments() {
-    const list = prompt("Edit Filament Colors (Comma Separated):", filamentData.join(', '));
-    if(list) {
-        filamentData = list.split(',').map(s => s.trim()).filter(s => s);
-        // In real app, save to DB
-        showAlert("Updated", "Filament list updated.");
-    }
-}
-
-// OTHER UTILS
+function manageFilaments() { const list = prompt("Edit Filament Colors (Comma Separated):", filamentData.join(', ')); if(list) { filamentData = list.split(',').map(s => s.trim()).filter(s => s); showAlert("Updated", "Filament list updated."); } }
 function toggleHistoryView() { showHistory = !showHistory; const b = document.querySelector('#admin-queue .btn-edit'); if(b) b.innerText = showHistory ? "Hide History" : "History"; const h = document.getElementById('admin-queue-history-list'); if(h) { h.style.display = showHistory ? 'block' : 'none'; renderQueueHistory(); } }
 function renderQueueHistory() { const h = document.getElementById('history-content'); if(!h) return; h.innerHTML = ''; const p = queueData.filter(q => q.status === 'Picked Up'); if(p.length === 0) h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>'; else p.forEach(q => h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`); }
 function adminSearchNinja() { const q = document.getElementById('admin-lb-search').value.toLowerCase(); const resDiv = document.getElementById('admin-lb-results'); resDiv.innerHTML = ''; if(q.length < 2) return; const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q)); found.slice(0, 5).forEach(n => { resDiv.innerHTML += `<div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">${n.name} <span style="color:var(--color-games); font-weight:bold;">${n.points} pts</span></div>`; }); }
@@ -734,46 +335,5 @@ function openGitHubUpload() { if (GITHUB_REPO_URL.includes("github.com")) window
 function toggleAdminViewMode() { const adminView = document.getElementById('admin-view'); const floatingBtn = document.getElementById('floating-admin-toggle'); if (adminView.classList.contains('active')) { adminView.classList.remove('active'); floatingBtn.style.display = 'flex'; } else { adminView.classList.add('active'); floatingBtn.style.display = 'flex'; } }
 function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
 function handleLogoClick() { if(window.innerWidth < 768) return; clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); if(clickCount === 3) { clickCount = 0; toggleAdminLogin(); } }
-
-// --- INITIALIZATION ---
-window.onload = function() {
-    const storedVer = localStorage.getItem('cn_app_version');
-    const msgEl = document.getElementById('login-version-msg');
-    if (storedVer !== APP_VERSION) { if(msgEl) { msgEl.innerText = `🚀 Update Detected! Welcome to v${APP_VERSION}`; msgEl.style.display = 'block'; } localStorage.setItem('cn_app_version', APP_VERSION); } else { if(msgEl) msgEl.style.display = 'none'; }
-
-    try {
-        if (typeof firebase !== 'undefined') {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            auth = firebase.auth();
-            console.log("Firebase Initialized");
-        }
-    } catch (e) { console.log("Demo Mode (No Firebase):", e); }
-
-    const savedUser = localStorage.getItem('cn_user');
-    if (savedUser) { try { currentUser = JSON.parse(savedUser); enterDashboard(); } catch (e) { console.error("Error parsing user", e); localStorage.removeItem('cn_user'); } } 
-    else { document.getElementById('login-view').style.display = 'flex'; document.getElementById('main-app').style.display = 'none'; }
-    subscribeToData();
-};
-
-function subscribeToData() {
-    if (db) {
-        db.collection("news").orderBy("createdAt", "desc").onSnapshot(snap => { newsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderNews(); renderAdminLists(); });
-        db.collection("rules").orderBy("createdAt", "asc").onSnapshot(snap => { rulesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderRules(); renderAdminLists(); });
-        db.collection("coins").onSnapshot(snap => { coinsData = snap.docs.map(d => ({id: d.id, ...d.data()})); coinsData.sort((a, b) => (a.order || 0) - (b.order || 0)); renderCoins(); renderAdminLists(); });
-        db.collection("catalog").onSnapshot(snap => { catalogData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderCatalog(); renderAdminLists(); });
-        db.collection("requests").orderBy("createdAt", "desc").onSnapshot(snap => { requestsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderAdminRequests(); });
-        db.collection("queue").orderBy("createdAt", "asc").onSnapshot(snap => { queueData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderQueue(); renderAdminLists(); });
-        db.collection("leaderboard").onSnapshot(snap => { leaderboardData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderLeaderboard(); });
-        db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); });
-    } else {
-        newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews;
-        rulesData = JSON.parse(localStorage.getItem('cn_rules')) || defaultRules;
-        coinsData = JSON.parse(localStorage.getItem('cn_coins')) || defaultCoins;
-        catalogData = JSON.parse(localStorage.getItem('cn_catalog')) || defaultCatalog;
-        requestsData = JSON.parse(localStorage.getItem('cn_requests')) || [];
-        queueData = JSON.parse(localStorage.getItem('cn_queue')) || [];
-        leaderboardData = JSON.parse(localStorage.getItem('cn_leaderboard')) || mockLeaderboard;
-        refreshAll();
-    }
-}
+window.onload = function() { const storedVer = localStorage.getItem('cn_app_version'); const msgEl = document.getElementById('login-version-msg'); if (storedVer !== APP_VERSION) { if(msgEl) { msgEl.innerText = `🚀 Update Detected! Welcome to v${APP_VERSION}`; msgEl.style.display = 'block'; } localStorage.setItem('cn_app_version', APP_VERSION); } else { if(msgEl) msgEl.style.display = 'none'; } try { if (typeof firebase !== 'undefined') { firebase.initializeApp(firebaseConfig); db = firebase.firestore(); auth = firebase.auth(); console.log("Firebase Initialized"); } } catch (e) { console.log("Demo Mode (No Firebase):", e); } const savedUser = localStorage.getItem('cn_user'); if (savedUser) { try { currentUser = JSON.parse(savedUser); enterDashboard(); } catch (e) { console.error("Error parsing user", e); localStorage.removeItem('cn_user'); } } else { document.getElementById('login-view').style.display = 'flex'; document.getElementById('main-app').style.display = 'none'; } subscribeToData(); };
+function subscribeToData() { if (db) { db.collection("news").orderBy("createdAt", "desc").onSnapshot(snap => { newsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderNews(); renderAdminLists(); }); db.collection("rules").orderBy("createdAt", "asc").onSnapshot(snap => { rulesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderRules(); renderAdminLists(); }); db.collection("coins").onSnapshot(snap => { coinsData = snap.docs.map(d => ({id: d.id, ...d.data()})); coinsData.sort((a, b) => (a.order || 0) - (b.order || 0)); renderCoins(); renderAdminLists(); }); db.collection("catalog").onSnapshot(snap => { catalogData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderCatalog(); renderAdminLists(); }); db.collection("requests").orderBy("createdAt", "desc").onSnapshot(snap => { requestsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderAdminRequests(); }); db.collection("queue").orderBy("createdAt", "asc").onSnapshot(snap => { queueData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderQueue(); renderAdminLists(); }); db.collection("leaderboard").onSnapshot(snap => { leaderboardData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderLeaderboard(); }); db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); }); } else { newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews; rulesData = JSON.parse(localStorage.getItem('cn_rules')) || defaultRules; coinsData = JSON.parse(localStorage.getItem('cn_coins')) || defaultCoins; catalogData = JSON.parse(localStorage.getItem('cn_catalog')) || defaultCatalog; requestsData = JSON.parse(localStorage.getItem('cn_requests')) || []; queueData = JSON.parse(localStorage.getItem('cn_queue')) || []; leaderboardData = JSON.parse(localStorage.getItem('cn_leaderboard')) || mockLeaderboard; refreshAll(); } }
