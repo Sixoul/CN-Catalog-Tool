@@ -266,6 +266,31 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .sub-name { font-weight: 600; font-size: 1rem; color: white; }
 .sub-project { font-size: 0.8rem; color: #888; }
 
+/* --- LIMITED TIME ITEMS --- */
+@keyframes glow-pulse {
+    0% { box-shadow: 0 0 5px #e74c3c, 0 0 10px #e74c3c; border-color: #e74c3c; }
+    50% { box-shadow: 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; border-color: #ff6b6b; }
+    100% { box-shadow: 0 0 5px #e74c3c, 0 0 10px #e74c3c; border-color: #e74c3c; }
+}
+
+.limited-card {
+    animation: glow-pulse 2s infinite;
+    background: linear-gradient(135deg, var(--card-bg) 0%, rgba(231, 76, 60, 0.1) 100%);
+    border: 1px solid #e74c3c;
+}
+
+.badge-limited {
+    font-size: 0.6rem;
+    color: white;
+    background: #e74c3c;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 5px;
+    font-weight: bold;
+    box-shadow: 0 0 5px #e74c3c;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
 /* --- LOGIN VIEW (IMPACT STYLE) --- */
 #login-view {
     display: flex;

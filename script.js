@@ -1,12 +1,12 @@
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.1 - Enhanced Premium Variants
+ * v4.2 - Full Catalog & Queue System
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.1";
+const APP_VERSION = "4.2";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -139,10 +139,23 @@ function renderCatalog() {
     if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier.</p>'; 
     else f.forEach(i => { 
         let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon || 'fa-cube'}"></i>`; 
-        let btnText = "Request"; let btnAction = `onclick="initRequest('${i.id}')"`; let catBadge = '';
-        if(i.category === 'custom') { btnText = "Custom Print"; catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`; } 
-        else if(i.category === 'premium') { btnText = "View Options"; catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`; }
-        c.innerHTML += `<div class="store-card"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`; 
+        let btnText = "Request"; let btnAction = `onclick="initRequest('${i.id}')"`; let catBadge = ''; let specialClass = '';
+        
+        if(i.category === 'custom') { 
+            btnText = "Custom Print"; 
+            catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`; 
+        } 
+        else if(i.category === 'premium') { 
+            btnText = "View Options"; 
+            catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`; 
+        }
+        else if(i.category === 'limited') { 
+            btnText = "Get It Now!"; 
+            catBadge = `<span class="badge-limited">LIMITED</span>`; 
+            specialClass = 'limited-card'; 
+        }
+        
+        c.innerHTML += `<div class="store-card ${specialClass}"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`; 
     }); 
 }
 
@@ -188,8 +201,8 @@ function renderAdminLists() { renderAdminNews(); renderAdminRules(); renderAdmin
 function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
 function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
 function renderAdminCoins() { const cList = document.getElementById('admin-coins-list'); if(cList){ cList.innerHTML=''; coinsData.forEach((c, index) => { const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>'; const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>'; cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
-function renderAdminInterest() { const intList = document.getElementById('admin-interest-list'); if(!intList) return; intList.innerHTML = ''; const st = catalogData.filter(c => c.category === 'standard' && (c.interest || 0) > 0); if(st.length === 0) { intList.innerHTML = '<p style="color:#666; width:100%; text-align:center; padding:20px; font-size:0.9rem;">No active interest.</p>'; } else { st.sort((a, b) => b.interest - a.interest); st.forEach(s => { let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`; intList.innerHTML += `<div class="interest-card-square"><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`; }); } }
-function renderAdminCatalog() { const catList = document.getElementById('admin-cat-list'); if(!catList) return; catList.innerHTML=''; const tiers = ['tier1','tier2','tier3','tier4']; const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; tiers.forEach(t => { catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; let g = `<div class="admin-store-grid">`; catalogData.filter(i => i.tier === t).forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; let h = i.visible === false ? 'hidden' : ''; let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : 'STD'); g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`; }); g += `</div>`; catList.innerHTML += g; }); }
+function renderAdminInterest() { const intList = document.getElementById('admin-interest-list'); if(!intList) return; intList.innerHTML = ''; const st = catalogData.filter(c => (c.category === 'standard' || c.category === 'limited') && (c.interest || 0) > 0); if(st.length === 0) { intList.innerHTML = '<p style="color:#666; width:100%; text-align:center; padding:20px; font-size:0.9rem;">No active interest.</p>'; } else { st.sort((a, b) => b.interest - a.interest); st.forEach(s => { let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`; intList.innerHTML += `<div class="interest-card-square"><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`; }); } }
+function renderAdminCatalog() { const catList = document.getElementById('admin-cat-list'); if(!catList) return; catList.innerHTML=''; const tiers = ['tier1','tier2','tier3','tier4']; const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; tiers.forEach(t => { catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; let g = `<div class="admin-store-grid">`; catalogData.filter(i => i.tier === t).forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; let h = i.visible === false ? 'hidden' : ''; let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : (i.category === 'limited' ? 'LIMITED' : 'STD')); g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`; }); g += `</div>`; catList.innerHTML += g; }); }
 function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; const pending = requestsData.filter(r => r.status === 'Waiting for Payment'); if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No incoming payment requests.</p>'; return; } pending.forEach(r => { c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`; }); }
 function renderAdminQueue() { const qList = document.getElementById('admin-queue-manage-list'); if(!qList) return; qList.innerHTML=''; const activeQ = queueData.filter(q => q.status !== 'Picked Up' && q.status !== 'Waiting for Payment'); activeQ.sort((a,b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt)); activeQ.forEach(q => { const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span class="status-badge" style="color:white; background:#333;">${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details ? '| '+q.details : ''}</div><div style="margin-top:5px; display:flex; gap:5px;"><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; }); }
 function renderAdminLbPreview() { const c = document.getElementById('admin-lb-preview-list'); if(!c) return; c.innerHTML = ''; const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } sorted.forEach((ninja, index) => { c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${ninja.name}</div><div class="admin-lb-points">${ninja.points}</div></div>`; }); }
@@ -201,7 +214,9 @@ function renderAdminLbPreview() { const c = document.getElementById('admin-lb-pr
 function initRequest(id) {
     currentRequestItem = catalogData.find(x => x.id === id);
     if(!currentRequestItem) return;
-    if (currentRequestItem.category === 'standard') {
+    
+    // Check Limits for Standard AND Limited Items
+    if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') {
         const today = new Date().toDateString();
         const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] };
         if (localRec.date !== today) { localRec.date = today; localRec.ids = []; }
@@ -209,6 +224,7 @@ function initRequest(id) {
         if (localRec.ids.length >= 3) { showAlert("Limit Reached", "Max 3 requests per day."); return; }
         incrementInterest(id, localRec); return;
     }
+    
     document.getElementById('req-item-name').innerText = currentRequestItem.name;
     const container = document.getElementById('req-dynamic-fields');
     const gallery = document.getElementById('req-gallery');
