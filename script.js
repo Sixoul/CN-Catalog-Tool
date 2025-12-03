@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.9 - "First Name Last Initial" Display & Username Login
+ * v4.11 - CSV Column Mapping & Username Generation
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.9";
+const APP_VERSION = "4.11";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -62,20 +62,19 @@ const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge
 const defaultRules = [{ id: "r1", title: "General", desc: "Respect the Dojo equipment.", penalty: "-1 Coin" }];
 const defaultCoins = [{ id: "c1", task: "Wear Uniform", val: "+1", type: "silver" }];
 const defaultCatalog = [{ id: "cat1", name: "Star", cost: "50", tier: "tier1", category: "standard", icon: "fa-star", visible: true }];
-const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "Blue", username: "asher.cullin" }];
+const mockLeaderboard = [{ id: "l1", name: "Asher C.", points: 1250, belt: "Blue", username: "asher.cullin" }];
 
 
 /* ==========================================================================
    2. HELPER FUNCTIONS
    ========================================================================== */
-// FORMAT: "Kane Leung" -> "Kane L."
 function formatName(name) {
     if (!name) return 'Ninja';
-    
-    // Clean up dots or extra spaces
+    // If name is already formatted like "Kane L.", return it.
+    if (name.includes('.') && name.split(' ').length === 2 && name.split(' ')[1].length === 2) return name;
+
     const clean = name.replace(/\./g, ' '); 
     const parts = clean.split(' ').filter(p => p.length > 0);
-    
     if (parts.length === 0) return 'Ninja';
     
     // Capitalize First Name
@@ -84,37 +83,25 @@ function formatName(name) {
     // Last Initial (if exists)
     let lastInitial = "";
     if (parts.length > 1) {
-        // Takes the last part as the last name
         lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + ".";
     }
     
     return first + lastInitial;
 }
 
-// GENERATE: "Kane Leung" -> "kane.leung" (Handles duplicates)
-function generateUsername(fullName, existingData) {
-    // Remove special characters, keep spaces
-    const clean = fullName.replace(/[^a-zA-Z0-9 ]/g, ''); 
-    const parts = clean.split(' ').filter(p => p.length > 0);
-    
-    if (parts.length === 0) return "ninja" + Math.floor(Math.random() * 1000);
+function generateUsername(baseName, existingData) {
+    // Expects "Kane.Leung" style base string
+    let clean = baseName.replace(/[^a-zA-Z0-9.]/g, '').toLowerCase(); 
+    if (!clean) clean = "ninja" + Math.floor(Math.random() * 1000);
 
-    const first = parts[0].toLowerCase();
-    // Use last part as last name, or empty if single name
-    const last = parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "";
-    
-    // Base pattern: first.last or just first
-    let base = last ? `${first}.${last}` : first;
-    
-    let candidate = base;
+    let candidate = clean;
     let counter = 1;
 
     // Check collision against DB
     const isTaken = (u) => existingData.some(n => (n.username || "").toLowerCase() === u);
 
-    // If taken, append number: kane.leung1, kane.leung2...
     while (isTaken(candidate)) {
-        candidate = base + counter;
+        candidate = clean + counter;
         counter++;
     }
     
@@ -155,8 +142,12 @@ function formatCoinBreakdown(valStr) {
 }
 
 function getBeltColor(belt) { 
+    // Handle special CSV cases
+    const b = (belt || 'white').toLowerCase();
+    if(b.includes('jr')) return 'var(--belt-white)'; // JR usually white belt visually or separate
+    
     const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; 
-    return map[(belt || 'white').toLowerCase()] || 'var(--belt-white)'; 
+    return map[b] || 'var(--belt-white)'; 
 }
 
 function getIconClass(belt) { 
@@ -191,10 +182,10 @@ function attemptNinjaLogin() {
     const input = document.getElementById('login-username').value.trim().toLowerCase(); 
     if(!input) return; 
     
-    // Login with USERNAME (e.g. kane.leung)
-    // Fallback: Check full name just in case
+    // Check USERNAME first
     const u = leaderboardData.find(l => 
         (l.username && l.username.toLowerCase() === input) || 
+        // Fallback for old data or manual adds without username
         (!l.username && l.name.toLowerCase() === input)
     ); 
 
@@ -204,7 +195,7 @@ function attemptNinjaLogin() {
         enterDashboard(); 
     } else { 
         document.getElementById('login-error-msg').style.display = 'block'; 
-        document.getElementById('login-error-msg').innerText = 'Ninja not found. Try first.last'; 
+        document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. kane.leung)'; 
     } 
 }
 
@@ -326,7 +317,7 @@ function renderQueue() {
         else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
         else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } 
         
-        // Use formatName for privacy
+        // Display formatted name in queue
         c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} <span style="opacity:0.6">| ${i.details}</span></p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; 
     }); 
 }
@@ -341,10 +332,10 @@ function renderLeaderboard() {
     if(s[0]) v.push({...s[0], rank: 1}); 
     if(s[2]) v.push({...s[2], rank: 3}); 
     
-    // Top 3 Podium: Use formatName()
+    // Top 3 (Podium) - Show Formatted Name
     v.forEach(i => p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`); 
     
-    // List: Use formatName()
+    // Rest of List - Show Formatted Name
     s.slice(3).forEach((i,x) => l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${formatName(i.name)}</div><div class="lb-row-points">${i.points}</div></div>`); 
     
     renderAdminLbPreview(); 
@@ -451,9 +442,9 @@ function renderAdminLbPreview() {
     const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); 
     if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } 
     sorted.forEach((ninja, index) => { 
-        // Show Username in Admin view to verify it's working
+        // Display Name + (username)
         const u = ninja.username ? ` <span style="font-size:0.7rem; color:#aaa;">(${ninja.username})</span>` : '';
-        c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${ninja.name}${u}</div><div class="admin-lb-points">${ninja.points}</div></div>`; 
+        c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${formatName(ninja.name)}${u}</div><div class="admin-lb-points">${ninja.points}</div></div>`; 
     }); 
 }
 
@@ -716,9 +707,10 @@ function adminSearchNinja() {
     const q = document.getElementById('admin-lb-search').value.toLowerCase(); 
     const resDiv = document.getElementById('admin-lb-results'); resDiv.innerHTML = ''; 
     if(q.length < 2) return; 
-    const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q)); 
+    const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q) || (n.username && n.username.toLowerCase().includes(q))); 
     found.slice(0, 5).forEach(n => { 
-        resDiv.innerHTML += `<div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">${n.name} <span style="color:var(--color-games); font-weight:bold;">${n.points} pts</span></div>`; 
+        const u = n.username ? ` (${n.username})` : '';
+        resDiv.innerHTML += `<div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">${formatName(n.name)} <span style="color:#888; font-size:0.8rem;">${u}</span> <span style="color:var(--color-games); font-weight:bold; float:right;">${n.points} pts</span></div>`; 
     }); 
 }
 
@@ -727,7 +719,7 @@ function selectNinjaToEdit(id) {
     document.getElementById('admin-lb-results').innerHTML = ''; 
     document.getElementById('admin-lb-search').value = ''; 
     document.getElementById('admin-lb-edit').style.display = 'block'; 
-    document.getElementById('admin-lb-name').innerText = n.name; 
+    document.getElementById('admin-lb-name').innerText = formatName(n.name) + (n.username ? ` (${n.username})` : ''); 
     document.getElementById('admin-lb-current').innerText = n.points; 
 }
 
@@ -739,17 +731,22 @@ function adminUpdatePoints() {
     const newPoints = (n.points || 0) + val; 
     if(db) { db.collection("leaderboard").doc(editingNinjaId).update({ points: newPoints }); } 
     else { const idx = leaderboardData.findIndex(x => x.id === editingNinjaId); leaderboardData[idx].points = newPoints; saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } 
-    document.getElementById('admin-lb-edit').style.display = 'none'; document.getElementById('admin-lb-adjust').value = ''; showAlert("Success", `Updated ${n.name} to ${newPoints} pts`); 
+    document.getElementById('admin-lb-edit').style.display = 'none'; document.getElementById('admin-lb-adjust').value = ''; showAlert("Success", `Updated ${formatName(n.name)} to ${newPoints} pts`); 
 }
 
 function adminAddNinja() { 
     const name = document.getElementById('admin-roster-add-name').value; if(!name) return; 
+    
+    // Manual add format: Check if input is "First Last"
+    const formatted = formatName(name);
+    // Username generation base
     const username = generateUsername(name, leaderboardData);
-    const data = { name: name, username: username, points: 0, belt: 'White' }; 
+
+    const data = { name: formatted, username: username, points: 0, belt: 'White' }; 
     if(db) { db.collection("leaderboard").add(data); } 
     else { leaderboardData.push({id: "local_n_"+Date.now(), ...data}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } 
     document.getElementById('admin-roster-add-name').value = ''; 
-    showAlert("Success", `Added ${name} (User: ${username})`); 
+    showAlert("Success", `Added ${formatted} (User: ${username})`); 
 }
 
 function processCSVFile() { 
@@ -761,37 +758,79 @@ function processCSVFile() {
     reader.onload = function(e) { 
         const text = e.target.result; 
         const lines = text.split('\n'); 
-        let addedCount = 0; 
         
+        if (lines.length < 2) { showAlert("Error", "CSV is empty or missing headers."); return; }
+
+        // Parse Headers
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+        const idxFirst = headers.indexOf('participant first name');
+        const idxLast = headers.indexOf('participant last name');
+        const idxRank = headers.indexOf('rank');
+        const idxMem = headers.indexOf('membership');
+        const idxUser = headers.indexOf('ninja username');
+
+        if (idxFirst === -1 || idxLast === -1) {
+            showAlert("Error", "CSV missing 'Participant First Name' or 'Participant Last Name'");
+            return;
+        }
+
+        let addedCount = 0; 
         let sessionNinjas = [...leaderboardData]; 
 
-        lines.forEach(line => { 
-            const parts = line.split(','); 
-            if (parts.length > 0) { 
-                let name = parts[0].trim().replace(/^"|"$/g, ''); 
-                if (name && name.toLowerCase() !== 'name' && name.toLowerCase() !== 'first name') { 
-                    
-                    const username = generateUsername(name, sessionNinjas);
-                    const alreadyExists = sessionNinjas.some(n => n.name.toLowerCase() === name.toLowerCase());
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            // Basic Split
+            const parts = line.split(',');
+            const getVal = (idx) => (idx !== -1 && idx < parts.length) ? parts[idx].trim().replace(/^"|"$/g, '') : "";
 
-                    if (!alreadyExists) { 
-                        const newNinja = { 
-                            name: name, 
-                            username: username, 
-                            points: 0, 
-                            belt: 'White', 
-                            createdAt: Date.now() 
-                        }; 
-                        
-                        if (db) { db.collection("leaderboard").add(newNinja); } 
-                        else { leaderboardData.push({id: "local_n_" + Date.now() + Math.random(), ...newNinja}); } 
-                        
-                        sessionNinjas.push(newNinja); 
-                        addedCount++; 
-                    } 
-                } 
+            const fName = getVal(idxFirst);
+            const lName = getVal(idxLast);
+            
+            if (!fName) continue;
+
+            // Format Name: "Kane L."
+            const displayName = formatName(fName + " " + lName);
+
+            // Rank Logic
+            let belt = getVal(idxRank);
+            if (!belt) {
+                const mem = getVal(idxMem).toLowerCase();
+                if (mem.includes('jr')) belt = "JR White";
+                else if (mem.includes('robotics')) belt = "Robotics";
+                else if (mem.includes('ai academy')) belt = "AI";
+                else belt = "White";
+            }
+
+            // Username Logic
+            let username = getVal(idxUser);
+            if (!username) {
+                username = generateUsername(fName + "." + lName, sessionNinjas);
+            }
+
+            // Check Duplicates (by username or display name)
+            const exists = sessionNinjas.some(n => 
+                (n.username && n.username.toLowerCase() === username.toLowerCase()) || 
+                n.name === displayName
+            );
+
+            if (!exists) { 
+                const newNinja = { 
+                    name: displayName, 
+                    username: username, 
+                    points: 0, 
+                    belt: belt, 
+                    createdAt: Date.now() 
+                }; 
+                
+                if (db) { db.collection("leaderboard").add(newNinja); } 
+                else { leaderboardData.push({id: "local_n_" + Date.now() + Math.random(), ...newNinja}); } 
+                
+                sessionNinjas.push(newNinja); 
+                addedCount++; 
             } 
-        }); 
+        } 
         
         if (!db) { saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } 
         showAlert("Sync Complete", `Added ${addedCount} new ninjas.`); 
