@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.8 - Fixes for Login, CSV, and Roster
+ * v4.9 - "First Name Last Initial" Display & Username Login
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.8";
+const APP_VERSION = "4.9";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -32,7 +32,7 @@ const DEFAULT_FILAMENTS = [
     "Elegoo Burgundy Red", "PLA-CF Burgundy Red", "Polylite PETG Gray"
 ];
 
-// State
+// State Variables
 let db = null;
 let auth = null;
 let currentUser = null;
@@ -57,7 +57,7 @@ let clickCount = 0;
 let clickTimer;
 let selectedVariantIdx = 0;
 
-// Mock Data
+// Default Mock Data
 const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge: "SOON" }];
 const defaultRules = [{ id: "r1", title: "General", desc: "Respect the Dojo equipment.", penalty: "-1 Coin" }];
 const defaultCoins = [{ id: "c1", task: "Wear Uniform", val: "+1", type: "silver" }];
@@ -68,10 +68,14 @@ const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "
 /* ==========================================================================
    2. HELPER FUNCTIONS
    ========================================================================== */
+// FORMAT: "Kane Leung" -> "Kane L."
 function formatName(name) {
     if (!name) return 'Ninja';
+    
+    // Clean up dots or extra spaces
     const clean = name.replace(/\./g, ' '); 
     const parts = clean.split(' ').filter(p => p.length > 0);
+    
     if (parts.length === 0) return 'Ninja';
     
     // Capitalize First Name
@@ -80,28 +84,35 @@ function formatName(name) {
     // Last Initial (if exists)
     let lastInitial = "";
     if (parts.length > 1) {
+        // Takes the last part as the last name
         lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + ".";
     }
     
     return first + lastInitial;
 }
 
+// GENERATE: "Kane Leung" -> "kane.leung" (Handles duplicates)
 function generateUsername(fullName, existingData) {
+    // Remove special characters, keep spaces
     const clean = fullName.replace(/[^a-zA-Z0-9 ]/g, ''); 
     const parts = clean.split(' ').filter(p => p.length > 0);
     
     if (parts.length === 0) return "ninja" + Math.floor(Math.random() * 1000);
 
     const first = parts[0].toLowerCase();
+    // Use last part as last name, or empty if single name
     const last = parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "";
     
+    // Base pattern: first.last or just first
     let base = last ? `${first}.${last}` : first;
+    
     let candidate = base;
     let counter = 1;
 
-    // Check collision against DB AND currently generated list
+    // Check collision against DB
     const isTaken = (u) => existingData.some(n => (n.username || "").toLowerCase() === u);
 
+    // If taken, append number: kane.leung1, kane.leung2...
     while (isTaken(candidate)) {
         candidate = base + counter;
         counter++;
@@ -180,7 +191,8 @@ function attemptNinjaLogin() {
     const input = document.getElementById('login-username').value.trim().toLowerCase(); 
     if(!input) return; 
     
-    // Check USERNAME first, then NAME (fallback for legacy)
+    // Login with USERNAME (e.g. kane.leung)
+    // Fallback: Check full name just in case
     const u = leaderboardData.find(l => 
         (l.username && l.username.toLowerCase() === input) || 
         (!l.username && l.name.toLowerCase() === input)
@@ -192,7 +204,7 @@ function attemptNinjaLogin() {
         enterDashboard(); 
     } else { 
         document.getElementById('login-error-msg').style.display = 'block'; 
-        document.getElementById('login-error-msg').innerText = 'Ninja not found. Try firstName.lastName'; 
+        document.getElementById('login-error-msg').innerText = 'Ninja not found. Try first.last'; 
     } 
 }
 
@@ -313,6 +325,8 @@ function renderQueue() {
         else if(sLow.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } 
         else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
         else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } 
+        
+        // Use formatName for privacy
         c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} <span style="opacity:0.6">| ${i.details}</span></p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; 
     }); 
 }
@@ -321,9 +335,18 @@ function renderLeaderboard() {
     const p = document.getElementById('lb-podium'); const l = document.getElementById('lb-list'); 
     if(!p || !l) return; p.innerHTML = ''; l.innerHTML = ''; 
     const s = [...leaderboardData].sort((a,b) => b.points - a.points); 
-    const v = []; if(s[1]) v.push({...s[1], rank: 2}); if(s[0]) v.push({...s[0], rank: 1}); if(s[2]) v.push({...s[2], rank: 3}); 
+    
+    const v = []; 
+    if(s[1]) v.push({...s[1], rank: 2}); 
+    if(s[0]) v.push({...s[0], rank: 1}); 
+    if(s[2]) v.push({...s[2], rank: 3}); 
+    
+    // Top 3 Podium: Use formatName()
     v.forEach(i => p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`); 
+    
+    // List: Use formatName()
     s.slice(3).forEach((i,x) => l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${formatName(i.name)}</div><div class="lb-row-points">${i.points}</div></div>`); 
+    
     renderAdminLbPreview(); 
 }
 
@@ -428,6 +451,7 @@ function renderAdminLbPreview() {
     const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); 
     if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } 
     sorted.forEach((ninja, index) => { 
+        // Show Username in Admin view to verify it's working
         const u = ninja.username ? ` <span style="font-size:0.7rem; color:#aaa;">(${ninja.username})</span>` : '';
         c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${ninja.name}${u}</div><div class="admin-lb-points">${ninja.points}</div></div>`; 
     }); 
