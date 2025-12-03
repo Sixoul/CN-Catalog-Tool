@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.6 - Syntax Verified & Fixed
+ * v4.7 - Full Fix (Roster, CSV, Login)
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.6";
+const APP_VERSION = "4.7";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -739,6 +739,7 @@ function processCSVFile() {
         const lines = text.split('\n'); 
         let addedCount = 0; 
         
+        // Track current session adds to prevent internal duplicates
         let sessionNinjas = [...leaderboardData]; 
 
         lines.forEach(line => { 
