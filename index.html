@@ -7,17 +7,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-
     <div id="login-view">
-        <div class="bg-circle circle-1"></div>
-        <div class="bg-circle circle-2"></div>
-        <div class="bg-circle circle-3"></div>
+        <div class="bg-circle circle-1"></div><div class="bg-circle circle-2"></div><div class="bg-circle circle-3"></div>
         <div class="login-card">
             <div class="login-logo"><i class="fa-solid fa-user-ninja"></i></div>
             <div class="login-title">CODE NINJAS DASHBOARD<br><span style="font-size:1rem; font-weight:300;">CERRITOS</span></div>
@@ -25,7 +21,7 @@
             <div id="login-error-msg" class="login-error">User not found or Incorrect Password</div>
             <div id="ninja-login-form">
                 <p style="color:white; margin-bottom:10px;">Ready to Code?</p>
-                <input type="text" id="login-username" class="login-input" placeholder="Enter Ninja Name" onkeydown="if(event.key==='Enter') attemptNinjaLogin()">
+                <input type="text" id="login-username" class="login-input" placeholder="Enter Username (e.g. royce.magcamit)" onkeydown="if(event.key==='Enter') attemptNinjaLogin()">
                 <button onclick="attemptNinjaLogin()" class="btn-login">LOG IN</button>
                 <div class="login-toggle" onclick="toggleAdminLogin()">Log in as Sensei (Admin)</div>
             </div>
@@ -41,9 +37,7 @@
 
     <div id="main-app" style="display:none; height:100%; width:100%; overflow:hidden; display:flex;">
         <nav class="sidebar">
-            <div id="admin-login-btn" class="logo-container desktop-only" style="cursor: default;">
-                <div class="cn-logo"><i class="fa-solid fa-user-ninja"></i></div>
-            </div>
+            <div id="admin-login-btn" class="logo-container desktop-only" style="cursor: default;"><div class="cn-logo"><i class="fa-solid fa-user-ninja"></i></div></div>
             <div class="nav-item home-theme active" onclick="showTab('home', this)"><i class="fa-solid fa-house"></i><span>Home</span></div>
             <div class="nav-item lb-theme" onclick="showTab('leaderboard', this)"><i class="fa-solid fa-medal"></i><span>Ranks</span></div>
             <div class="nav-item jams-theme" onclick="showTab('jams', this)"><i class="fa-solid fa-trophy"></i><span>Jams</span></div>
@@ -64,57 +58,12 @@
             </header>
 
             <div class="content-area">
-                <div id="home" class="tab-content active">
-                    <div class="home-grid">
-                        <div class="news-column">
-                            <div class="section-title"><span>📢 Dojo News & Events</span></div>
-                            <div id="news-feed" class="scroll-container"></div>
-                            <div style="height: 1px; background: #2a2e45; margin: 10px 0 20px 0;"></div>
-                            <div class="section-title"><span>⚠️ Dojo Rules</span></div>
-                            <div id="rules-feed" class="scroll-container"></div>
-                        </div>
-                        <div class="coins-column">
-                            <div class="section-title"><span>💰 Code Coins</span></div>
-                            <div class="coin-panel">
-                                <ul id="coin-feed" class="coin-list"></ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="games" class="tab-content">
-                    <div class="section-title">🎮 Games of the Week</div>
-                    <div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Roblox: Obby Creator</h3></div></div>
-                </div>
-
-                <div id="jams" class="tab-content">
-                    <div class="section-title">🏆 Active Contests & Jams</div>
-                    <div id="jams-feed"></div>
-                </div>
-
-                <div id="catalog" class="tab-content">
-                    <div class="section-title">🖨️ Prize Catalog</div>
-                    <div class="tier-tabs">
-                        <button class="tier-btn active" onclick="filterCatalog('tier1', this)">Tier 1</button>
-                        <button class="tier-btn" onclick="filterCatalog('tier2', this)">Tier 2</button>
-                        <button class="tier-btn" onclick="filterCatalog('tier3', this)">Tier 3</button>
-                        <button class="tier-btn" onclick="filterCatalog('tier4', this)">Tier 4</button>
-                    </div>
-                    <div id="catalog-feed" class="store-grid"></div>
-                </div>
-
-                <div id="queue" class="tab-content">
-                    <div class="section-title"><span>⏳ Print Queue Status</span></div>
-                    <div id="queue-list" class="queue-list scroll-container" style="height: calc(100vh - 200px);"></div>
-                </div>
-
-                <div id="leaderboard" class="tab-content">
-                    <div class="section-title"><span>📈 Ninja Leaderboard</span></div>
-                    <div class="lb-container scroll-container">
-                        <div id="lb-podium" class="lb-top-3"></div>
-                        <div id="lb-list" class="lb-list"></div>
-                    </div>
-                </div>
+                <div id="home" class="tab-content active"><div class="home-grid"><div class="news-column"><div class="section-title"><span>📢 Dojo News & Events</span></div><div id="news-feed" class="scroll-container"></div><div style="height: 1px; background: #2a2e45; margin: 10px 0 20px 0;"></div><div class="section-title"><span>⚠️ Dojo Rules</span></div><div id="rules-feed" class="scroll-container"></div></div><div class="coins-column"><div class="section-title"><span>💰 Code Coins</span></div><div class="coin-panel"><ul id="coin-feed" class="coin-list"></ul></div></div></div></div>
+                <div id="games" class="tab-content"><div class="section-title">🎮 Games of the Week</div><div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Roblox: Obby Creator</h3></div></div></div>
+                <div id="jams" class="tab-content"><div class="section-title">🏆 Active Contests & Jams</div><div id="jams-feed"></div></div>
+                <div id="catalog" class="tab-content"><div class="section-title">🖨️ Prize Catalog</div><div class="tier-tabs"><button class="tier-btn active" onclick="filterCatalog('tier1', this)">Tier 1</button><button class="tier-btn" onclick="filterCatalog('tier2', this)">Tier 2</button><button class="tier-btn" onclick="filterCatalog('tier3', this)">Tier 3</button><button class="tier-btn" onclick="filterCatalog('tier4', this)">Tier 4</button></div><div id="catalog-feed" class="store-grid"></div></div>
+                <div id="queue" class="tab-content"><div class="section-title"><span>⏳ Print Queue Status</span></div><div id="queue-list" class="queue-list scroll-container" style="height: calc(100vh - 200px);"></div></div>
+                <div id="leaderboard" class="tab-content"><div class="section-title"><span>📈 Ninja Leaderboard</span></div><div class="lb-container scroll-container"><div id="lb-podium" class="lb-top-3"></div><div id="lb-list" class="lb-list"></div></div></div>
             </div>
         </div>
     </div>
@@ -144,144 +93,15 @@
                 <div id="admin-roster" class="admin-section">
                     <div class="admin-card">
                         <h3>☁️ Sync Roster (CSV)</h3>
-                        <p style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">Upload a CSV file to bulk add ninjas. (Duplicate names will be skipped).</p>
+                        <p style="color:#aaa; font-size:0.8rem; margin-bottom:10px;">Upload CSV to bulk add ninjas. (Skips duplicates).</p>
                         <input type="file" id="csv-file-input" class="admin-input" accept=".csv">
-                        <button class="btn-sync" onclick="processCSVFile()" style="width:100%">IMPORT & SYNC</button>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-sync" onclick="processCSVFile()" style="width:70%">IMPORT & SYNC</button>
+                            <button class="btn-sync" onclick="clearZeroPointNinjas()" style="width:30%; background:#e74c3c;">CLEAN (0 PTS)</button>
+                        </div>
                     </div>
-
                     <div class="admin-card">
                         <h3>➕ Add Single Ninja</h3>
                         <div style="display:flex; gap:10px;">
                             <input type="text" id="admin-roster-add-name" class="admin-input" placeholder="Name (e.g. Kai S.)" onkeydown="if(event.key==='Enter') adminAddNinja()">
-                            <button class="btn-add" onclick="adminAddNinja()">ADD</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="admin-lb" class="admin-section">
-                    <div class="admin-card">
-                        <h3>🔍 Student Point Manager</h3>
-                        <input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()">
-                        <div id="admin-lb-results"></div>
-                        <div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px; margin-top:10px;">
-                            <h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);">Student Name</h4>
-                            <p>Current: <span id="admin-lb-current">0</span> pts</p>
-                            <input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)">
-                            <button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button>
-                        </div>
-                    </div>
-                    <div class="admin-card"><h3>🏆 Leaderboard Preview</h3><div id="admin-lb-preview-list" class="req-list"></div></div>
-                </div>
-
-                <div id="admin-cat" class="admin-section">
-                    <div class="admin-card">
-                        <h3>🛍️ Manage Catalog 
-                            <div style="display:inline-flex; gap:5px;">
-                                <button class="btn-add" onclick="showAddCatModal()" style="width:auto; padding:5px 10px;">+ Add Prize</button>
-                                <button class="admin-btn" onclick="manageFilaments()" style="width:auto; padding:5px 10px; background:#444; margin:0; font-size:0.8rem;">Manage Colors</button>
-                            </div>
-                        </h3>
-                        <div id="admin-cat-list"></div>
-                    </div>
-                </div>
-
-                <div id="admin-queue" class="admin-section">
-                    <div class="admin-card" style="border-color: var(--color-home);">
-                        <h3>📊 Interest Tracker <span style="font-size:0.8rem; color:#aaa;">(Standard Items)</span></h3>
-                        <div id="admin-interest-list"></div>
-                    </div>
-                    <div class="admin-card" style="border-color: var(--color-catalog);">
-                        <h3>📩 Incoming Print Requests</h3>
-                        <div id="admin-requests-list" class="req-list"></div>
-                    </div>
-                    <div class="admin-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><h3 style="margin:0;">⏳ Active Print Queue</h3><button onclick="toggleHistoryView()" class="btn-edit" style="width:auto;">History</button></div>
-                        <div id="admin-queue-manage-list"></div>
-                        <div id="admin-queue-history-list" style="display:none; border-top:1px solid #444; padding-top:10px; margin-top:10px;"><h4 style="color:#aaa; margin-top:0;">History</h4><div id="history-content"></div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="cat-edit-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width:500px; max-height: 90vh;">
-            <div class="modal-header">
-                <h2 style="color:white; margin:0;" id="cat-modal-title">Edit Prize</h2>
-                <button onclick="closeCatModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="ce-name" class="admin-input" placeholder="Item Name">
-                <input type="text" id="ce-cost" class="admin-input" placeholder="Cost (Gold Coins)">
-                <textarea id="ce-desc" class="admin-input" placeholder="Short Description" style="resize:vertical; min-height:60px;"></textarea>
-                
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <select id="ce-tier" class="admin-input" style="margin-bottom:0;">
-                        <option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option>
-                    </select>
-                    <select id="ce-category" class="admin-input" style="margin-bottom:0;" onchange="toggleCatOptions(this.value)">
-                        <option value="standard">Standard</option>
-                        <option value="custom">Custom Print</option>
-                        <option value="premium">Premium</option>
-						<option value="limited">Limited Time!</option>
-                    </select>
-                </div>
-
-                <div id="ce-custom-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;">
-                    <label style="color:white; font-size:0.9rem;">Color Fee (Optional):</label>
-                    <input type="number" id="ce-color-fee" class="admin-input" placeholder="0">
-                </div>
-
-                <div id="ce-options-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;">
-                    <label style="color:white; font-size:0.9rem; margin-bottom:5px; display:block;">Manage Variations:</label>
-                    <div id="ce-variants-list"></div>
-                    <button onclick="addVariantRow()" class="btn-mini" style="background:#444; width:100%; margin-top:5px; padding:8px;">+ Add Variant Row</button>
-                </div>
-
-                <label style="color:#aaa; font-size:0.8rem;">Main Image URL (Default):</label>
-                <input type="text" id="ce-img" class="admin-input" placeholder="https://...">
-                
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <label style="color:white; font-size:0.9rem;"><input type="checkbox" id="ce-visible" checked> Visible</label>
-                </div>
-                <div style="display:flex;gap:10px;">
-                    <button onclick="saveCatItem()" class="admin-btn btn-add">SAVE PRIZE</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="req-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 style="margin:0; color: white;">Request</h2>
-                <button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body">
-                <div id="req-img-container" class="req-img-container">
-                    <img src="" alt="Prize" style="display:none;">
-                    <i class="fa-solid fa-cube"></i>
-                </div>
-                <div id="req-gallery" class="req-gallery"></div>
-                
-                <h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3>
-                
-                <label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label>
-                <input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name">
-                
-                <div id="req-dynamic-fields"></div>
-                
-                <button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SUBMIT REQUEST</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="news-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit News</h2><button onclick="closeNewsModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="news-input-title" class="admin-input" placeholder="Title"><input type="text" id="news-input-date" class="admin-input" placeholder="Date"><input type="text" id="news-input-badge" class="admin-input" placeholder="Badge"><button onclick="saveNews()" class="admin-btn btn-add">SAVE</button></div></div></div>
-    <div id="rules-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Rule</h2><button onclick="closeRulesModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="rule-input-title" class="admin-input" placeholder="Category"><input type="text" id="rule-input-desc" class="admin-input" placeholder="Rule Description"><input type="text" id="rule-input-penalty" class="admin-input" placeholder="Penalty"><button onclick="saveRule()" class="admin-btn btn-add">SAVE</button></div></div></div>
-    <div id="coin-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Coin Task</h2><button onclick="closeCoinModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="coin-input-task" class="admin-input" placeholder="Task Name"><input type="text" id="coin-input-val" class="admin-input" placeholder="Value (+5)"><button onclick="saveCoin()" class="admin-btn btn-add">SAVE</button></div></div></div>
-    <div id="alert-modal" class="modal-overlay" style="z-index: 300000;"><div class="modal-content" style="max-width:400px; height:auto; border-color: var(--color-games);"><div class="modal-header" style="border-bottom-color: var(--color-games);"><h2 id="alert-title" style="margin:0; color:white;">Notice</h2></div><div class="modal-body" style="text-align:center;"><p id="alert-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Message</p><button onclick="document.getElementById('alert-modal').style.display='none'" class="btn-blue" style="background:var(--color-games); width:100%;">OK</button></div></div></div>
-    <div id="confirm-modal" class="modal-overlay" style="z-index: 300000;"><div class="modal-content" style="max-width:400px; height:auto; border-color: #e74c3c;"><div class="modal-header" style="border-bottom-color: #e74c3c;"><h2 style="margin:0; color:white;">Confirm Action</h2></div><div class="modal-body" style="text-align:center;"><p id="confirm-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Are you sure?</p><div style="display:flex; gap:10px;"><button id="confirm-yes-btn" class="btn-blue" style="background:#e74c3c; width:50%;">YES</button><button onclick="document.getElementById('confirm-modal').style.display='none'" class="btn-blue" style="background:#555; width:50%;">NO</button></div></div></div></div>
-
-    <script src="script.js" defer></script>
-</body>
-</html>
+                            <button class="btn-

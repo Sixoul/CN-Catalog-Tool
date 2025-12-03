@@ -1,12 +1,12 @@
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.3 - Roster Page & CSV Sync
+ * v4.4 - Enhanced Roster & Username Login
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.3";
+const APP_VERSION = "4.4";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -58,7 +58,7 @@ const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge
 const defaultRules = [{ id: "r1", title: "General", desc: "Respect the Dojo equipment.", penalty: "-1 Coin" }];
 const defaultCoins = [{ id: "c1", task: "Wear Uniform", val: "+1", type: "silver" }];
 const defaultCatalog = [{ id: "cat1", name: "Star", cost: "50", tier: "tier1", category: "standard", icon: "fa-star", visible: true }];
-const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "Blue" }];
+const mockLeaderboard = [{ id: "l1", name: "Asher Cullin", points: 1250, belt: "Blue", username: "asher.cullin" }];
 
 
 /* ==========================================================================
@@ -69,10 +69,41 @@ function formatName(name) {
     const clean = name.replace(/\./g, ' '); 
     const parts = clean.split(' ').filter(p => p.length > 0);
     if (parts.length === 0) return 'Ninja';
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+    
+    // Capitalize First Name
     const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
-    const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
-    return `${first} ${lastInitial}.`;
+    
+    // Last Initial (if exists)
+    let lastInitial = "";
+    if (parts.length > 1) {
+        lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + ".";
+    }
+    
+    return first + lastInitial;
+}
+
+function generateUsername(fullName, existingData) {
+    const clean = fullName.replace(/[^a-zA-Z0-9 ]/g, ''); // Remove special chars
+    const parts = clean.split(' ').filter(p => p.length > 0);
+    
+    if (parts.length === 0) return "ninja" + Math.floor(Math.random() * 1000);
+
+    const first = parts[0].toLowerCase();
+    const last = parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "";
+    
+    let base = last ? `${first}.${last}` : first;
+    let candidate = base;
+    let counter = 1;
+
+    // Check collision against DB AND currently generated list
+    const isTaken = (u) => existingData.some(n => (n.username || "").toLowerCase() === u);
+
+    while (isTaken(candidate)) {
+        candidate = base + counter;
+        counter++;
+    }
+    
+    return candidate;
 }
 
 function formatCostDisplay(costVal) {
@@ -107,10 +138,30 @@ function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText =
 function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
 
 /* ==========================================================================
-   3. AUTHENTICATION
+   3. AUTHENTICATION (UPDATED)
    ========================================================================== */
 function toggleAdminLogin() { const n = document.getElementById('ninja-login-form'); const a = document.getElementById('admin-login-form'); if(n.style.display === 'none') { n.style.display = 'block'; a.style.display = 'none'; } else { n.style.display = 'none'; a.style.display = 'block'; document.getElementById('admin-pass').focus(); } }
-function attemptNinjaLogin() { const n = document.getElementById('login-username').value.trim(); if(!n) return; const u = leaderboardData.find(l => l.name.toLowerCase() === n.toLowerCase()); if(u){ currentUser = u; localStorage.setItem('cn_user', JSON.stringify(u)); enterDashboard(); } else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Ninja not found in roster.'; } }
+
+function attemptNinjaLogin() { 
+    const input = document.getElementById('login-username').value.trim().toLowerCase(); 
+    if(!input) return; 
+    
+    // Check USERNAME first, then NAME (fallback for legacy)
+    const u = leaderboardData.find(l => 
+        (l.username && l.username.toLowerCase() === input) || 
+        (!l.username && l.name.toLowerCase() === input)
+    ); 
+
+    if(u){ 
+        currentUser = u; 
+        localStorage.setItem('cn_user', JSON.stringify(u)); 
+        enterDashboard(); 
+    } else { 
+        document.getElementById('login-error-msg').style.display = 'block'; 
+        document.getElementById('login-error-msg').innerText = 'Ninja not found. Try firstName.lastName'; 
+    } 
+}
+
 function attemptAdminLogin() { const e = document.getElementById('admin-email').value; const p = document.getElementById('admin-pass').value; if(p === "@2633Ninjas") { loginAsAdmin(); return; } if(auth) { auth.signInWithEmailAndPassword(e, p).then(() => loginAsAdmin()).catch(err => { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied.'; }); } else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied (Offline).'; } }
 function loginAsAdmin() { currentUser = { name: "Sensei", isAdmin: true }; localStorage.setItem('cn_user', JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); }
 function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(auth) auth.signOut(); location.reload(); }
@@ -138,7 +189,11 @@ function renderAdminInterest() { const intList = document.getElementById('admin-
 function renderAdminCatalog() { const catList = document.getElementById('admin-cat-list'); if(!catList) return; catList.innerHTML=''; const tiers = ['tier1','tier2','tier3','tier4']; const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; tiers.forEach(t => { catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; let g = `<div class="admin-store-grid">`; catalogData.filter(i => i.tier === t).forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; let h = i.visible === false ? 'hidden' : ''; let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : (i.category === 'limited' ? 'LIMITED' : 'STD')); g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`; }); g += `</div>`; catList.innerHTML += g; }); }
 function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; const pending = requestsData.filter(r => r.status === 'Waiting for Payment'); if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No incoming payment requests.</p>'; return; } pending.forEach(r => { c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`; }); }
 function renderAdminQueue() { const qList = document.getElementById('admin-queue-manage-list'); if(!qList) return; qList.innerHTML=''; const activeQ = queueData.filter(q => q.status !== 'Picked Up' && q.status !== 'Waiting for Payment'); activeQ.sort((a,b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt)); activeQ.forEach(q => { const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span class="status-badge" style="color:white; background:#333;">${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details ? '| '+q.details : ''}</div><div style="margin-top:5px; display:flex; gap:5px;"><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; }); }
-function renderAdminLbPreview() { const c = document.getElementById('admin-lb-preview-list'); if(!c) return; c.innerHTML = ''; const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } sorted.forEach((ninja, index) => { c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${ninja.name}</div><div class="admin-lb-points">${ninja.points}</div></div>`; }); }
+function renderAdminLbPreview() { const c = document.getElementById('admin-lb-preview-list'); if(!c) return; c.innerHTML = ''; const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } sorted.forEach((ninja, index) => { 
+    // Show Username in preview so admin knows it
+    const u = ninja.username ? ` <span style="font-size:0.7rem; color:#aaa;">(${ninja.username})</span>` : '';
+    c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${ninja.name}${u}</div><div class="admin-lb-points">${ninja.points}</div></div>`; 
+}); }
 
 
 /* ==========================================================================
@@ -191,7 +246,6 @@ function initRequest(id) {
 }
 
 function updatePremiumPreview(idx) { selectedVariantIdx = idx; const item = currentRequestItem.variations[idx]; const mainImg = document.querySelector('#req-img-container img'); if(item.image) mainImg.src = item.image; document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); }
-
 function submitRequest() { 
     const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
     if(!name) return showAlert("Error","Name required"); 
@@ -271,8 +325,103 @@ function renderQueueHistory() { const h = document.getElementById('history-conte
 function adminSearchNinja() { const q = document.getElementById('admin-lb-search').value.toLowerCase(); const resDiv = document.getElementById('admin-lb-results'); resDiv.innerHTML = ''; if(q.length < 2) return; const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q)); found.slice(0, 5).forEach(n => { resDiv.innerHTML += `<div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">${n.name} <span style="color:var(--color-games); font-weight:bold;">${n.points} pts</span></div>`; }); }
 function selectNinjaToEdit(id) { const n = leaderboardData.find(x => x.id === id); if(!n) return; editingNinjaId = id; document.getElementById('admin-lb-results').innerHTML = ''; document.getElementById('admin-lb-search').value = ''; document.getElementById('admin-lb-edit').style.display = 'block'; document.getElementById('admin-lb-name').innerText = n.name; document.getElementById('admin-lb-current').innerText = n.points; }
 function adminUpdatePoints() { if(!editingNinjaId) return; const val = parseInt(document.getElementById('admin-lb-adjust').value); if(isNaN(val)) return; const n = leaderboardData.find(x => x.id === editingNinjaId); if(!n) return; const newPoints = (n.points || 0) + val; if(db) { db.collection("leaderboard").doc(editingNinjaId).update({ points: newPoints }); } else { const idx = leaderboardData.findIndex(x => x.id === editingNinjaId); leaderboardData[idx].points = newPoints; saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-lb-edit').style.display = 'none'; document.getElementById('admin-lb-adjust').value = ''; showAlert("Success", `Updated ${n.name} to ${newPoints} pts`); }
-function adminAddNinja() { const name = document.getElementById('admin-roster-add-name').value; if(!name) return; const data = { name: name, points: 0, belt: 'White' }; if(db) { db.collection("leaderboard").add(data); } else { leaderboardData.push({id: "local_n_"+Date.now(), ...data}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-roster-add-name').value = ''; showAlert("Success", "Added " + name); }
-function processCSVFile() { const fileInput = document.getElementById('csv-file-input'); const file = fileInput.files[0]; if (!file) { showAlert("Error", "Please select a CSV file first."); return; } const reader = new FileReader(); reader.onload = function(e) { const text = e.target.result; const lines = text.split('\n'); let addedCount = 0; lines.forEach(line => { const parts = line.split(','); if (parts.length > 0) { let name = parts[0].trim().replace(/^"|"$/g, ''); if (name && name.toLowerCase() !== 'name' && name.toLowerCase() !== 'first name') { const exists = leaderboardData.some(n => n.name.toLowerCase() === name.toLowerCase()); if (!exists) { const newNinja = { name: name, points: 0, belt: 'White', createdAt: Date.now() }; if (db) { db.collection("leaderboard").add(newNinja); } else { leaderboardData.push({id: "local_n_" + Date.now() + Math.random(), ...newNinja}); } addedCount++; } } } }); if (!db) { saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } showAlert("Sync Complete", `Added ${addedCount} new ninjas.`); fileInput.value = ''; }; reader.readAsText(file); }
+
+function adminAddNinja() { 
+    const name = document.getElementById('admin-roster-add-name').value; 
+    if(!name) return; 
+    
+    // Auto-generate username for manual adds too
+    const username = generateUsername(name, leaderboardData);
+
+    const data = { name: name, username: username, points: 0, belt: 'White' }; 
+    if(db) { db.collection("leaderboard").add(data); } 
+    else { leaderboardData.push({id: "local_n_"+Date.now(), ...data}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } 
+    
+    document.getElementById('admin-roster-add-name').value = ''; 
+    showAlert("Success", `Added ${name} (User: ${username})`); 
+}
+
+function processCSVFile() { 
+    const fileInput = document.getElementById('csv-file-input'); 
+    const file = fileInput.files[0]; 
+    if (!file) { showAlert("Error", "Please select a CSV file first."); return; } 
+    
+    const reader = new FileReader(); 
+    reader.onload = function(e) { 
+        const text = e.target.result; 
+        const lines = text.split('\n'); 
+        let addedCount = 0; 
+        
+        // Track current session adds to prevent internal duplicates in same CSV
+        let sessionNinjas = [...leaderboardData]; 
+
+        lines.forEach(line => { 
+            const parts = line.split(','); 
+            if (parts.length > 0) { 
+                let name = parts[0].trim().replace(/^"|"$/g, ''); 
+                if (name && name.toLowerCase() !== 'name' && name.toLowerCase() !== 'first name') { 
+                    
+                    // Generate Unique Username
+                    const username = generateUsername(name, sessionNinjas);
+                    
+                    // Check if name already exists (Prevent double import of same person)
+                    // We check if a ninja with this NAME already exists, if so skip.
+                    // If you want to allow duplicate names (e.g. two John Smiths), remove this check.
+                    // But usually Roster Sync implies idempotency.
+                    const alreadyExists = sessionNinjas.some(n => n.name.toLowerCase() === name.toLowerCase());
+
+                    if (!alreadyExists) { 
+                        const newNinja = { 
+                            name: name, // Store Full Name (formatName handles display)
+                            username: username, // Store Generated Login
+                            points: 0, 
+                            belt: 'White', 
+                            createdAt: Date.now() 
+                        }; 
+                        
+                        if (db) { db.collection("leaderboard").add(newNinja); } 
+                        else { leaderboardData.push({id: "local_n_" + Date.now() + Math.random(), ...newNinja}); } 
+                        
+                        sessionNinjas.push(newNinja); // Add to local tracker for dup check
+                        addedCount++; 
+                    } 
+                } 
+            } 
+        }); 
+        
+        if (!db) { saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } 
+        showAlert("Sync Complete", `Added ${addedCount} new ninjas.`); 
+        fileInput.value = ''; 
+    }; 
+    reader.readAsText(file); 
+}
+
+function clearZeroPointNinjas() {
+    showConfirm("Remove all ninjas with 0 points?", () => {
+        if(db) {
+            // Firestore deletion requires individual deletes
+            // BE CAREFUL: This causes many writes.
+            const batch = db.batch();
+            let count = 0;
+            leaderboardData.forEach(n => {
+                if(n.points === 0) {
+                    const ref = db.collection("leaderboard").doc(n.id);
+                    batch.delete(ref);
+                    count++;
+                }
+            });
+            batch.commit().then(() => showAlert("Cleared", `Removed ${count} entries.`));
+        } else {
+            const before = leaderboardData.length;
+            leaderboardData = leaderboardData.filter(n => n.points > 0);
+            const diff = before - leaderboardData.length;
+            saveLocal('cn_leaderboard', leaderboardData);
+            renderLeaderboard();
+            showAlert("Cleared", `Removed ${diff} entries.`);
+        }
+    });
+}
+
 function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
 function closeJamModal() { document.getElementById('jam-modal').style.display='none'; }
 function openGitHubUpload() { if (GITHUB_REPO_URL.includes("github.com")) window.open(GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main", '_blank'); else showAlert("Error", "Configure GITHUB_REPO_URL"); }
