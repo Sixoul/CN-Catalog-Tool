@@ -1,12 +1,14 @@
+console.log("DASHBOARD SCRIPT STARTING...");
+
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.5 - Stable Version (Uncompacted)
+ * v4.6 - Syntax Verified & Fixed
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.5";
+const APP_VERSION = "4.6";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -97,6 +99,7 @@ function generateUsername(fullName, existingData) {
     let candidate = base;
     let counter = 1;
 
+    // Check collision against DB AND currently generated list
     const isTaken = (u) => existingData.some(n => (n.username || "").toLowerCase() === u);
 
     while (isTaken(candidate)) {
@@ -552,7 +555,7 @@ function approveRequest(id) {
 function deleteRequest(id) { 
     showConfirm("Delete Request?", () => { 
         if(db) db.collection("requests").doc(id).delete(); 
-        else { requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
+        else { requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_requests', requestsData); renderAdminLists(); renderAdminRequests(); } 
     }); 
 }
 
@@ -736,7 +739,6 @@ function processCSVFile() {
         const lines = text.split('\n'); 
         let addedCount = 0; 
         
-        // Track current session adds to prevent internal duplicates
         let sessionNinjas = [...leaderboardData]; 
 
         lines.forEach(line => { 
@@ -807,6 +809,7 @@ function handleLogoClick() { if(window.innerWidth < 768) return; clickCount++; c
 
 // --- INITIALIZATION ---
 window.onload = function() { 
+    console.log("Window loaded. Initializing...");
     const storedVer = localStorage.getItem('cn_app_version'); 
     const msgEl = document.getElementById('login-version-msg'); 
     if (storedVer !== APP_VERSION) { 
