@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.7 - Full Fix (Roster, CSV, Login)
+ * v4.8 - Fixes for Login, CSV, and Roster
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.7";
+const APP_VERSION = "4.8";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -32,7 +32,7 @@ const DEFAULT_FILAMENTS = [
     "Elegoo Burgundy Red", "PLA-CF Burgundy Red", "Polylite PETG Gray"
 ];
 
-// State Variables
+// State
 let db = null;
 let auth = null;
 let currentUser = null;
@@ -57,7 +57,7 @@ let clickCount = 0;
 let clickTimer;
 let selectedVariantIdx = 0;
 
-// Default Mock Data
+// Mock Data
 const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge: "SOON" }];
 const defaultRules = [{ id: "r1", title: "General", desc: "Respect the Dojo equipment.", penalty: "-1 Coin" }];
 const defaultCoins = [{ id: "c1", task: "Wear Uniform", val: "+1", type: "silver" }];
@@ -739,7 +739,6 @@ function processCSVFile() {
         const lines = text.split('\n'); 
         let addedCount = 0; 
         
-        // Track current session adds to prevent internal duplicates
         let sessionNinjas = [...leaderboardData]; 
 
         lines.forEach(line => { 
@@ -863,3 +862,5 @@ function subscribeToData() {
         refreshAll(); 
     } 
 }
+
+console.log("DASHBOARD SCRIPT LOADED SUCCESSFULLY");
