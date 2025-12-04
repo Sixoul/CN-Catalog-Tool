@@ -208,7 +208,7 @@ function attemptNinjaLogin() {
         enterDashboard(); 
     } else { 
         document.getElementById('login-error-msg').style.display = 'block'; 
-        document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. kane.leung)'; 
+        document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. firstName.lastName)'; 
     } 
 }
 
