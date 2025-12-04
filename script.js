@@ -2,7 +2,7 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.12 - Robust CSV Parsing (Fixes Date/Username Shift)
+ * v4.12 - Fixed Premium Request Error & CSV Parsing
  */
 
 /* ==========================================================================
@@ -76,8 +76,10 @@ function formatName(name) {
     const parts = clean.split(' ').filter(p => p.length > 0);
     if (parts.length === 0) return 'Ninja';
     
+    // Capitalize First Name
     const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
     
+    // Last Initial (if exists)
     let lastInitial = "";
     if (parts.length > 1) {
         lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + ".";
@@ -103,7 +105,7 @@ function generateUsername(baseName, existingData) {
     return candidate;
 }
 
-// ROBUST CSV PARSER (Handles "Value, With, Commas" correctly)
+// ROBUST CSV PARSER (Handles quoted values with commas)
 function parseCSVLine(text) {
     let results = [];
     let entry = [];
@@ -122,7 +124,7 @@ function parseCSVLine(text) {
         }
     }
     results.push(entry.join(''));
-    return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); // Clean quotes
+    return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); 
 }
 
 function formatCostDisplay(costVal) {
@@ -452,7 +454,6 @@ function renderAdminLbPreview() {
     const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); 
     if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } 
     sorted.forEach((ninja, index) => { 
-        // Display Name + (username)
         const u = ninja.username ? ` <span style="font-size:0.7rem; color:#aaa;">(${ninja.username})</span>` : '';
         c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${formatName(ninja.name)}${u}</div><div class="admin-lb-points">${ninja.points}</div></div>`; 
     }); 
@@ -462,6 +463,38 @@ function renderAdminLbPreview() {
 /* ==========================================================================
    6. ACTIONS & LOGIC
    ========================================================================== */
+// FIXED submitRequest Function
+function submitRequest() { 
+    const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
+    if(!name) return showAlert("Error","Name required"); 
+    
+    // Safely get item name or fallback
+    let finalItemName = currentRequestItem ? currentRequestItem.name : "Unknown Item";
+    let details = ""; 
+
+    if (currentRequestItem && currentRequestItem.category === 'custom') { 
+        const url = document.getElementById('req-url').value; 
+        const color = document.getElementById('req-color').value; 
+        if(!url) return showAlert("Error", "Tinkercad Link required"); 
+        details = `Color: ${color} | Link: ${url}`; 
+    } 
+    else if (currentRequestItem && currentRequestItem.category === 'premium') { 
+        // Safely check for variations
+        if (currentRequestItem.variations && currentRequestItem.variations[selectedVariantIdx]) {
+            const v = currentRequestItem.variations[selectedVariantIdx]; 
+            details = `Variant: ${v.name}`; 
+        } else {
+            details = "Variant: Default"; // Fallback if no variations exist
+        }
+    }
+    
+    const req = { name, item: finalItemName, details, status: "Waiting for Payment", createdAt: Date.now() }; 
+    if(db) { db.collection("requests").add(req); } 
+    else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
+    
+    closeReqModal(); showAlert("Sent!", "Please pay the Sensei to start your print."); 
+}
+
 function initRequest(id) {
     currentRequestItem = catalogData.find(x => x.id === id);
     if(!currentRequestItem) return;
@@ -523,29 +556,6 @@ function updatePremiumPreview(idx) {
     const mainImg = document.querySelector('#req-img-container img'); 
     if(item.image) mainImg.src = item.image; 
     document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); 
-}
-
-function submitRequest() { 
-    const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
-    if(!name) return showAlert("Error","Name required"); 
-    
-    let details = ""; let finalItemName = currentRequestItem.name;
-    if (currentRequestItem.category === 'custom') { 
-        const url = document.getElementById('req-url').value; 
-        const color = document.getElementById('req-color').value; 
-        if(!url) return showAlert("Error", "Tinkercad Link required"); 
-        details = `Color: ${color} | Link: ${url}`; 
-    } 
-    else if (currentRequestItem.category === 'premium') { 
-        const v = currentRequestItem.variations[selectedVariantIdx]; 
-        details = `Variant: ${v.name}`; 
-    }
-    
-    const req = { name, item: finalItemName, details, status: "Waiting for Payment", createdAt: Date.now() }; 
-    if(db) { db.collection("requests").add(req); } 
-    else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
-    
-    closeReqModal(); showAlert("Sent!", "Please pay the Sensei to start your print."); 
 }
 
 function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
@@ -794,8 +804,6 @@ function processCSVFile() {
             
             // Robust Split
             const parts = parseCSVLine(line);
-            
-            // Helper to safely get value by index
             const getVal = (idx) => (idx !== -1 && idx < parts.length) ? parts[idx] : "";
 
             const fName = getVal(idxFirst);
