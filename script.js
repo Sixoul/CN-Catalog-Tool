@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.13 - Premium Color Selection Feature
+ * v4.14 - Unified Request Modal (All items open modal)
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.13";
+const APP_VERSION = "4.14";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -208,7 +208,7 @@ function attemptNinjaLogin() {
         enterDashboard(); 
     } else { 
         document.getElementById('login-error-msg').style.display = 'block'; 
-        document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. firstName.lastName)'; 
+        document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. kane.leung)'; 
     } 
 }
 
@@ -468,14 +468,7 @@ function initRequest(id) {
     currentRequestItem = catalogData.find(x => x.id === id);
     if(!currentRequestItem) return;
     
-    if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') {
-        const today = new Date().toDateString();
-        const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] };
-        if (localRec.date !== today) { localRec.date = today; localRec.ids = []; }
-        if (localRec.ids.includes(id)) { showAlert("Notice", "You already requested this today."); return; }
-        if (localRec.ids.length >= 3) { showAlert("Limit Reached", "Max 3 requests per day."); return; }
-        incrementInterest(id, localRec); return;
-    }
+    // UNIFIED MODAL FOR ALL ITEMS (Removed auto-submit logic)
     
     document.getElementById('req-item-name').innerText = currentRequestItem.name;
     const container = document.getElementById('req-dynamic-fields');
@@ -514,7 +507,6 @@ function initRequest(id) {
             vars.forEach((v, idx) => { const thumb = document.createElement('div'); thumb.className = idx === 0 ? 'req-thumb active' : 'req-thumb'; thumb.onclick = () => { document.getElementById('req-variant').selectedIndex = idx; updatePremiumPreview(idx); }; thumb.innerHTML = `<img src="${v.image || ''}">`; gallery.appendChild(thumb); });
         }
         
-        // NEW: Premium Color Selection Logic
         if (currentRequestItem.colorSelection) {
             const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:';
             labelCol.style.marginTop = '10px';
@@ -544,26 +536,39 @@ function submitRequest() {
     const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
     if(!name) return showAlert("Error","Name required"); 
     
-    let finalItemName = currentRequestItem ? currentRequestItem.name : "Unknown Item";
+    // STANDARD / LIMITED LOGIC (Limit Checks & Interest Count)
+    if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') {
+        const today = new Date().toDateString();
+        const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] };
+        
+        if (localRec.date !== today) { localRec.date = today; localRec.ids = []; }
+        if (localRec.ids.includes(currentRequestItem.id)) { showAlert("Notice", "You already requested this today."); return; }
+        if (localRec.ids.length >= 3) { showAlert("Limit Reached", "Max 3 requests per day."); return; }
+        
+        incrementInterest(currentRequestItem.id, localRec);
+        closeReqModal();
+        return; 
+    }
+
+    // PREMIUM / CUSTOM LOGIC (Full Request Ticket)
+    let finalItemName = currentRequestItem.name;
     let details = ""; 
 
-    if (currentRequestItem && currentRequestItem.category === 'custom') { 
+    if (currentRequestItem.category === 'custom') { 
         const url = document.getElementById('req-url').value; 
         const color = document.getElementById('req-color').value; 
         if(!url) return showAlert("Error", "Tinkercad Link required"); 
         details = `Color: ${color} | Link: ${url}`; 
     } 
-    else if (currentRequestItem && currentRequestItem.category === 'premium') { 
+    else if (currentRequestItem.category === 'premium') { 
         let variantsPart = "";
         let colorPart = "";
 
-        // Variant Logic
         if (currentRequestItem.variations && currentRequestItem.variations[selectedVariantIdx]) {
             const v = currentRequestItem.variations[selectedVariantIdx]; 
             variantsPart = `Variant: ${v.name}`; 
         }
 
-        // Color Logic (New)
         if (currentRequestItem.colorSelection) {
             const colorEl = document.getElementById('req-prem-color');
             if (colorEl && colorEl.value) {
@@ -571,7 +576,6 @@ function submitRequest() {
             }
         }
 
-        // Combine parts
         if (variantsPart && colorPart) details = `${variantsPart} | ${colorPart}`;
         else if (variantsPart) details = variantsPart;
         else if (colorPart) details = colorPart;
@@ -642,8 +646,8 @@ function showAddCatModal() {
     document.getElementById('ce-img').value=''; document.getElementById('ce-desc').value=''; 
     document.getElementById('ce-visible').checked=true; document.getElementById('ce-category').value='standard'; 
     document.getElementById('ce-variants-list').innerHTML = ''; 
-    document.getElementById('ce-prem-color-check').checked = false; // Reset color check
-    document.getElementById('ce-prem-color-fee').value = ''; // Reset fee
+    document.getElementById('ce-prem-color-check').checked = false; 
+    document.getElementById('ce-prem-color-fee').value = ''; 
     document.getElementById('ce-prem-fee-wrap').style.display = 'none';
     
     toggleCatOptions('standard'); document.getElementById('cat-edit-modal').style.display='flex'; 
@@ -664,11 +668,10 @@ function editCatItem(id) {
     const catSelect = document.getElementById('ce-category'); catSelect.value = item.category || 'standard'; 
     toggleCatOptions(item.category); 
     if(item.colorFee) {
-        document.getElementById('ce-color-fee').value = item.colorFee; // For Custom Print
-        document.getElementById('ce-prem-color-fee').value = item.colorFee; // For Premium
+        document.getElementById('ce-color-fee').value = item.colorFee; 
+        document.getElementById('ce-prem-color-fee').value = item.colorFee; 
     }
     
-    // Populate Premium Color Options
     if(item.category === 'premium') {
         const hasColor = item.colorSelection === true;
         document.getElementById('ce-prem-color-check').checked = hasColor;
@@ -695,7 +698,6 @@ function saveCatItem() {
             if(vName) variations.push({name: vName, image: vImg});
         });
         
-        // Save Color Options
         colorSelection = document.getElementById('ce-prem-color-check').checked;
         if(colorSelection) {
             colorFee = document.getElementById('ce-prem-color-fee').value;
