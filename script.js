@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.14 - Unified Request Modal (All items open modal)
+ * v4.15 - Strict Category Logic (Interest vs Ticket)
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.14";
+const APP_VERSION = "4.15";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -103,23 +103,15 @@ function generateUsername(baseName, existingData) {
     return candidate;
 }
 
-// ROBUST CSV PARSER
 function parseCSVLine(text) {
     let results = [];
     let entry = [];
     let inQuote = false;
-    
     for (let i = 0; i < text.length; i++) {
         let char = text[i];
-        
-        if (char === '"') {
-            inQuote = !inQuote;
-        } else if (char === ',' && !inQuote) {
-            results.push(entry.join(''));
-            entry = [];
-        } else {
-            entry.push(char);
-        }
+        if (char === '"') { inQuote = !inQuote; } 
+        else if (char === ',' && !inQuote) { results.push(entry.join('')); entry = []; } 
+        else { entry.push(char); }
     }
     results.push(entry.join(''));
     return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); 
@@ -403,7 +395,12 @@ function renderAdminInterest() {
         st.sort((a, b) => b.interest - a.interest); 
         st.forEach(s => { 
             let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`; 
-            intList.innerHTML += `<div class="interest-card-square"><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`; 
+            
+            // HIGHLIGHT LIMITED ITEMS
+            let extraClass = s.category === 'limited' ? 'style="border:1px solid #e74c3c;"' : '';
+            let namePrefix = s.category === 'limited' ? '<span style="color:#e74c3c;font-size:0.7rem;">[LTD]</span> ' : '';
+
+            intList.innerHTML += `<div class="interest-card-square" ${extraClass}><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${namePrefix}${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`; 
         }); 
     } 
 }
@@ -468,8 +465,7 @@ function initRequest(id) {
     currentRequestItem = catalogData.find(x => x.id === id);
     if(!currentRequestItem) return;
     
-    // UNIFIED MODAL FOR ALL ITEMS (Removed auto-submit logic)
-    
+    // UNIFIED MODAL - ALL ITEMS OPEN HERE FIRST
     document.getElementById('req-item-name').innerText = currentRequestItem.name;
     const container = document.getElementById('req-dynamic-fields');
     const gallery = document.getElementById('req-gallery');
@@ -494,6 +490,7 @@ function initRequest(id) {
         container.appendChild(labelCol); container.appendChild(select);
     } 
     else if (currentRequestItem.category === 'premium') {
+        // Variant Select
         if (currentRequestItem.variations && currentRequestItem.variations.length > 0) {
             selectedVariantIdx = 0;
             const vars = currentRequestItem.variations;
@@ -507,6 +504,7 @@ function initRequest(id) {
             vars.forEach((v, idx) => { const thumb = document.createElement('div'); thumb.className = idx === 0 ? 'req-thumb active' : 'req-thumb'; thumb.onclick = () => { document.getElementById('req-variant').selectedIndex = idx; updatePremiumPreview(idx); }; thumb.innerHTML = `<img src="${v.image || ''}">`; gallery.appendChild(thumb); });
         }
         
+        // Color Select
         if (currentRequestItem.colorSelection) {
             const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:';
             labelCol.style.marginTop = '10px';
@@ -532,11 +530,12 @@ function updatePremiumPreview(idx) {
     document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); 
 }
 
+// STRICT SUBMISSION LOGIC
 function submitRequest() { 
     const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
     if(!name) return showAlert("Error","Name required"); 
     
-    // STANDARD / LIMITED LOGIC (Limit Checks & Interest Count)
+    // PATH 1: STANDARD / LIMITED -> INTEREST TRACKER
     if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') {
         const today = new Date().toDateString();
         const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] };
@@ -550,7 +549,7 @@ function submitRequest() {
         return; 
     }
 
-    // PREMIUM / CUSTOM LOGIC (Full Request Ticket)
+    // PATH 2: CUSTOM / PREMIUM -> PRINT QUEUE
     let finalItemName = currentRequestItem.name;
     let details = ""; 
 
