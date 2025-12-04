@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.12 - Fixed Premium Request Error & CSV Parsing
+ * v4.13 - Premium Color Selection Feature
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.12";
+const APP_VERSION = "4.13";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -76,10 +76,8 @@ function formatName(name) {
     const parts = clean.split(' ').filter(p => p.length > 0);
     if (parts.length === 0) return 'Ninja';
     
-    // Capitalize First Name
     const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
     
-    // Last Initial (if exists)
     let lastInitial = "";
     if (parts.length > 1) {
         lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + ".";
@@ -105,7 +103,7 @@ function generateUsername(baseName, existingData) {
     return candidate;
 }
 
-// ROBUST CSV PARSER (Handles quoted values with commas)
+// ROBUST CSV PARSER
 function parseCSVLine(text) {
     let results = [];
     let entry = [];
@@ -332,7 +330,9 @@ function renderQueue() {
         else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
         else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } 
         
-        c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} <span style="opacity:0.6">| ${i.details}</span></p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; 
+        const detHtml = i.details ? `<span style="opacity:0.6">| ${i.details}</span>` : '';
+
+        c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} ${detHtml}</p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; 
     }); 
 }
 
@@ -444,7 +444,8 @@ function renderAdminQueue() {
     activeQ.sort((a,b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt)); 
     activeQ.forEach(q => { 
         const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; 
-        qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span class="status-badge" style="color:white; background:#333;">${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${q.details ? '| '+q.details : ''}</div><div style="margin-top:5px; display:flex; gap:5px;"><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; 
+        const detHtml = q.details ? `| ${q.details}` : '';
+        qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span class="status-badge" style="color:white; background:#333;">${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${detHtml}</div><div style="margin-top:5px; display:flex; gap:5px;"><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; 
     }); 
 }
 
@@ -463,38 +464,6 @@ function renderAdminLbPreview() {
 /* ==========================================================================
    6. ACTIONS & LOGIC
    ========================================================================== */
-// FIXED submitRequest Function
-function submitRequest() { 
-    const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
-    if(!name) return showAlert("Error","Name required"); 
-    
-    // Safely get item name or fallback
-    let finalItemName = currentRequestItem ? currentRequestItem.name : "Unknown Item";
-    let details = ""; 
-
-    if (currentRequestItem && currentRequestItem.category === 'custom') { 
-        const url = document.getElementById('req-url').value; 
-        const color = document.getElementById('req-color').value; 
-        if(!url) return showAlert("Error", "Tinkercad Link required"); 
-        details = `Color: ${color} | Link: ${url}`; 
-    } 
-    else if (currentRequestItem && currentRequestItem.category === 'premium') { 
-        // Safely check for variations
-        if (currentRequestItem.variations && currentRequestItem.variations[selectedVariantIdx]) {
-            const v = currentRequestItem.variations[selectedVariantIdx]; 
-            details = `Variant: ${v.name}`; 
-        } else {
-            details = "Variant: Default"; // Fallback if no variations exist
-        }
-    }
-    
-    const req = { name, item: finalItemName, details, status: "Waiting for Payment", createdAt: Date.now() }; 
-    if(db) { db.collection("requests").add(req); } 
-    else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
-    
-    closeReqModal(); showAlert("Sent!", "Please pay the Sensei to start your print."); 
-}
-
 function initRequest(id) {
     currentRequestItem = catalogData.find(x => x.id === id);
     if(!currentRequestItem) return;
@@ -544,6 +513,19 @@ function initRequest(id) {
             gallery.style.display = 'flex';
             vars.forEach((v, idx) => { const thumb = document.createElement('div'); thumb.className = idx === 0 ? 'req-thumb active' : 'req-thumb'; thumb.onclick = () => { document.getElementById('req-variant').selectedIndex = idx; updatePremiumPreview(idx); }; thumb.innerHTML = `<img src="${v.image || ''}">`; gallery.appendChild(thumb); });
         }
+        
+        // NEW: Premium Color Selection Logic
+        if (currentRequestItem.colorSelection) {
+            const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:';
+            labelCol.style.marginTop = '10px';
+            if(currentRequestItem.colorFee && parseInt(currentRequestItem.colorFee) > 0) {
+                labelCol.innerHTML += ` <span style="color:#e74c3c; font-size:0.8rem;">(+${currentRequestItem.colorFee} Gold Fee)</span>`;
+            }
+            const select = document.createElement('select'); select.id = 'req-prem-color'; select.className = 'req-input';
+            const optRand = document.createElement('option'); optRand.value = "Random"; optRand.innerText = "Random (No Extra Fee)"; select.appendChild(optRand);
+            filamentData.forEach(color => { const opt = document.createElement('option'); opt.value = color; opt.innerText = color; select.appendChild(opt); });
+            container.appendChild(labelCol); container.appendChild(select);
+        }
     }
     
     if(currentUser && currentUser.name !== "Sensei") { const nameInput = document.getElementById('req-ninja-name'); if(nameInput) nameInput.value = currentUser.name; }
@@ -556,6 +538,51 @@ function updatePremiumPreview(idx) {
     const mainImg = document.querySelector('#req-img-container img'); 
     if(item.image) mainImg.src = item.image; 
     document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); 
+}
+
+function submitRequest() { 
+    const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
+    if(!name) return showAlert("Error","Name required"); 
+    
+    let finalItemName = currentRequestItem ? currentRequestItem.name : "Unknown Item";
+    let details = ""; 
+
+    if (currentRequestItem && currentRequestItem.category === 'custom') { 
+        const url = document.getElementById('req-url').value; 
+        const color = document.getElementById('req-color').value; 
+        if(!url) return showAlert("Error", "Tinkercad Link required"); 
+        details = `Color: ${color} | Link: ${url}`; 
+    } 
+    else if (currentRequestItem && currentRequestItem.category === 'premium') { 
+        let variantsPart = "";
+        let colorPart = "";
+
+        // Variant Logic
+        if (currentRequestItem.variations && currentRequestItem.variations[selectedVariantIdx]) {
+            const v = currentRequestItem.variations[selectedVariantIdx]; 
+            variantsPart = `Variant: ${v.name}`; 
+        }
+
+        // Color Logic (New)
+        if (currentRequestItem.colorSelection) {
+            const colorEl = document.getElementById('req-prem-color');
+            if (colorEl && colorEl.value) {
+                colorPart = `Color: ${colorEl.value}`;
+            }
+        }
+
+        // Combine parts
+        if (variantsPart && colorPart) details = `${variantsPart} | ${colorPart}`;
+        else if (variantsPart) details = variantsPart;
+        else if (colorPart) details = colorPart;
+        else details = "";
+    }
+    
+    const req = { name, item: finalItemName, details, status: "Waiting for Payment", createdAt: Date.now() }; 
+    if(db) { db.collection("requests").add(req); } 
+    else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } 
+    
+    closeReqModal(); showAlert("Sent!", "Please pay the Sensei to start your print."); 
 }
 
 function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
@@ -615,6 +642,10 @@ function showAddCatModal() {
     document.getElementById('ce-img').value=''; document.getElementById('ce-desc').value=''; 
     document.getElementById('ce-visible').checked=true; document.getElementById('ce-category').value='standard'; 
     document.getElementById('ce-variants-list').innerHTML = ''; 
+    document.getElementById('ce-prem-color-check').checked = false; // Reset color check
+    document.getElementById('ce-prem-color-fee').value = ''; // Reset fee
+    document.getElementById('ce-prem-fee-wrap').style.display = 'none';
+    
     toggleCatOptions('standard'); document.getElementById('cat-edit-modal').style.display='flex'; 
 }
 
@@ -632,8 +663,18 @@ function editCatItem(id) {
     document.getElementById('ce-desc').value = item.desc || ''; document.getElementById('ce-visible').checked = item.visible !== false; 
     const catSelect = document.getElementById('ce-category'); catSelect.value = item.category || 'standard'; 
     toggleCatOptions(item.category); 
-    if(item.colorFee) document.getElementById('ce-color-fee').value = item.colorFee;
+    if(item.colorFee) {
+        document.getElementById('ce-color-fee').value = item.colorFee; // For Custom Print
+        document.getElementById('ce-prem-color-fee').value = item.colorFee; // For Premium
+    }
     
+    // Populate Premium Color Options
+    if(item.category === 'premium') {
+        const hasColor = item.colorSelection === true;
+        document.getElementById('ce-prem-color-check').checked = hasColor;
+        document.getElementById('ce-prem-fee-wrap').style.display = hasColor ? 'block' : 'none';
+    }
+
     document.getElementById('ce-variants-list').innerHTML = '';
     if (item.variations) { item.variations.forEach(v => addVariantRow(v.name, v.image)); }
     document.getElementById('cat-edit-modal').style.display='flex'; 
@@ -645,18 +686,30 @@ function saveCatItem() {
     const d = document.getElementById('ce-desc').value; const vis = document.getElementById('ce-visible').checked; 
     const cat = document.getElementById('ce-category').value; 
     
-    let variations = []; let colorFee = 0;
+    let variations = []; let colorFee = 0; let colorSelection = false;
+
     if (cat === 'premium') { 
         document.querySelectorAll('#ce-variants-list .variant-row').forEach(row => {
             const vName = row.querySelector('.var-name').value.trim();
             const vImg = row.querySelector('.var-img').value.trim();
             if(vName) variations.push({name: vName, image: vImg});
         });
+        
+        // Save Color Options
+        colorSelection = document.getElementById('ce-prem-color-check').checked;
+        if(colorSelection) {
+            colorFee = document.getElementById('ce-prem-color-fee').value;
+        }
     }
+    
     if (cat === 'custom') { colorFee = document.getElementById('ce-color-fee').value; }
     
     if(n) { 
-        const data = { name:n, cost:c, tier:t, icon:'fa-cube', category:cat, desc: d, image:im, visible:vis, variations: variations, colorFee: colorFee }; 
+        const data = { 
+            name:n, cost:c, tier:t, icon:'fa-cube', category:cat, desc: d, image:im, visible:vis, 
+            variations: variations, colorFee: colorFee, colorSelection: colorSelection 
+        }; 
+        
         if(db) { 
             if(editingCatId) db.collection("catalog").doc(editingCatId).update(data); 
             else db.collection("catalog").add({...data, createdAt: Date.now(), interest: 0}); 
@@ -720,7 +773,10 @@ function renderQueueHistory() {
     const h = document.getElementById('history-content'); if(!h) return; h.innerHTML = ''; 
     const p = queueData.filter(q => q.status === 'Picked Up'); 
     if(p.length === 0) h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>'; 
-    else p.forEach(q => h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`); 
+    else p.forEach(q => {
+        const detHtml = q.details ? ` - ${q.details}` : '';
+        h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} ${detHtml} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`;
+    }); 
 }
 
 function adminSearchNinja() { 
