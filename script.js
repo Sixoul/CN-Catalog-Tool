@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.11 - CSV Column Mapping & Username Generation
+ * v4.12 - Robust CSV Parsing (Fixes Date/Username Shift)
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.11";
+const APP_VERSION = "4.12";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -70,17 +70,14 @@ const mockLeaderboard = [{ id: "l1", name: "Asher C.", points: 1250, belt: "Blue
    ========================================================================== */
 function formatName(name) {
     if (!name) return 'Ninja';
-    // If name is already formatted like "Kane L.", return it.
     if (name.includes('.') && name.split(' ').length === 2 && name.split(' ')[1].length === 2) return name;
 
     const clean = name.replace(/\./g, ' '); 
     const parts = clean.split(' ').filter(p => p.length > 0);
     if (parts.length === 0) return 'Ninja';
     
-    // Capitalize First Name
     const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
     
-    // Last Initial (if exists)
     let lastInitial = "";
     if (parts.length > 1) {
         lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + ".";
@@ -90,14 +87,12 @@ function formatName(name) {
 }
 
 function generateUsername(baseName, existingData) {
-    // Expects "Kane.Leung" style base string
     let clean = baseName.replace(/[^a-zA-Z0-9.]/g, '').toLowerCase(); 
     if (!clean) clean = "ninja" + Math.floor(Math.random() * 1000);
 
     let candidate = clean;
     let counter = 1;
 
-    // Check collision against DB
     const isTaken = (u) => existingData.some(n => (n.username || "").toLowerCase() === u);
 
     while (isTaken(candidate)) {
@@ -106,6 +101,28 @@ function generateUsername(baseName, existingData) {
     }
     
     return candidate;
+}
+
+// ROBUST CSV PARSER (Handles "Value, With, Commas" correctly)
+function parseCSVLine(text) {
+    let results = [];
+    let entry = [];
+    let inQuote = false;
+    
+    for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        
+        if (char === '"') {
+            inQuote = !inQuote;
+        } else if (char === ',' && !inQuote) {
+            results.push(entry.join(''));
+            entry = [];
+        } else {
+            entry.push(char);
+        }
+    }
+    results.push(entry.join(''));
+    return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); // Clean quotes
 }
 
 function formatCostDisplay(costVal) {
@@ -142,10 +159,8 @@ function formatCoinBreakdown(valStr) {
 }
 
 function getBeltColor(belt) { 
-    // Handle special CSV cases
     const b = (belt || 'white').toLowerCase();
-    if(b.includes('jr')) return 'var(--belt-white)'; // JR usually white belt visually or separate
-    
+    if(b.includes('jr')) return 'var(--belt-white)'; 
     const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; 
     return map[b] || 'var(--belt-white)'; 
 }
@@ -182,10 +197,8 @@ function attemptNinjaLogin() {
     const input = document.getElementById('login-username').value.trim().toLowerCase(); 
     if(!input) return; 
     
-    // Check USERNAME first
     const u = leaderboardData.find(l => 
         (l.username && l.username.toLowerCase() === input) || 
-        // Fallback for old data or manual adds without username
         (!l.username && l.name.toLowerCase() === input)
     ); 
 
@@ -317,7 +330,6 @@ function renderQueue() {
         else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
         else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } 
         
-        // Display formatted name in queue
         c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} <span style="opacity:0.6">| ${i.details}</span></p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; 
     }); 
 }
@@ -332,10 +344,8 @@ function renderLeaderboard() {
     if(s[0]) v.push({...s[0], rank: 1}); 
     if(s[2]) v.push({...s[2], rank: 3}); 
     
-    // Top 3 (Podium) - Show Formatted Name
     v.forEach(i => p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`); 
     
-    // Rest of List - Show Formatted Name
     s.slice(3).forEach((i,x) => l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${formatName(i.name)}</div><div class="lb-row-points">${i.points}</div></div>`); 
     
     renderAdminLbPreview(); 
@@ -761,8 +771,9 @@ function processCSVFile() {
         
         if (lines.length < 2) { showAlert("Error", "CSV is empty or missing headers."); return; }
 
-        // Parse Headers
-        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+        // Parse Headers using Robust Parser
+        const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+        
         const idxFirst = headers.indexOf('participant first name');
         const idxLast = headers.indexOf('participant last name');
         const idxRank = headers.indexOf('rank');
@@ -781,9 +792,11 @@ function processCSVFile() {
             const line = lines[i].trim();
             if (!line) continue;
             
-            // Basic Split
-            const parts = line.split(',');
-            const getVal = (idx) => (idx !== -1 && idx < parts.length) ? parts[idx].trim().replace(/^"|"$/g, '') : "";
+            // Robust Split
+            const parts = parseCSVLine(line);
+            
+            // Helper to safely get value by index
+            const getVal = (idx) => (idx !== -1 && idx < parts.length) ? parts[idx] : "";
 
             const fName = getVal(idxFirst);
             const lName = getVal(idxLast);
