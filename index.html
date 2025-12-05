@@ -141,16 +141,38 @@
         <div class="admin-top-bar"><i class="fa-solid fa-wrench"></i> SENSEI ADMIN VIEW</div>
         <div class="admin-layout">
             <div class="admin-nav">
-                <div id="nav-admin-home" class="admin-nav-btn active" onclick="showAdminSection('admin-home', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
-                <div id="nav-admin-roster" class="admin-nav-btn" onclick="showAdminSection('admin-roster', this)"><i class="fa-solid fa-users"></i> Roster</div>
-                <div id="nav-admin-lb" class="admin-nav-btn" onclick="showAdminSection('admin-lb', this)"><i class="fa-solid fa-medal"></i> Leaderboard</div>
-                <div id="nav-admin-jams" class="admin-nav-btn" onclick="showAdminSection('admin-jams', this)"><i class="fa-solid fa-trophy"></i> Jams</div>
-                <div id="nav-admin-games" class="admin-nav-btn" onclick="showAdminSection('admin-games', this)"><i class="fa-solid fa-gamepad"></i> Games</div>
-                <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)"><i class="fa-solid fa-cube"></i> Catalog</div>
-                <div id="nav-admin-queue" class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)"><i class="fa-solid fa-list"></i> Queue & Reqs</div>
-                <div style="flex-grow:1;"></div>
-                <div class="admin-nav-btn" onclick="logout()" style="color: #e74c3c;"><i class="fa-solid fa-door-open"></i> Logout</div>
-            </div>
+    <div id="nav-admin-home" class="admin-nav-btn active" onclick="showAdminSection('admin-home', this)">
+        <i class="fa-solid fa-house"></i> Dashboard
+    </div>
+    <div id="nav-admin-roster" class="admin-nav-btn" onclick="showAdminSection('admin-roster', this)">
+        <i class="fa-solid fa-users"></i> Roster
+    </div>
+    <div id="nav-admin-lb" class="admin-nav-btn" onclick="showAdminSection('admin-lb', this)">
+        <i class="fa-solid fa-medal"></i> Leaderboard
+    </div>
+    <div id="nav-admin-jams" class="admin-nav-btn" onclick="showAdminSection('admin-jams', this)">
+        <i class="fa-solid fa-trophy"></i> Jams
+    </div>
+    <div id="nav-admin-games" class="admin-nav-btn" onclick="showAdminSection('admin-games', this)">
+        <i class="fa-solid fa-gamepad"></i> Games
+    </div>
+    <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)">
+        <i class="fa-solid fa-cube"></i> Catalog
+    </div>
+    <div id="nav-admin-queue" class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)">
+        <i class="fa-solid fa-list"></i> Queue & Reqs
+    </div>
+    
+    <div style="flex-grow:1;"></div>
+    
+    <div class="admin-nav-btn" onclick="toggleAdminViewMode()" style="color: var(--color-home); border-top: 1px solid #333;">
+        <i class="fa-solid fa-user-ninja"></i> View as Ninja
+    </div>
+    
+    <div class="admin-nav-btn" onclick="logout()" style="color: #e74c3c;">
+        <i class="fa-solid fa-door-open"></i> Logout
+    </div>
+</div>
 
             <div class="admin-content">
                 <div id="admin-home" class="admin-section active">
