@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v5.1 - Game Jam Dynamic Colors
+ * v5.2 - Hero Image & Overlapping Text Box Layout
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "5.1";
+const APP_VERSION = "5.2";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -39,7 +39,7 @@ let currentUser = null;
 
 let newsData = [];
 let jamsData = [];
-let jamSubmissions = []; // Stores individual entries
+let jamSubmissions = [];
 let rulesData = [];
 let coinsData = [];
 let catalogData = [];
@@ -53,8 +53,8 @@ let currentRequestItem = null;
 let editingCatId = null;
 let editingId = null;
 let editingNinjaId = null;
-let editingJamId = null; // For Admin Jam Edit
-let currentJamSubmissionId = null; // For Ninja Submit
+let editingJamId = null;
+let currentJamSubmissionId = null;
 let showHistory = false;
 let clickCount = 0;
 let clickTimer;
@@ -106,18 +106,17 @@ function parseCSVLine(text) {
     return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); 
 }
 
-// DYNAMIC MARKDOWN: Accepts custom color
+// DYNAMIC MARKDOWN
 function parseMarkdown(text, customColor) {
     if(!text) return "";
     const color = customColor || '#f1c40f';
-    // Replaces **text** with styled span (Gold/Custom Color + Bold + Glow)
     return text.replace(/\*\*(.*?)\*\*/g, `<span style="color:${color}; font-weight:900; text-shadow:0 0 10px ${color}80;">$1</span>`);
 }
 
 function formatCostDisplay(costVal) {
     const cost = parseInt(costVal) || 0;
     if (cost === 0) return "Free";
-    if (cost % 5 === 0) { const obs = cost / 5; return `<span style="color:var(--coin-obsidian); font-weight:bold;">${obs} Obsidian Coin${obs > 1 ? 's' : ''}</span>`; }
+    if (cost % 5 === 0) { return `<span style="color:var(--coin-obsidian); font-weight:bold;">${cost/5} Obsidian Coin${cost/5 > 1 ? 's' : ''}</span>`; }
     if (cost > 5) { const obs = Math.floor(cost / 5); const gold = cost % 5; return `<span style="color:var(--coin-obsidian); font-weight:bold;">${obs} Obsidian</span> <span style="color:var(--coin-gold); font-weight:bold;">${gold} Gold</span>`; }
     return `<span style="color:var(--coin-gold); font-weight:bold;">${cost} Gold Coin${cost > 1 ? 's' : ''}</span>`;
 }
@@ -138,19 +137,12 @@ function formatCoinBreakdown(valStr) {
     return html;
 }
 
-function getBeltColor(belt) { 
-    const b = (belt || 'white').toLowerCase();
-    if(b.includes('jr')) return 'var(--belt-white)'; 
-    const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; 
-    return map[b] || 'var(--belt-white)'; 
-}
-
+function getBeltColor(belt) { const b = (belt || 'white').toLowerCase(); if(b.includes('jr')) return 'var(--belt-white)'; const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[b] || 'var(--belt-white)'; }
 function getIconClass(belt) { const b = (belt||'white').toLowerCase(); if(b.includes('robot')) return 'fa-robot'; if(b.includes('ai')) return 'fa-microchip'; if(b.includes('jr')) return 'fa-child'; return 'fa-user-ninja'; }
 function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 function showAlert(t, m) { document.getElementById('alert-title').innerText = t; document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
 function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText = m; const b = document.getElementById('confirm-yes-btn'); const n = b.cloneNode(true); b.parentNode.replaceChild(n, b); n.onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; cb(); }; document.getElementById('confirm-modal').style.display = 'flex'; }
 function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
-
 
 /* ==========================================================================
    3. AUTHENTICATION
@@ -161,14 +153,13 @@ function attemptAdminLogin() { const e = document.getElementById('admin-email').
 function loginAsAdmin() { currentUser = { name: "Sensei", isAdmin: true }; localStorage.setItem('cn_user', JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); }
 function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(auth) auth.signOut(); location.reload(); }
 
-
 /* ==========================================================================
    4. RENDERERS
    ========================================================================== */
 function enterDashboard() { document.getElementById('login-view').style.display = 'none'; document.getElementById('main-app').style.display = 'flex'; if(currentUser && currentUser.name) document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; if(currentUser && currentUser.isAdmin) document.getElementById('floating-admin-toggle').style.display = 'flex'; else document.getElementById('floating-admin-toggle').style.display = 'none'; refreshAll(); }
 function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
 
-// --- GAME JAMS & CAROUSEL LOGIC ---
+// --- NEW GAME JAM RENDERER (UPDATED LAYOUT) ---
 function renderJams() {
     const track = document.getElementById('jam-carousel-track');
     const pastGrid = document.getElementById('past-jams-grid');
@@ -195,13 +186,13 @@ function renderJams() {
     });
 
     if(activeJams.length === 0) {
-        track.innerHTML = '<div class="jam-slide" style="display:flex; align-items:center; justify-content:center;"><h2 style="color:#666;">No Active Events</h2></div>';
+        track.innerHTML = '<div class="jam-slide active" style="display:flex; align-items:center; justify-content:center; background:#111;"><h2 style="color:#666;">No Active Events</h2></div>';
     } else {
         activeJams.forEach((jam, idx) => {
             const isWinnerMode = jam.status === 'revealed';
-            const themeColor = jam.color || '#f1c40f'; // Use Custom Color
+            const themeColor = jam.color || '#f1c40f';
             
-            // WINNER OVERLAY (Dynamic Color)
+            // Winners Overlay
             let winnerHtml = '';
             if(isWinnerMode && jam.winners && jam.winners.length > 0) {
                 winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${themeColor}; text-shadow:0 0 20px ${themeColor}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
@@ -212,15 +203,22 @@ function renderJams() {
             }
 
             const activeClass = idx === carouselIndex ? 'active' : '';
+            
+            // NEW STRUCTURE: Slide > Hero Image + Content Box (Overlapping)
             track.innerHTML += `
-            <div class="jam-slide ${activeClass}" style="background-image: url('${jam.image || ''}');" onclick="openJamSubmission('${jam.id}', ${isWinnerMode})">
-                <div class="jam-content">
-                    <div class="jam-type-badge" style="background-color:${themeColor};">${jam.type || 'Game Jam'}</div>
-                    <div class="jam-dates">${jam.dates}</div>
-                    <h1 class="jam-header">${parseMarkdown(jam.header, themeColor)}</h1>
+            <div class="jam-slide ${activeClass}" onclick="openJamSubmission('${jam.id}', ${isWinnerMode})">
+                
+                <div class="jam-hero-image" style="background-image: url('${jam.image || ''}');"></div>
+                
+                <div class="jam-content-box">
+                    <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); background:${themeColor}; color:black; font-weight:bold; padding:4px 12px; border-radius:20px; font-size:0.8rem; text-transform:uppercase; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+                        ${jam.type || 'Game Jam'} | ${jam.dates}
+                    </div>
+                    <h1 class="jam-header" style="margin-top:10px;">${parseMarkdown(jam.header, themeColor)}</h1>
                     <p class="jam-desc">${jam.desc}</p>
                     <div class="jam-details" style="color:${themeColor};">${jam.details}</div>
                 </div>
+
                 ${winnerHtml}
             </div>`;
         });
@@ -255,184 +253,17 @@ function moveCarousel(dir) {
     slides[carouselIndex].classList.add('active');
 }
 
-function openJamSubmission(jamId, isWinnerView) {
-    if(isWinnerView) return; 
-    if(!currentUser) { showAlert("Log In", "Please log in to submit."); return; }
+// ... (KEEP ALL EXISTING LOGIC: initRequest, submitRequest, Admin Functions, etc.) ...
+// Just repeating the core logic below for file completeness
 
-    currentJamSubmissionId = jamId;
-    const jam = jamsData.find(j => j.id === jamId);
-    if(!jam) return;
-
-    document.getElementById('js-title').innerText = jam.title;
-    document.getElementById('js-title').style.color = jam.color || '#f1c40f'; // Dynamic Color
-    
-    // Style the submit button dynamically
-    const btn = document.querySelector('#jam-submit-modal .btn-blue');
-    if(btn) btn.style.background = jam.color || '#f1c40f';
-
-    document.getElementById('js-game-title').value = '';
-    document.getElementById('js-link').value = '';
-    document.getElementById('jam-submit-modal').style.display = 'flex';
-}
-
-function submitJamEntry() {
-    const title = document.getElementById('js-game-title').value;
-    const link = document.getElementById('js-link').value;
-    if(!title || !link) return showAlert("Error", "Title and Link required.");
-
-    const entry = {
-        jamId: currentJamSubmissionId,
-        ninjaName: currentUser.name,
-        username: currentUser.username || currentUser.name,
-        gameTitle: title,
-        link: link,
-        createdAt: Date.now()
-    };
-
-    if(db) { db.collection("jamSubmissions").add(entry); }
-    else { 
-        jamSubmissions.push({id:"local_sub_"+Date.now(), ...entry}); 
-        saveLocal('cn_jam_subs', jamSubmissions); 
-    }
-    
-    document.getElementById('jam-submit-modal').style.display = 'none';
-    showAlert("Success", "Good luck, Ninja!");
-}
-
-function openWinnerModal(jamId) {
-    const jam = jamsData.find(j => j.id === jamId);
-    if(!jam || !jam.winners || jam.winners.length === 0) return;
-    const w = jam.winners[0]; 
-    document.getElementById('win-game-title').innerText = w.gameTitle;
-    document.getElementById('win-game-title').style.color = jam.color || '#f1c40f';
-    document.getElementById('win-ninja').innerText = `By ${formatName(w.ninjaName)}`;
-    const linkBtn = document.getElementById('win-link');
-    linkBtn.href = w.link;
-    linkBtn.style.background = jam.color || '#f1c40f';
-    document.getElementById('winner-modal').style.display = 'flex';
-}
-
-// --- ADMIN JAM FUNCTIONS ---
-function openAdminJamModal(id=null) {
-    editingJamId = id;
-    document.getElementById('jam-submissions-area').style.display = 'none'; 
-    
-    if(id) {
-        const j = jamsData.find(x => x.id === id);
-        document.getElementById('jam-modal-header').innerText = "Edit Jam";
-        document.getElementById('jam-title').value = j.title;
-        document.getElementById('jam-dates').value = j.dates;
-        document.getElementById('jam-type').value = j.type;
-        document.getElementById('jam-image').value = j.image;
-        document.getElementById('jam-header').value = j.header;
-        document.getElementById('jam-desc').value = j.desc;
-        document.getElementById('jam-details').value = j.details;
-        document.getElementById('jam-color').value = j.color || '#f1c40f'; // Populate Color
-        
-        document.getElementById('jam-submissions-area').style.display = 'block';
-        renderJamSubmissionsList(id, j.winners || []);
-    } else {
-        document.getElementById('jam-modal-header').innerText = "Create Jam";
-        document.getElementById('jam-title').value = '';
-        document.getElementById('jam-dates').value = '';
-        document.getElementById('jam-image').value = '';
-        document.getElementById('jam-header').value = '';
-        document.getElementById('jam-desc').value = '';
-        document.getElementById('jam-details').value = '';
-        document.getElementById('jam-color').value = '#f1c40f';
-    }
-    document.getElementById('jam-admin-modal').style.display = 'flex';
-}
-
-function saveJam() {
-    const data = {
-        title: document.getElementById('jam-title').value,
-        dates: document.getElementById('jam-dates').value,
-        type: document.getElementById('jam-type').value,
-        image: document.getElementById('jam-image').value,
-        header: document.getElementById('jam-header').value,
-        desc: document.getElementById('jam-desc').value,
-        details: document.getElementById('jam-details').value,
-        color: document.getElementById('jam-color').value, // Save Color
-        status: 'active' 
-    };
-
-    if(!data.title) return;
-
-    if(db) {
-        if(editingJamId) db.collection("jams").doc(editingJamId).update(data);
-        else db.collection("jams").add({...data, createdAt: Date.now()});
-    } else {
-        if(editingJamId) {
-            const idx = jamsData.findIndex(j=>j.id===editingJamId);
-            jamsData[idx] = {...jamsData[idx], ...data};
-        } else {
-            jamsData.push({id:"local_jam_"+Date.now(), ...data, createdAt:Date.now()});
-        }
-        saveLocal('cn_jams', jamsData);
-        renderJams();
-        renderAdminLists();
-    }
-    document.getElementById('jam-admin-modal').style.display = 'none';
-}
-
-function renderJamSubmissionsList(jamId, currentWinners) {
-    const list = document.getElementById('jam-subs-list');
-    list.innerHTML = '';
-    const subs = jamSubmissions.filter(s => s.jamId === jamId);
-    
-    if(subs.length === 0) { list.innerHTML = '<p style="color:#666;">No submissions yet.</p>'; return; }
-
-    subs.forEach(s => {
-        const isWinner = currentWinners.some(w => w.id === s.id);
-        const check = isWinner ? 'checked' : '';
-        list.innerHTML += `
-        <div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;">
-            <input type="checkbox" class="winner-check" value="${s.id}" ${check} style="margin-right:10px;">
-            <div style="flex-grow:1;">
-                <div style="color:white;">${s.ninjaName}</div>
-                <div style="color:#888; font-size:0.7rem;">${s.gameTitle}</div>
-            </div>
-            <a href="${s.link}" target="_blank" style="color:var(--color-jams); font-size:0.8rem;">Link</a>
-        </div>`;
-    });
-}
-
-function revealWinners() {
-    if(!editingJamId) return;
-    const checkboxes = document.querySelectorAll('.winner-check:checked');
-    const winnerIds = Array.from(checkboxes).map(c => c.value);
-    const winners = jamSubmissions.filter(s => winnerIds.includes(s.id));
-    
-    const update = { status: 'revealed', revealedAt: Date.now(), winners: winners };
-
-    if(db) { db.collection("jams").doc(editingJamId).update(update).then(() => showAlert("Success", "Winners Revealed!")); } 
-    else {
-        const idx = jamsData.findIndex(j=>j.id===editingJamId);
-        jamsData[idx] = {...jamsData[idx], ...update};
-        saveLocal('cn_jams', jamsData);
-        renderJams();
-        showAlert("Success", "Winners Revealed (Local)!");
-    }
-    document.getElementById('jam-admin-modal').style.display = 'none';
-}
-
-function renderAdminJamsList() {
-    const c = document.getElementById('admin-jams-list'); if(!c) return; c.innerHTML = '';
-    jamsData.forEach(j => {
-        // Admin List uses the custom color for the border/status
-        const color = j.color || '#2ecc71'; 
-        c.innerHTML += `
-        <div class="admin-list-wrapper" onclick="openAdminJamModal('${j.id}')" style="cursor:pointer;">
-            <div class="list-card" style="margin:0; border-left-color:${color};">
-                <div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div>
-                <div class="status-badge" style="color:${color}">${j.status || 'Active'}</div>
-            </div>
-        </div>`;
-    });
-}
-
-// ... (STANDARD RENDER FUNCTIONS UNCHANGED - Just ensuring they are present in the full file build)
+function openJamSubmission(jamId, isWinnerView) { if(isWinnerView) return; if(!currentUser) { showAlert("Log In", "Please log in to submit."); return; } currentJamSubmissionId = jamId; const jam = jamsData.find(j => j.id === jamId); if(!jam) return; document.getElementById('js-title').innerText = jam.title; document.getElementById('js-title').style.color = jam.color || '#f1c40f'; const btn = document.querySelector('#jam-submit-modal .btn-blue'); if(btn) btn.style.background = jam.color || '#f1c40f'; document.getElementById('js-game-title').value = ''; document.getElementById('js-link').value = ''; document.getElementById('jam-submit-modal').style.display = 'flex'; }
+function submitJamEntry() { const title = document.getElementById('js-game-title').value; const link = document.getElementById('js-link').value; if(!title || !link) return showAlert("Error", "Title and Link required."); const entry = { jamId: currentJamSubmissionId, ninjaName: currentUser.name, username: currentUser.username || currentUser.name, gameTitle: title, link: link, createdAt: Date.now() }; if(db) { db.collection("jamSubmissions").add(entry); } else { jamSubmissions.push({id:"local_sub_"+Date.now(), ...entry}); saveLocal('cn_jam_subs', jamSubmissions); } document.getElementById('jam-submit-modal').style.display = 'none'; showAlert("Success", "Good luck, Ninja!"); }
+function openWinnerModal(jamId) { const jam = jamsData.find(j => j.id === jamId); if(!jam || !jam.winners || jam.winners.length === 0) return; const w = jam.winners[0]; document.getElementById('win-game-title').innerText = w.gameTitle; document.getElementById('win-game-title').style.color = jam.color || '#f1c40f'; document.getElementById('win-ninja').innerText = `By ${formatName(w.ninjaName)}`; const linkBtn = document.getElementById('win-link'); linkBtn.href = w.link; linkBtn.style.background = jam.color || '#f1c40f'; document.getElementById('winner-modal').style.display = 'flex'; }
+function openAdminJamModal(id=null) { editingJamId = id; document.getElementById('jam-submissions-area').style.display = 'none'; if(id) { const j = jamsData.find(x => x.id === id); document.getElementById('jam-modal-header').innerText = "Edit Jam"; document.getElementById('jam-title').value = j.title; document.getElementById('jam-dates').value = j.dates; document.getElementById('jam-type').value = j.type; document.getElementById('jam-image').value = j.image; document.getElementById('jam-header').value = j.header; document.getElementById('jam-desc').value = j.desc; document.getElementById('jam-details').value = j.details; document.getElementById('jam-color').value = j.color || '#f1c40f'; document.getElementById('jam-submissions-area').style.display = 'block'; renderJamSubmissionsList(id, j.winners || []); } else { document.getElementById('jam-modal-header').innerText = "Create Jam"; document.getElementById('jam-title').value = ''; document.getElementById('jam-dates').value = ''; document.getElementById('jam-image').value = ''; document.getElementById('jam-header').value = ''; document.getElementById('jam-desc').value = ''; document.getElementById('jam-details').value = ''; document.getElementById('jam-color').value = '#f1c40f'; } document.getElementById('jam-admin-modal').style.display = 'flex'; }
+function saveJam() { const data = { title: document.getElementById('jam-title').value, dates: document.getElementById('jam-dates').value, type: document.getElementById('jam-type').value, image: document.getElementById('jam-image').value, header: document.getElementById('jam-header').value, desc: document.getElementById('jam-desc').value, details: document.getElementById('jam-details').value, color: document.getElementById('jam-color').value, status: 'active' }; if(!data.title) return; if(db) { if(editingJamId) db.collection("jams").doc(editingJamId).update(data); else db.collection("jams").add({...data, createdAt: Date.now()}); } else { if(editingJamId) { const idx = jamsData.findIndex(j=>j.id===editingJamId); jamsData[idx] = {...jamsData[idx], ...data}; } else { jamsData.push({id:"local_jam_"+Date.now(), ...data, createdAt:Date.now()}); } saveLocal('cn_jams', jamsData); renderJams(); renderAdminLists(); } document.getElementById('jam-admin-modal').style.display = 'none'; }
+function renderJamSubmissionsList(jamId, currentWinners) { const list = document.getElementById('jam-subs-list'); list.innerHTML = ''; const subs = jamSubmissions.filter(s => s.jamId === jamId); if(subs.length === 0) { list.innerHTML = '<p style="color:#666;">No submissions yet.</p>'; return; } subs.forEach(s => { const isWinner = currentWinners.some(w => w.id === s.id); const check = isWinner ? 'checked' : ''; list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${s.id}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${s.ninjaName}</div><div style="color:#888; font-size:0.7rem;">${s.gameTitle}</div></div><a href="${s.link}" target="_blank" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`; }); }
+function revealWinners() { if(!editingJamId) return; const checkboxes = document.querySelectorAll('.winner-check:checked'); const winnerIds = Array.from(checkboxes).map(c => c.value); const winners = jamSubmissions.filter(s => winnerIds.includes(s.id)); const update = { status: 'revealed', revealedAt: Date.now(), winners: winners }; if(db) { db.collection("jams").doc(editingJamId).update(update).then(() => showAlert("Success", "Winners Revealed!")); } else { const idx = jamsData.findIndex(j=>j.id===editingJamId); jamsData[idx] = {...jamsData[idx], ...update}; saveLocal('cn_jams', jamsData); renderJams(); showAlert("Success", "Winners Revealed (Local)!"); } document.getElementById('jam-admin-modal').style.display = 'none'; }
+function renderAdminJamsList() { const c = document.getElementById('admin-jams-list'); if(!c) return; c.innerHTML = ''; jamsData.forEach(j => { const color = j.color || '#2ecc71'; c.innerHTML += `<div class="admin-list-wrapper" onclick="openAdminJamModal('${j.id}')" style="cursor:pointer;"><div class="list-card" style="margin:0; border-left-color:${color};"><div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div><div class="status-badge" style="color:${color}">${j.status || 'Active'}</div></div></div>`; }); }
 function renderNews() { const c = document.getElementById('news-feed'); if(!c) return; c.innerHTML=''; newsData.forEach(i => c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); }
 function renderRules() { const c = document.getElementById('rules-feed'); if(!c) return; c.innerHTML=''; const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if(!groups[cat]) groups[cat] = []; groups[cat].push(r); }); for (const [category, items] of Object.entries(groups)) { c.innerHTML += `<h3 class="rules-group-header">${category}</h3>`; let gridHtml = `<div class="rules-group-grid">`; items.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${r.desc}</h3></div>${b}</div>`; }); gridHtml += `</div>`; c.innerHTML += gridHtml; } }
 function renderCoins() { const c = document.getElementById('coin-feed'); if(!c) return; c.innerHTML=''; coinsData.forEach(i => c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); }
@@ -440,7 +271,6 @@ function filterCatalog(tier, btn) { currentTier = tier; document.querySelectorAl
 function renderCatalog() { const c = document.getElementById('catalog-feed'); if(!c) return; c.innerHTML=''; if(!currentTier) currentTier = 'tier1'; const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false); if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier.</p>'; else f.forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon || 'fa-cube'}"></i>`; let btnText = "Request"; let btnAction = `onclick="initRequest('${i.id}')"`; let catBadge = ''; let specialClass = ''; if(i.category === 'custom') { btnText = "Custom Print"; catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`; } else if(i.category === 'premium') { btnText = "View Options"; catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`; } else if(i.category === 'limited') { btnText = "Get It Now!"; catBadge = `<span class="badge-limited">LIMITED</span>`; specialClass = 'limited-card'; } c.innerHTML += `<div class="store-card ${specialClass}"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`; }); }
 function renderQueue() { const c = document.getElementById('queue-list'); if(!c) return; c.innerHTML=''; let q = !showHistory ? queueData.filter(i => i.status.toLowerCase() !== 'picked up') : [...queueData].sort((a,b) => b.createdAt - a.createdAt); if(q.length === 0) c.innerHTML = '<p style="color:#666;text-align:center;">Empty.</p>'; else q.forEach((i,x) => { let s = i.status, cl = 'status-pending', icon = 'fa-clock', cc = 'queue-card'; const sLow = s.toLowerCase(); if(sLow.includes('ready')){ cl='status-ready'; icon='fa-check'; cc+=' ready-pickup'; } else if(sLow.includes('printing')){ cl='status-printing printing-anim'; icon='fa-print'; } else if(sLow.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } const detHtml = i.details ? `<span style="opacity:0.6">| ${i.details}</span>` : ''; c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} ${detHtml}</p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; }); }
 function renderLeaderboard() { const p = document.getElementById('lb-podium'); const l = document.getElementById('lb-list'); if(!p || !l) return; p.innerHTML = ''; l.innerHTML = ''; const s = [...leaderboardData].sort((a,b) => b.points - a.points); const v = []; if(s[1]) v.push({...s[1], rank: 2}); if(s[0]) v.push({...s[0], rank: 1}); if(s[2]) v.push({...s[2], rank: 3}); v.forEach(i => p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`); s.slice(3).forEach((i,x) => l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${formatName(i.name)}</div><div class="lb-row-points">${i.points}</div></div>`); renderAdminLbPreview(); }
-
 function renderAdminLists() { renderAdminNews(); renderAdminRules(); renderAdminCoins(); renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview(); renderAdminInterest(); renderAdminJamsList(); }
 function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
 function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
@@ -450,10 +280,6 @@ function renderAdminCatalog() { const catList = document.getElementById('admin-c
 function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; const pending = requestsData.filter(r => r.status === 'Waiting for Payment'); if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No incoming payment requests.</p>'; return; } pending.forEach(r => { c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`; }); }
 function renderAdminQueue() { const qList = document.getElementById('admin-queue-manage-list'); if(!qList) return; qList.innerHTML=''; const activeQ = queueData.filter(q => q.status !== 'Picked Up' && q.status !== 'Waiting for Payment'); activeQ.sort((a,b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt)); activeQ.forEach(q => { const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; const detHtml = q.details ? `| ${q.details}` : ''; qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span class="status-badge" style="color:white; background:#333;">${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${detHtml}</div><div style="margin-top:5px; display:flex; gap:5px;"><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; }); }
 function renderAdminLbPreview() { const c = document.getElementById('admin-lb-preview-list'); if(!c) return; c.innerHTML = ''; const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } sorted.forEach((ninja, index) => { const u = ninja.username ? ` <span style="font-size:0.7rem; color:#aaa;">(${ninja.username})</span>` : ''; c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${formatName(ninja.name)}${u}</div><div class="admin-lb-points">${ninja.points}</div></div>`; }); }
-
-/* ==========================================================================
-   ACTIONS
-   ========================================================================== */
 function initRequest(id) { currentRequestItem = catalogData.find(x => x.id === id); if(!currentRequestItem) return; document.getElementById('req-item-name').innerText = currentRequestItem.name; const container = document.getElementById('req-dynamic-fields'); const gallery = document.getElementById('req-gallery'); const mainImg = document.querySelector('#req-img-container img'); const mainIcon = document.querySelector('#req-img-container i'); const nameContainer = document.getElementById('req-name-container'); container.innerHTML = ''; gallery.innerHTML = ''; gallery.style.display = 'none'; if(currentRequestItem.image) { mainImg.src = currentRequestItem.image; mainImg.style.display='block'; mainIcon.style.display='none'; } else { mainImg.style.display='none'; mainIcon.style.display='block'; } if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') { nameContainer.style.display = 'none'; } else { nameContainer.style.display = 'block'; if(currentUser && currentUser.name !== "Sensei") { document.getElementById('req-ninja-name').value = currentUser.name; } } if (currentRequestItem.category === 'custom') { const labelUrl = document.createElement('label'); labelUrl.className = 'req-label'; labelUrl.innerText = 'Tinkercad Link:'; const inputUrl = document.createElement('input'); inputUrl.type='text'; inputUrl.id = 'req-url'; inputUrl.className = 'req-input'; inputUrl.placeholder = "https://www.tinkercad.com/..."; container.appendChild(labelUrl); container.appendChild(inputUrl); const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:'; if(currentRequestItem.colorFee && parseInt(currentRequestItem.colorFee) > 0) labelCol.innerHTML += ` <span style="color:#e74c3c; font-size:0.8rem;">(+${currentRequestItem.colorFee} Gold Fee)</span>`; const select = document.createElement('select'); select.id = 'req-color'; select.className = 'req-input'; const optRand = document.createElement('option'); optRand.value = "Random"; optRand.innerText = "Random (No Extra Fee)"; select.appendChild(optRand); filamentData.forEach(color => { const opt = document.createElement('option'); opt.value = color; opt.innerText = color; select.appendChild(opt); }); container.appendChild(labelCol); container.appendChild(select); } else if (currentRequestItem.category === 'premium') { if (currentRequestItem.variations && currentRequestItem.variations.length > 0) { selectedVariantIdx = 0; const vars = currentRequestItem.variations; if(vars[0].image) mainImg.src = vars[0].image; const labelVar = document.createElement('label'); labelVar.className = 'req-label'; labelVar.innerText = 'Select Style:'; const select = document.createElement('select'); select.id = 'req-variant'; select.className = 'req-input'; select.onchange = (e) => updatePremiumPreview(e.target.selectedIndex); vars.forEach((v, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = v.name; select.appendChild(opt); }); container.appendChild(labelVar); container.appendChild(select); gallery.style.display = 'flex'; vars.forEach((v, idx) => { const thumb = document.createElement('div'); thumb.className = idx === 0 ? 'req-thumb active' : 'req-thumb'; thumb.onclick = () => { document.getElementById('req-variant').selectedIndex = idx; updatePremiumPreview(idx); }; thumb.innerHTML = `<img src="${v.image || ''}">`; gallery.appendChild(thumb); }); } if (currentRequestItem.colorSelection) { const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:'; labelCol.style.marginTop = '10px'; if(currentRequestItem.colorFee && parseInt(currentRequestItem.colorFee) > 0) { labelCol.innerHTML += ` <span style="color:#e74c3c; font-size:0.8rem;">(+${currentRequestItem.colorFee} Gold Fee)</span>`; } const select = document.createElement('select'); select.id = 'req-prem-color'; select.className = 'req-input'; const optRand = document.createElement('option'); optRand.value = "Random"; optRand.innerText = "Random (No Extra Fee)"; select.appendChild(optRand); filamentData.forEach(color => { const opt = document.createElement('option'); opt.value = color; opt.innerText = color; select.appendChild(opt); }); container.appendChild(labelCol); container.appendChild(select); } } document.getElementById('req-modal').style.display = 'flex'; }
 function updatePremiumPreview(idx) { selectedVariantIdx = idx; const item = currentRequestItem.variations[idx]; const mainImg = document.querySelector('#req-img-container img'); if(item.image) mainImg.src = item.image; document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); }
 function submitRequest() { const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') { const today = new Date().toDateString(); const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] }; if (localRec.date !== today) { localRec.date = today; localRec.ids = []; } if (localRec.ids.includes(currentRequestItem.id)) { showAlert("Notice", "You already requested this today."); return; } if (localRec.ids.length >= 3) { showAlert("Limit Reached", "Max 3 requests per day."); return; } incrementInterest(currentRequestItem.id, localRec); closeReqModal(); return; } if(!name) return showAlert("Error","Name required"); let finalItemName = currentRequestItem.name; let details = ""; if (currentRequestItem.category === 'custom') { const url = document.getElementById('req-url').value; const color = document.getElementById('req-color').value; if(!url) return showAlert("Error", "Tinkercad Link required"); details = `Color: ${color} | Link: ${url}`; } else if (currentRequestItem.category === 'premium') { let variantsPart = ""; let colorPart = ""; if (currentRequestItem.variations && currentRequestItem.variations[selectedVariantIdx]) { const v = currentRequestItem.variations[selectedVariantIdx]; variantsPart = `Variant: ${v.name}`; } if (currentRequestItem.colorSelection) { const colorEl = document.getElementById('req-prem-color'); if (colorEl && colorEl.value) { colorPart = `Color: ${colorEl.value}`; } } if (variantsPart && colorPart) details = `${variantsPart} | ${colorPart}`; else if (variantsPart) details = variantsPart; else if (colorPart) details = colorPart; else details = ""; } const req = { name, item: finalItemName, details, status: "Waiting for Payment", createdAt: Date.now() }; if(db) { db.collection("requests").add(req); } else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } closeReqModal(); showAlert("Sent!", "Please pay the Sensei to start your print."); }
