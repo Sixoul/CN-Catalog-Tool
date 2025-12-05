@@ -60,7 +60,22 @@
             <div class="content-area">
                 <div id="home" class="tab-content active"><div class="home-grid"><div class="news-column"><div class="section-title"><span>📢 Dojo News & Events</span></div><div id="news-feed" class="scroll-container"></div><div style="height: 1px; background: #2a2e45; margin: 10px 0 20px 0;"></div><div class="section-title"><span>⚠️ Dojo Rules</span></div><div id="rules-feed" class="scroll-container"></div></div><div class="coins-column"><div class="section-title"><span>💰 Code Coins</span></div><div class="coin-panel"><ul id="coin-feed" class="coin-list"></ul></div></div></div></div>
                 <div id="games" class="tab-content"><div class="section-title">🎮 Games of the Week</div><div class="list-card passed" style="border-left-color: var(--color-games);"><div class="card-info"><h3>Roblox: Obby Creator</h3></div></div></div>
-                <div id="jams" class="tab-content"><div class="section-title">🏆 Active Contests & Jams</div><div id="jams-feed"></div></div>
+                
+                <div id="jams" class="tab-content">
+                    <div class="jam-carousel-container">
+                        <button class="carousel-btn prev" onclick="moveCarousel(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div id="jam-carousel-track" class="jam-carousel-track">
+                            </div>
+                        <button class="carousel-btn next" onclick="moveCarousel(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+
+                    <div style="height: 1px; background: #2a2e45; margin: 30px 0;"></div>
+
+                    <div class="section-title">📜 Past Jams & Winners <span style="font-size:0.8rem; color:#666;">(Last 6 Months)</span></div>
+                    <div id="past-jams-grid" class="past-jams-grid">
+                        </div>
+                </div>
+
                 <div id="catalog" class="tab-content"><div class="section-title">🖨️ Prize Catalog</div><div class="tier-tabs"><button class="tier-btn active" onclick="filterCatalog('tier1', this)">Tier 1</button><button class="tier-btn" onclick="filterCatalog('tier2', this)">Tier 2</button><button class="tier-btn" onclick="filterCatalog('tier3', this)">Tier 3</button><button class="tier-btn" onclick="filterCatalog('tier4', this)">Tier 4</button></div><div id="catalog-feed" class="store-grid"></div></div>
                 <div id="queue" class="tab-content"><div class="section-title"><span>⏳ Print Queue Status</span></div><div id="queue-list" class="queue-list scroll-container" style="height: calc(100vh - 200px);"></div></div>
                 <div id="leaderboard" class="tab-content"><div class="section-title"><span>📈 Ninja Leaderboard</span></div><div class="lb-container scroll-container"><div id="lb-podium" class="lb-top-3"></div><div id="lb-list" class="lb-list"></div></div></div>
@@ -77,6 +92,7 @@
                 <div id="nav-admin-home" class="admin-nav-btn active" onclick="showAdminSection('admin-home', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
                 <div id="nav-admin-roster" class="admin-nav-btn" onclick="showAdminSection('admin-roster', this)"><i class="fa-solid fa-users"></i> Roster</div>
                 <div id="nav-admin-lb" class="admin-nav-btn" onclick="showAdminSection('admin-lb', this)"><i class="fa-solid fa-medal"></i> Leaderboard</div>
+                <div id="nav-admin-jams" class="admin-nav-btn" onclick="showAdminSection('admin-jams', this)"><i class="fa-solid fa-trophy"></i> Jams</div>
                 <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)"><i class="fa-solid fa-cube"></i> Catalog</div>
                 <div id="nav-admin-queue" class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)"><i class="fa-solid fa-list"></i> Queue & Reqs</div>
                 <div style="flex-grow:1;"></div>
@@ -124,6 +140,14 @@
                     <div class="admin-card"><h3>🏆 Leaderboard Preview</h3><div id="admin-lb-preview-list" class="req-list"></div></div>
                 </div>
 
+                <div id="admin-jams" class="admin-section">
+                    <div class="admin-card">
+                        <h3>🎮 Game Jams & Contests <button class="btn-add" onclick="openAdminJamModal()">+ Create New</button></h3>
+                        <p style="color:#aaa; font-size:0.8rem;">Click an active jam to manage submissions/winners.</p>
+                        <div id="admin-jams-list"></div>
+                    </div>
+                </div>
+
                 <div id="admin-cat" class="admin-section">
                     <div class="admin-card"><h3>🛍️ Manage Catalog <div style="display:inline-flex; gap:5px;"><button class="btn-add" onclick="showAddCatModal()" style="width:auto; padding:5px 10px;">+ Add Prize</button><button class="admin-btn" onclick="manageFilaments()" style="width:auto; padding:5px 10px; background:#444; margin:0; font-size:0.8rem;">Manage Colors</button></div></h3><div id="admin-cat-list"></div></div>
                 </div>
@@ -137,66 +161,63 @@
         </div>
     </div>
 
-    <div id="cat-edit-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width:500px; max-height: 90vh;">
-            <div class="modal-header"><h2 style="color:white; margin:0;" id="cat-modal-title">Edit Prize</h2><button onclick="closeCatModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div>
+    <div id="jam-admin-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header"><h2 id="jam-modal-header" style="color:white; margin:0;">Create Jam</h2><button onclick="document.getElementById('jam-admin-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div>
             <div class="modal-body">
-                <input type="text" id="ce-name" class="admin-input" placeholder="Item Name">
-                <input type="text" id="ce-cost" class="admin-input" placeholder="Cost (Gold Coins)">
-                <textarea id="ce-desc" class="admin-input" placeholder="Short Description" style="resize:vertical; min-height:60px;"></textarea>
-                <div style="display:flex; gap:10px; margin-bottom:10px;">
-                    <select id="ce-tier" class="admin-input" style="margin-bottom:0;"><option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option></select>
-                    <select id="ce-category" class="admin-input" style="margin-bottom:0;" onchange="toggleCatOptions(this.value)"><option value="standard">Standard</option><option value="limited">Limited Time!</option><option value="custom">Custom Print</option><option value="premium">Premium</option></select>
+                <input type="text" id="jam-title" class="admin-input" placeholder="Title (e.g. Winter Game Jam)">
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="jam-dates" class="admin-input" placeholder="Dates (e.g. Dec 1 - Dec 20)">
+                    <select id="jam-type" class="admin-input"><option value="Game Jam">Game Jam</option><option value="Contest">Contest</option></select>
                 </div>
-                
-                <div id="ce-custom-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;">
-                    <label style="color:white; font-size:0.9rem;">Color Fee (Optional):</label>
-                    <input type="number" id="ce-color-fee" class="admin-input" placeholder="0">
+                <input type="text" id="jam-image" class="admin-input" placeholder="Hero Image URL">
+                <label style="color:#aaa; font-size:0.8rem;">Header (Use **text** for bold/color):</label>
+                <input type="text" id="jam-header" class="admin-input" placeholder="Theme: **EXPLORATION**">
+                <textarea id="jam-desc" class="admin-input" placeholder="Description (Small white text)" style="height:60px;"></textarea>
+                <input type="text" id="jam-details" class="admin-input" placeholder="Details (Yellow text)">
+                <div id="jam-submissions-area" style="display:none; border-top:1px solid #444; padding-top:10px; margin-top:10px;">
+                    <h4 style="color:white; margin:0 0 10px 0;">Manage Submissions & Winners</h4>
+                    <div id="jam-subs-list" style="max-height:150px; overflow-y:auto; margin-bottom:10px;"></div>
+                    <button onclick="revealWinners()" class="btn-blue" style="background:#f1c40f; color:black;">REVEAL WINNERS</button>
                 </div>
-
-                <div id="ce-options-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;">
-                    <label style="color:white; font-size:0.9rem; margin-bottom:5px; display:block;">Manage Variations:</label>
-                    <div id="ce-variants-list"></div>
-                    <button onclick="addVariantRow()" class="btn-mini" style="background:#444; width:100%; margin-top:5px; padding:8px;">+ Add Variant Row</button>
-                    
-                    <div style="margin-top:15px; border-top:1px solid #333; padding-top:10px;">
-                        <label style="color:white; font-size:0.9rem; display:flex; align-items:center;">
-                            <input type="checkbox" id="ce-prem-color-check" style="margin-right:10px;" onchange="document.getElementById('ce-prem-fee-wrap').style.display = this.checked ? 'block' : 'none'"> 
-                            Allow Color Selection
-                        </label>
-                        <div id="ce-prem-fee-wrap" style="display:none; margin-top:5px; padding-left:20px;">
-                             <label style="color:#aaa; font-size:0.8rem;">Extra Color Fee (Gold):</label>
-                             <input type="number" id="ce-prem-color-fee" class="admin-input" placeholder="0" style="width:100px;">
-                        </div>
-                    </div>
-                </div>
-
-                <label style="color:#aaa; font-size:0.8rem;">Main Image URL (Default):</label>
-                <input type="text" id="ce-img" class="admin-input" placeholder="https://...">
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <label style="color:white; font-size:0.9rem;"><input type="checkbox" id="ce-visible" checked> Visible</label>
-                </div>
-                <div style="display:flex;gap:10px;"><button onclick="saveCatItem()" class="admin-btn btn-add">SAVE PRIZE</button></div>
+                <button onclick="saveJam()" class="btn-blue" style="margin-top:10px;">SAVE JAM</button>
             </div>
         </div>
     </div>
 
-    <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"><img src="" alt="Prize" style="display:none;"><i class="fa-solid fa-cube"></i></div><div id="req-gallery" class="req-gallery"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3>
-    
-    <div id="req-name-container">
-        <label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label>
-        <input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name">
+    <div id="jam-submit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header"><h2 style="color:white; margin:0;">Submit Entry</h2><button onclick="document.getElementById('jam-submit-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="modal-body">
+                <h3 id="js-title" style="color:var(--color-jams); margin-top:0;">Jam Title</h3>
+                <label class="req-label">Game Title:</label>
+                <input type="text" id="js-game-title" class="req-input" placeholder="My Awesome Game">
+                <label class="req-label">Link (Scratch/MakeCode/Roblox):</label>
+                <input type="text" id="js-link" class="req-input" placeholder="https://...">
+                <button onclick="submitJamEntry()" class="btn-blue" style="background:var(--color-jams); color:black;">SUBMIT</button>
+            </div>
+        </div>
     </div>
 
-    <div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SUBMIT REQUEST</button></div></div></div>
-    
+    <div id="winner-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align:center;">
+            <div class="modal-header"><h2 style="color:white; margin:0;">Winner!</h2><button onclick="document.getElementById('winner-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="modal-body">
+                <h2 id="win-game-title" style="color:var(--color-jams); margin:0;">Game Title</h2>
+                <p id="win-ninja" style="color:white; font-size:1.2rem; margin:10px 0;">By Ninja</p>
+                <a id="win-link" href="#" target="_blank" class="btn-blue" style="display:inline-block; margin-top:20px; text-decoration:none;">PLAY GAME</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="cat-edit-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px; max-height: 90vh;"><div class="modal-header"><h2 style="color:white; margin:0;" id="cat-modal-title">Edit Prize</h2><button onclick="closeCatModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="ce-name" class="admin-input" placeholder="Item Name"><input type="text" id="ce-cost" class="admin-input" placeholder="Cost (Gold Coins)"><textarea id="ce-desc" class="admin-input" placeholder="Short Description" style="resize:vertical; min-height:60px;"></textarea><div style="display:flex; gap:10px; margin-bottom:10px;"><select id="ce-tier" class="admin-input" style="margin-bottom:0;"><option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option></select><select id="ce-category" class="admin-input" style="margin-bottom:0;" onchange="toggleCatOptions(this.value)"><option value="standard">Standard</option><option value="limited">Limited Time!</option><option value="custom">Custom Print</option><option value="premium">Premium</option></select></div><div id="ce-custom-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem;">Color Fee (Optional):</label><input type="number" id="ce-color-fee" class="admin-input" placeholder="0"></div><div id="ce-options-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem; margin-bottom:5px; display:block;">Manage Variations:</label><div id="ce-variants-list"></div><button onclick="addVariantRow()" class="btn-mini" style="background:#444; width:100%; margin-top:5px; padding:8px;">+ Add Variant Row</button><div style="margin-top:15px; border-top:1px solid #333; padding-top:10px;"><label style="color:white; font-size:0.9rem; display:flex; align-items:center;"><input type="checkbox" id="ce-prem-color-check" style="margin-right:10px;" onchange="document.getElementById('ce-prem-fee-wrap').style.display = this.checked ? 'block' : 'none'"> Allow Color Selection</label><div id="ce-prem-fee-wrap" style="display:none; margin-top:5px; padding-left:20px;"><label style="color:#aaa; font-size:0.8rem;">Extra Color Fee (Gold):</label><input type="number" id="ce-prem-color-fee" class="admin-input" placeholder="0" style="width:100px;"></div></div></div><label style="color:#aaa; font-size:0.8rem;">Main Image URL (Default):</label><input type="text" id="ce-img" class="admin-input" placeholder="https://..."><div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem;"><input type="checkbox" id="ce-visible" checked> Visible</label></div><div style="display:flex;gap:10px;"><button onclick="saveCatItem()" class="admin-btn btn-add">SAVE PRIZE</button></div></div></div></div>
+    <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"><img src="" alt="Prize" style="display:none;"><i class="fa-solid fa-cube"></i></div><div id="req-gallery" class="req-gallery"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3><div id="req-name-container"><label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label><input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name"></div><div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SUBMIT REQUEST</button></div></div></div>
     <div id="news-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit News</h2><button onclick="closeNewsModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="news-input-title" class="admin-input" placeholder="Title"><input type="text" id="news-input-date" class="admin-input" placeholder="Date"><input type="text" id="news-input-badge" class="admin-input" placeholder="Badge"><button onclick="saveNews()" class="admin-btn btn-add">SAVE</button></div></div></div>
     <div id="rules-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Rule</h2><button onclick="closeRulesModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="rule-input-title" class="admin-input" placeholder="Category"><input type="text" id="rule-input-desc" class="admin-input" placeholder="Rule Description"><input type="text" id="rule-input-penalty" class="admin-input" placeholder="Penalty"><button onclick="saveRule()" class="admin-btn btn-add">SAVE</button></div></div></div>
     <div id="coin-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Coin Task</h2><button onclick="closeCoinModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="coin-input-task" class="admin-input" placeholder="Task Name"><input type="text" id="coin-input-val" class="admin-input" placeholder="Value (+5)"><button onclick="saveCoin()" class="admin-btn btn-add">SAVE</button></div></div></div>
     <div id="alert-modal" class="modal-overlay" style="z-index: 300000;"><div class="modal-content" style="max-width:400px; height:auto; border-color: var(--color-games);"><div class="modal-header" style="border-bottom-color: var(--color-games);"><h2 id="alert-title" style="margin:0; color:white;">Notice</h2></div><div class="modal-body" style="text-align:center;"><p id="alert-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Message</p><button onclick="document.getElementById('alert-modal').style.display='none'" class="btn-blue" style="background:var(--color-games); width:100%;">OK</button></div></div></div>
     <div id="confirm-modal" class="modal-overlay" style="z-index: 300000;"><div class="modal-content" style="max-width:400px; height:auto; border-color: #e74c3c;"><div class="modal-header" style="border-bottom-color: #e74c3c;"><h2 style="margin:0; color:white;">Confirm Action</h2></div><div class="modal-body" style="text-align:center;"><p id="confirm-msg" style="color:#ddd; font-size:1.1rem; margin-bottom:20px;">Are you sure?</p><div style="display:flex; gap:10px;"><button id="confirm-yes-btn" class="btn-blue" style="background:#e74c3c; width:50%;">YES</button><button onclick="document.getElementById('confirm-modal').style.display='none'" class="btn-blue" style="background:#555; width:50%;">NO</button></div></div></div></div>
-    <div id="jam-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 id="modal-title" style="margin:0; color: white;">Contest</h2><button onclick="closeJamModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="modal-status-banner" style="padding:10px; background:#222; color:#aaa; text-align:center; border-radius:4px; margin-bottom:20px; font-weight:bold;">STATUS</div><div style="display:flex; gap:20px;"><div style="flex:1;"><h3 style="color: var(--color-jams);">Details</h3><p id="modal-desc" style="color:#ccc;"></p><p style="color:#888; font-size:0.9rem;">Deadline: <span id="modal-deadline" style="color:white;"></span></p></div><div style="flex:1;"><h3 style="color: var(--color-jams);">Reqs</h3><ul id="modal-reqs" style="color:#ccc; padding-left:20px;"></ul></div></div><div id="jam-submit-area" style="margin-top:20px;"></div><div style="margin-top:30px;"><h3 id="modal-subs-title" style="border-bottom:1px solid #444; padding-bottom:10px; color:white;">Submissions</h3><div id="modal-subs-grid" class="sub-grid"></div></div></div></div></div>
-
+    
     <script src="script.js" defer></script>
 </body>
 </html>
