@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v5.7 - Games of the Month & Logic Fixes
+ * v6.0 - Full System (Jams, Games, Catalog, Roster)
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "5.7";
+const APP_VERSION = "6.0";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -40,7 +40,7 @@ let currentUser = null;
 let newsData = [];
 let jamsData = [];
 let jamSubmissions = [];
-let gamesData = []; // Game of the Month Data
+let gamesData = [];
 let rulesData = [];
 let coinsData = [];
 let catalogData = [];
@@ -137,12 +137,19 @@ function formatCoinBreakdown(valStr) {
     return html;
 }
 
-function getBeltColor(belt) { const b = (belt || 'white').toLowerCase(); if(b.includes('jr')) return 'var(--belt-white)'; const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[b] || 'var(--belt-white)'; }
+function getBeltColor(belt) { 
+    const b = (belt || 'white').toLowerCase();
+    if(b.includes('jr')) return 'var(--belt-white)'; 
+    const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; 
+    return map[b] || 'var(--belt-white)'; 
+}
+
 function getIconClass(belt) { const b = (belt||'white').toLowerCase(); if(b.includes('robot')) return 'fa-robot'; if(b.includes('ai')) return 'fa-microchip'; if(b.includes('jr')) return 'fa-child'; return 'fa-user-ninja'; }
 function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 function showAlert(t, m) { document.getElementById('alert-title').innerText = t; document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
 function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText = m; const b = document.getElementById('confirm-yes-btn'); const n = b.cloneNode(true); b.parentNode.replaceChild(n, b); n.onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; cb(); }; document.getElementById('confirm-modal').style.display = 'flex'; }
 function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
+
 
 /* ==========================================================================
    3. AUTHENTICATION
@@ -153,6 +160,7 @@ function attemptAdminLogin() { const e = document.getElementById('admin-email').
 function loginAsAdmin() { currentUser = { name: "Sensei", isAdmin: true }; localStorage.setItem('cn_user', JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); }
 function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(auth) auth.signOut(); location.reload(); }
 
+
 /* ==========================================================================
    4. RENDERERS
    ========================================================================== */
@@ -161,11 +169,9 @@ function refreshAll() { renderNews(); renderJams(); renderGames(); renderRules()
 
 // --- GAMES OF THE MONTH ---
 function renderGames() {
-    // Separate active game from history
     const activeGame = gamesData.find(g => g.status === 'active');
     const pastGames = gamesData.filter(g => g.status === 'archived').sort((a,b) => b.createdAt - a.createdAt);
 
-    // 1. Render Active Game Hero
     const heroContainer = document.getElementById('active-game-container');
     if (heroContainer) {
         if(activeGame) {
@@ -181,17 +187,15 @@ function renderGames() {
         }
     }
 
-    // 2. Render Active Leaderboard
     const lbContainer = document.getElementById('active-game-lb');
     if (lbContainer) {
         if(activeGame && activeGame.scores && activeGame.scores.length > 0) {
             lbContainer.innerHTML = '';
-            const sorted = [...activeGame.scores].sort((a,b) => b.score - a.score).slice(0, 10); // Top 10
+            const sorted = [...activeGame.scores].sort((a,b) => b.score - a.score).slice(0, 10); 
             
             sorted.forEach((s, i) => {
                 let prizeHtml = '';
                 const rank = i + 1;
-                
                 if (rank === 1) prizeHtml = `<span class="coin-val gold">3</span>`;
                 else if (rank === 2) prizeHtml = `<span class="coin-val gold">2</span>`;
                 else if (rank === 3) prizeHtml = `<span class="coin-val gold">1</span>`;
@@ -211,7 +215,6 @@ function renderGames() {
         }
     }
 
-    // 3. Render History List (Right Column)
     const historyList = document.getElementById('games-history-list');
     if (historyList) {
         historyList.innerHTML = '';
@@ -263,6 +266,7 @@ function renderJams() {
         activeJams.forEach((jam, idx) => {
             const isWinnerMode = jam.status === 'revealed';
             const themeColor = jam.color || '#f1c40f';
+            
             let winnerHtml = '';
             if(isWinnerMode && jam.winners && jam.winners.length > 0) {
                 winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${themeColor}; text-shadow:0 0 20px ${themeColor}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
@@ -276,6 +280,7 @@ function renderJams() {
                 });
                 winnerHtml += `</div></div>`;
             }
+
             const activeClass = idx === carouselIndex ? 'active' : '';
             track.innerHTML += `
             <div class="jam-slide ${activeClass}" onclick="openJamSubmission('${jam.id}', ${isWinnerMode})">
@@ -381,7 +386,6 @@ function submitJamEntry() {
 // --- ADMIN FUNCTIONS ---
 function renderAdminLists() { renderAdminNews(); renderAdminRules(); renderAdminCoins(); renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview(); renderAdminInterest(); renderAdminJamsList(); renderAdminGames(); }
 
-// ... (Previous Admin functions for News, Rules, Coins, Catalog, etc. remain unchanged) ...
 function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
 function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
 function renderAdminCoins() { const cList = document.getElementById('admin-coins-list'); if(cList){ cList.innerHTML=''; coinsData.forEach((c, index) => { const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>'; const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>'; cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
@@ -400,33 +404,25 @@ function renderAdminJamsList() { const c = document.getElementById('admin-jams-l
 // --- ADMIN GAMES (Game of the Month) ---
 function renderAdminGames() {
     const activeGame = gamesData.find(g => g.status === 'active');
-    
-    // Populate Input Fields
     if(activeGame) {
         document.getElementById('ag-title').value = activeGame.title;
         document.getElementById('ag-image').value = activeGame.image;
         document.getElementById('ag-desc').value = activeGame.desc;
         renderAdminGameScores(activeGame);
     } else {
-        // Clear fields if no active game
         document.getElementById('ag-title').value = '';
         document.getElementById('ag-image').value = '';
         document.getElementById('ag-desc').value = '';
         document.getElementById('admin-game-scores-list').innerHTML = '<p style="color:#666;">No active game. Create one above.</p>';
     }
 }
-
 function saveActiveGame() {
     const title = document.getElementById('ag-title').value;
     const image = document.getElementById('ag-image').value;
     const desc = document.getElementById('ag-desc').value;
-    
     if(!title) return showAlert("Error", "Title required.");
-
     const gameData = { title, image, desc, status: 'active', month: new Date().toLocaleString('default', { month: 'long' }) };
-    
     let activeGame = gamesData.find(g => g.status === 'active');
-    
     if(db) {
         if(activeGame) db.collection("games").doc(activeGame.id).update(gameData);
         else db.collection("games").add({ ...gameData, scores: [], createdAt: Date.now() });
@@ -439,84 +435,48 @@ function saveActiveGame() {
         }
         saveLocal('cn_games', gamesData);
         renderGames();
+        renderAdminGames();
         showAlert("Saved", "Game Updated!");
     }
 }
-
 function renderAdminGameScores(game) {
     const list = document.getElementById('admin-game-scores-list');
     list.innerHTML = '';
     if(!game.scores || game.scores.length === 0) return;
-
     game.scores.sort((a,b) => b.score - a.score).forEach((s, idx) => {
-        list.innerHTML += `
-        <div style="display:flex; justify-content:space-between; background:#111; padding:8px; margin-bottom:5px; border-radius:4px;">
-            <span>${idx+1}. ${s.name} - <strong>${s.score}</strong></span>
-            <button onclick="deleteGameScore('${s.name}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;">X</button>
-        </div>`;
+        list.innerHTML += `<div style="display:flex; justify-content:space-between; background:#111; padding:8px; margin-bottom:5px; border-radius:4px;"><span>${idx+1}. ${s.name} - <strong>${s.score}</strong></span><button onclick="deleteGameScore('${s.name}')" style="background:#e74c3c; border:none; color:white; border-radius:4px; cursor:pointer;">X</button></div>`;
     });
 }
-
 function addGameScore() {
     const name = document.getElementById('ag-score-name').value;
     const score = parseInt(document.getElementById('ag-score-val').value);
     if(!name || isNaN(score)) return;
-
     const activeGame = gamesData.find(g => g.status === 'active');
     if(!activeGame) return showAlert("Error", "Create a game first.");
-
     const newScores = activeGame.scores || [];
-    // Remove existing score for same person to update it
     const filtered = newScores.filter(s => s.name !== name);
     filtered.push({ name, score });
-
-    if(db) {
-        db.collection("games").doc(activeGame.id).update({ scores: filtered });
-    } else {
-        activeGame.scores = filtered;
-        saveLocal('cn_games', gamesData);
-        renderGames();
-        renderAdminGames();
-    }
-    document.getElementById('ag-score-name').value = '';
-    document.getElementById('ag-score-val').value = '';
+    if(db) { db.collection("games").doc(activeGame.id).update({ scores: filtered }); } 
+    else { activeGame.scores = filtered; saveLocal('cn_games', gamesData); renderGames(); renderAdminGames(); }
+    document.getElementById('ag-score-name').value = ''; document.getElementById('ag-score-val').value = '';
 }
-
 function deleteGameScore(name) {
     const activeGame = gamesData.find(g => g.status === 'active');
     if(!activeGame) return;
-
     const newScores = activeGame.scores.filter(s => s.name !== name);
-    
-    if(db) {
-        db.collection("games").doc(activeGame.id).update({ scores: newScores });
-    } else {
-        activeGame.scores = newScores;
-        saveLocal('cn_games', gamesData);
-        renderGames();
-        renderAdminGames();
-    }
+    if(db) { db.collection("games").doc(activeGame.id).update({ scores: newScores }); } 
+    else { activeGame.scores = newScores; saveLocal('cn_games', gamesData); renderGames(); renderAdminGames(); }
 }
-
 function archiveActiveGame() {
     const activeGame = gamesData.find(g => g.status === 'active');
     if(!activeGame) return;
-
     showConfirm("Archive this game? It will move to history.", () => {
-        if(db) {
-            db.collection("games").doc(activeGame.id).update({ status: 'archived' });
-        } else {
-            activeGame.status = 'archived';
-            saveLocal('cn_games', gamesData);
-            renderGames();
-            renderAdminGames();
-        }
+        if(db) { db.collection("games").doc(activeGame.id).update({ status: 'archived' }); } 
+        else { activeGame.status = 'archived'; saveLocal('cn_games', gamesData); renderGames(); renderAdminGames(); }
     });
 }
 
 // ... (Rest of existing functions: initRequest, submitRequest, etc.) ...
-// I will include them to ensure the file is complete. 
-
 function showAddCatModal() { editingCatId = null; document.getElementById('cat-modal-title').innerText = "Add Prize"; document.getElementById('ce-name').value=''; document.getElementById('ce-cost').value=''; document.getElementById('ce-img').value=''; document.getElementById('ce-desc').value=''; document.getElementById('ce-visible').checked=true; document.getElementById('ce-category').value='standard'; document.getElementById('ce-variants-list').innerHTML = ''; document.getElementById('ce-prem-color-check').checked = false; document.getElementById('ce-prem-color-fee').value = ''; document.getElementById('ce-prem-fee-wrap').style.display = 'none'; toggleCatOptions('standard'); document.getElementById('cat-edit-modal').style.display='flex'; }
 function addVariantRow(name='', img='') { const div = document.createElement('div'); div.className = 'variant-row'; div.innerHTML = `<input type="text" class="admin-input var-name" placeholder="Name" value="${name}" style="margin:0; flex:1;"><input type="text" class="admin-input var-img" placeholder="Image URL" value="${img}" style="margin:0; flex:2;"><button onclick="this.parentElement.remove()" class="btn-mini" style="background:#e74c3c; width:30px;">X</button>`; document.getElementById('ce-variants-list').appendChild(div); }
 function editCatItem(id) { editingCatId = id; const item = catalogData.find(x => x.id === id); if (!item) return; document.getElementById('cat-modal-title').innerText = "Edit Prize"; document.getElementById('ce-name').value = item.name; document.getElementById('ce-cost').value = item.cost; document.getElementById('ce-tier').value = item.tier; document.getElementById('ce-img').value = item.image || ''; document.getElementById('ce-desc').value = item.desc || ''; document.getElementById('ce-visible').checked = item.visible !== false; const catSelect = document.getElementById('ce-category'); catSelect.value = item.category || 'standard'; toggleCatOptions(item.category); if(item.colorFee) { document.getElementById('ce-color-fee').value = item.colorFee; document.getElementById('ce-prem-color-fee').value = item.colorFee; } if(item.category === 'premium') { const hasColor = item.colorSelection === true; document.getElementById('ce-prem-color-check').checked = hasColor; document.getElementById('ce-prem-fee-wrap').style.display = hasColor ? 'block' : 'none'; } document.getElementById('ce-variants-list').innerHTML = ''; if (item.variations) { item.variations.forEach(v => addVariantRow(v.name, v.image)); } document.getElementById('cat-edit-modal').style.display='flex'; }
@@ -594,7 +554,6 @@ function subscribeToData() {
         db.collection("leaderboard").onSnapshot(snap => { leaderboardData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderLeaderboard(); }); 
         db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); renderAdminJamsList(); });
         db.collection("jamSubmissions").onSnapshot(snap => { jamSubmissions = snap.docs.map(d => ({id: d.id, ...d.data()})); });
-        db.collection("games").onSnapshot(snap => { gamesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderGames(); renderAdminGames(); });
         db.collection("settings").doc("filaments").onSnapshot(doc => { if(doc.exists) { filamentData = doc.data().colors || DEFAULT_FILAMENTS; } }); 
     } else { 
         newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews; 
@@ -606,7 +565,6 @@ function subscribeToData() {
         leaderboardData = JSON.parse(localStorage.getItem('cn_leaderboard')) || mockLeaderboard; 
         jamsData = JSON.parse(localStorage.getItem('cn_jams')) || []; 
         jamSubmissions = JSON.parse(localStorage.getItem('cn_jam_subs')) || [];
-        gamesData = JSON.parse(localStorage.getItem('cn_games')) || [];
         const storedFilaments = JSON.parse(localStorage.getItem('cn_filaments')); 
         if(storedFilaments) filamentData = storedFilaments; 
         refreshAll(); 
