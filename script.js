@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v7.0 - Full Feature Set (Challenges, Jams, Games, Catalog)
+ * v7.1 - Fixed Missing Challenge Functions
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "7.0";
+const APP_VERSION = "7.1";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -41,7 +41,7 @@ let newsData = [];
 let jamsData = [];
 let jamSubmissions = [];
 let gamesData = [];
-let challengesData = []; // NEW: Challenges Array
+let challengesData = [];
 let rulesData = [];
 let coinsData = [];
 let catalogData = [];
@@ -56,7 +56,7 @@ let editingCatId = null;
 let editingId = null;
 let editingNinjaId = null;
 let editingJamId = null;
-let editingChallengeId = null; // For Challenges
+let editingChallengeId = null;
 let currentJamSubmissionId = null;
 let showHistory = false;
 let clickCount = 0;
@@ -157,6 +157,7 @@ function showAlert(t, m) { document.getElementById('alert-title').innerText = t;
 function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText = m; const b = document.getElementById('confirm-yes-btn'); const n = b.cloneNode(true); b.parentNode.replaceChild(n, b); n.onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; cb(); }; document.getElementById('confirm-modal').style.display = 'flex'; }
 function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
 
+
 /* ==========================================================================
    3. AUTHENTICATION
    ========================================================================== */
@@ -165,6 +166,7 @@ function attemptNinjaLogin() { const input = document.getElementById('login-user
 function attemptAdminLogin() { const e = document.getElementById('admin-email').value; const p = document.getElementById('admin-pass').value; if(p === "@2633Ninjas") { loginAsAdmin(); return; } if(auth) { auth.signInWithEmailAndPassword(e, p).then(() => loginAsAdmin()).catch(err => { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied.'; }); } else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied (Offline).'; } }
 function loginAsAdmin() { currentUser = { name: "Sensei", isAdmin: true }; localStorage.setItem('cn_user', JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); }
 function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(auth) auth.signOut(); location.reload(); }
+
 
 /* ==========================================================================
    4. RENDERERS
@@ -178,7 +180,7 @@ function renderChallenges() {
     if (!c) return;
     c.innerHTML = '';
     if (challengesData.length === 0) {
-        c.innerHTML = '<p style="color:#666; font-size:0.9rem;">No active challenges.</p>';
+        c.innerHTML = '<p style="color:#666; font-size:0.9rem; padding:10px;">No active challenges.</p>';
         return;
     }
     challengesData.forEach(item => {
@@ -199,7 +201,7 @@ function renderChallenges() {
 
 // --- GAMES OF THE MONTH ---
 function renderGames() {
-    renderChallenges(); // Call challenges renderer
+    renderChallenges(); // Make sure challenges are rendered
     const activeGame = gamesData.find(g => g.status === 'active');
     const pastGames = gamesData.filter(g => g.status === 'archived').sort((a,b) => b.createdAt - a.createdAt);
 
@@ -223,6 +225,7 @@ function renderGames() {
         if(activeGame && activeGame.scores && activeGame.scores.length > 0) {
             lbContainer.innerHTML = '';
             const sorted = [...activeGame.scores].sort((a,b) => b.score - a.score).slice(0, 10); 
+            
             sorted.forEach((s, i) => {
                 let prizeHtml = '';
                 const rank = i + 1;
@@ -296,6 +299,7 @@ function renderJams() {
         activeJams.forEach((jam, idx) => {
             const isWinnerMode = jam.status === 'revealed';
             const themeColor = jam.color || '#f1c40f';
+            
             let winnerHtml = '';
             if(isWinnerMode && jam.winners && jam.winners.length > 0) {
                 winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${themeColor}; text-shadow:0 0 20px ${themeColor}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
@@ -413,33 +417,28 @@ function submitJamEntry() {
 
 // --- ADMIN FUNCTIONS ---
 function renderAdminLists() { 
-    renderAdminNews(); 
-    renderAdminRules(); 
-    renderAdminCoins(); 
-    renderAdminCatalog(); 
-    renderAdminRequests(); 
-    renderAdminQueue(); 
-    renderAdminLbPreview(); 
-    renderAdminInterest(); 
-    renderAdminJamsList(); 
-    renderAdminGames(); 
-    renderAdminChallenges(); // NEW
+    renderAdminNews(); renderAdminRules(); renderAdminCoins(); 
+    renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); 
+    renderAdminLbPreview(); renderAdminInterest(); 
+    renderAdminJamsList(); renderAdminGames(); renderAdminChallenges(); 
 }
 
-// --- ADMIN CHALLENGES ---
+// --- ADMIN CHALLENGES (NEW) ---
 function renderAdminChallenges() {
     const list = document.getElementById('admin-challenges-list');
     if(!list) return;
     list.innerHTML = '';
     if(challengesData.length === 0) {
-        list.innerHTML = '<p style="color:#666;">No challenges defined.</p>';
+        list.innerHTML = '<p style="color:#666;">No active challenges.</p>';
+        return;
     }
     challengesData.forEach(c => {
+        const icon = getChallengeIcon(c.type);
         list.innerHTML += `
         <div class="admin-list-wrapper">
             <div class="list-card" style="margin:0; border-left: 4px solid #3498db;">
                 <div class="card-info">
-                    <h3>${c.type}</h3>
+                    <h3><i class="fa-solid ${icon}"></i> ${c.type}</h3>
                     <p>${c.desc} (${c.reward})</p>
                 </div>
             </div>
@@ -472,7 +471,7 @@ function saveChallenge() {
     const reward = document.getElementById('chal-reward').value;
     const duration = document.getElementById('chal-duration').value;
 
-    if(!desc) return;
+    if(!desc) return showAlert("Error", "Description required");
 
     const data = { type, desc, reward, duration };
 
@@ -505,12 +504,10 @@ function deleteChallenge(id) {
     });
 }
 
-// DELETE JAM FUNCTION (Fix for missing delete)
 function deleteJam(id) {
-    showConfirm("Delete this Game Jam? This cannot be undone.", () => {
-        if(db) {
-            db.collection("jams").doc(id).delete();
-        } else {
+    showConfirm("Delete this Jam? Cannot be undone.", () => {
+        if(db) { db.collection("jams").doc(id).delete(); }
+        else {
             jamsData = jamsData.filter(j => j.id !== id);
             saveLocal('cn_jams', jamsData);
             renderJams();
@@ -534,7 +531,7 @@ function renderAdminJamsList() {
     }); 
 }
 
-// ... (Previous Admin functions for News, Rules, Coins, Catalog, etc. remain unchanged) ...
+// ... (Standard Admin Renderers) ...
 function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
 function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
 function renderAdminCoins() { const cList = document.getElementById('admin-coins-list'); if(cList){ cList.innerHTML=''; coinsData.forEach((c, index) => { const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>'; const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>'; cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
@@ -698,7 +695,7 @@ function subscribeToData() {
         db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); renderAdminJamsList(); });
         db.collection("jamSubmissions").onSnapshot(snap => { jamSubmissions = snap.docs.map(d => ({id: d.id, ...d.data()})); });
         db.collection("games").onSnapshot(snap => { gamesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderGames(); renderAdminGames(); });
-        db.collection("challenges").onSnapshot(snap => { challengesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderChallenges(); renderAdminChallenges(); }); // NEW
+        db.collection("challenges").onSnapshot(snap => { challengesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderChallenges(); renderAdminChallenges(); }); 
         db.collection("settings").doc("filaments").onSnapshot(doc => { if(doc.exists) { filamentData = doc.data().colors || DEFAULT_FILAMENTS; } }); 
     } else { 
         newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews; 
@@ -711,7 +708,7 @@ function subscribeToData() {
         jamsData = JSON.parse(localStorage.getItem('cn_jams')) || []; 
         jamSubmissions = JSON.parse(localStorage.getItem('cn_jam_subs')) || [];
         gamesData = JSON.parse(localStorage.getItem('cn_games')) || [];
-        challengesData = JSON.parse(localStorage.getItem('cn_challenges')) || []; // NEW
+        challengesData = JSON.parse(localStorage.getItem('cn_challenges')) || []; 
         const storedFilaments = JSON.parse(localStorage.getItem('cn_filaments')); 
         if(storedFilaments) filamentData = storedFilaments; 
         refreshAll(); 
