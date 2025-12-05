@@ -81,6 +81,11 @@
                 </div>
 
                 <div id="games" class="tab-content">
+                    <div class="section-title">🔥 Active Challenges <span style="font-size:0.8rem; color:#666;">EARN EXTRA COINS</span></div>
+                    <div id="challenges-feed" class="challenges-scroll-list"></div>
+
+                    <div style="height: 20px;"></div>
+
                     <div class="games-layout">
                         <div class="games-main-col">
                             <div class="section-title">🎮 Game of the Month</div>
@@ -141,38 +146,16 @@
         <div class="admin-top-bar"><i class="fa-solid fa-wrench"></i> SENSEI ADMIN VIEW</div>
         <div class="admin-layout">
             <div class="admin-nav">
-    <div id="nav-admin-home" class="admin-nav-btn active" onclick="showAdminSection('admin-home', this)">
-        <i class="fa-solid fa-house"></i> Dashboard
-    </div>
-    <div id="nav-admin-roster" class="admin-nav-btn" onclick="showAdminSection('admin-roster', this)">
-        <i class="fa-solid fa-users"></i> Roster
-    </div>
-    <div id="nav-admin-lb" class="admin-nav-btn" onclick="showAdminSection('admin-lb', this)">
-        <i class="fa-solid fa-medal"></i> Leaderboard
-    </div>
-    <div id="nav-admin-jams" class="admin-nav-btn" onclick="showAdminSection('admin-jams', this)">
-        <i class="fa-solid fa-trophy"></i> Jams
-    </div>
-    <div id="nav-admin-games" class="admin-nav-btn" onclick="showAdminSection('admin-games', this)">
-        <i class="fa-solid fa-gamepad"></i> Games
-    </div>
-    <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)">
-        <i class="fa-solid fa-cube"></i> Catalog
-    </div>
-    <div id="nav-admin-queue" class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)">
-        <i class="fa-solid fa-list"></i> Queue & Reqs
-    </div>
-    
-    <div style="flex-grow:1;"></div>
-    
-    <div class="admin-nav-btn" onclick="toggleAdminViewMode()" style="color: var(--color-home); border-top: 1px solid #333;">
-        <i class="fa-solid fa-user-ninja"></i> View as Ninja
-    </div>
-    
-    <div class="admin-nav-btn" onclick="logout()" style="color: #e74c3c;">
-        <i class="fa-solid fa-door-open"></i> Logout
-    </div>
-</div>
+                <div id="nav-admin-home" class="admin-nav-btn active" onclick="showAdminSection('admin-home', this)"><i class="fa-solid fa-house"></i> Dashboard</div>
+                <div id="nav-admin-roster" class="admin-nav-btn" onclick="showAdminSection('admin-roster', this)"><i class="fa-solid fa-users"></i> Roster</div>
+                <div id="nav-admin-lb" class="admin-nav-btn" onclick="showAdminSection('admin-lb', this)"><i class="fa-solid fa-medal"></i> Leaderboard</div>
+                <div id="nav-admin-jams" class="admin-nav-btn" onclick="showAdminSection('admin-jams', this)"><i class="fa-solid fa-trophy"></i> Jams</div>
+                <div id="nav-admin-games" class="admin-nav-btn" onclick="showAdminSection('admin-games', this)"><i class="fa-solid fa-gamepad"></i> Games</div>
+                <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)"><i class="fa-solid fa-cube"></i> Catalog</div>
+                <div id="nav-admin-queue" class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)"><i class="fa-solid fa-list"></i> Queue & Reqs</div>
+                <div style="flex-grow:1;"></div>
+                <div class="admin-nav-btn" onclick="logout()" style="color: #e74c3c;"><i class="fa-solid fa-door-open"></i> Logout</div>
+            </div>
 
             <div class="admin-content">
                 <div id="admin-home" class="admin-section active">
@@ -185,55 +168,38 @@
                     <div class="admin-card">
                         <h3>☁️ Sync Roster (CSV)</h3>
                         <input type="file" id="csv-file-input" class="admin-input" accept=".csv">
-                        <div style="display:flex; gap:10px;">
-                            <button class="btn-sync" onclick="processCSVFile()" style="width:70%">IMPORT & SYNC</button>
-                            <button class="btn-sync" onclick="clearZeroPointNinjas()" style="width:30%; background:#e74c3c;">CLEAN (0 PTS)</button>
-                        </div>
+                        <div style="display:flex; gap:10px;"><button class="btn-sync" onclick="processCSVFile()" style="width:70%">IMPORT & SYNC</button><button class="btn-sync" onclick="clearZeroPointNinjas()" style="width:30%; background:#e74c3c;">CLEAN (0 PTS)</button></div>
                     </div>
-                    <div class="admin-card">
-                        <h3>➕ Add Single Ninja</h3>
-                        <div style="display:flex; gap:10px;">
-                            <input type="text" id="admin-roster-add-name" class="admin-input" placeholder="Name (e.g. Kai S.)" onkeydown="if(event.key==='Enter') adminAddNinja()">
-                            <button class="btn-add" onclick="adminAddNinja()">ADD</button>
-                        </div>
-                    </div>
+                    <div class="admin-card"><h3>➕ Add Single Ninja</h3><div style="display:flex; gap:10px;"><input type="text" id="admin-roster-add-name" class="admin-input" placeholder="Name (e.g. Kai S.)" onkeydown="if(event.key==='Enter') adminAddNinja()"><button class="btn-add" onclick="adminAddNinja()">ADD</button></div></div>
                 </div>
 
                 <div id="admin-lb" class="admin-section">
-                    <div class="admin-card">
-                        <h3>🔍 Student Point Manager</h3>
-                        <input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()">
-                        <div id="admin-lb-results"></div>
-                        <div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px; margin-top:10px;">
-                            <h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);"></h4>
-                            <p>Current: <span id="admin-lb-current">0</span> pts</p>
-                            <input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)">
-                            <button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button>
-                        </div>
-                    </div>
+                    <div class="admin-card"><h3>🔍 Student Point Manager</h3><input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()"><div id="admin-lb-results"></div><div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px; margin-top:10px;"><h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);"></h4><p>Current: <span id="admin-lb-current">0</span> pts</p><input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)"><button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button></div></div>
                     <div class="admin-card"><h3>🏆 Leaderboard Preview</h3><div id="admin-lb-preview-list" class="req-list"></div></div>
                 </div>
 
                 <div id="admin-jams" class="admin-section">
                     <div class="admin-card">
                         <h3>🎮 Game Jams & Contests <button class="btn-add" onclick="openAdminJamModal()">+ Create New</button></h3>
+                        <p style="color:#aaa; font-size:0.8rem;">Click an active jam to manage submissions/winners.</p>
                         <div id="admin-jams-list"></div>
                     </div>
                 </div>
 
                 <div id="admin-games" class="admin-section">
                     <div class="admin-card">
+                        <h3>⚡ Manage Challenges <button class="btn-add" onclick="openChallengeModal()">+ Add</button></h3>
+                        <div id="admin-challenges-list"></div>
+                    </div>
+                    
+                    <div class="admin-card">
                         <h3>🎮 Active Game Manager</h3>
                         <div id="admin-active-game-editor" style="background: rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin-bottom:15px;">
-                            <label style="color:#aaa; font-size:0.8rem;">Game Title:</label>
-                            <input type="text" id="ag-title" class="admin-input">
-                            <label style="color:#aaa; font-size:0.8rem;">Image URL:</label>
-                            <input type="text" id="ag-image" class="admin-input">
-                            <label style="color:#aaa; font-size:0.8rem;">Description:</label>
-                            <input type="text" id="ag-desc" class="admin-input">
+                            <label style="color:#aaa; font-size:0.8rem;">Game Title:</label><input type="text" id="ag-title" class="admin-input">
+                            <label style="color:#aaa; font-size:0.8rem;">Image URL:</label><input type="text" id="ag-image" class="admin-input">
+                            <label style="color:#aaa; font-size:0.8rem;">Description:</label><input type="text" id="ag-desc" class="admin-input">
                             <button class="btn-blue" onclick="saveActiveGame()">UPDATE GAME DETAILS</button>
                         </div>
-
                         <h3>🏆 Manage Scores</h3>
                         <div style="display:flex; gap:10px; margin-bottom:10px;">
                             <input type="text" id="ag-score-name" class="admin-input" placeholder="Ninja Name (e.g. Kai S.)" style="flex:2; margin:0;">
@@ -241,7 +207,6 @@
                             <button class="btn-add" onclick="addGameScore()" style="width:auto; margin:0;">ADD</button>
                         </div>
                         <div id="admin-game-scores-list"></div>
-                        
                         <div style="margin-top:20px; border-top:1px solid #444; padding-top:20px;">
                             <button class="interest-reset-btn" onclick="archiveActiveGame()">ARCHIVE & START NEW</button>
                         </div>
@@ -257,6 +222,27 @@
                     <div class="admin-card" style="border-color: var(--color-catalog);"><h3>📩 Incoming Print Requests</h3><div id="admin-requests-list" class="req-list"></div></div>
                     <div class="admin-card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><h3 style="margin:0;">⏳ Active Print Queue</h3><button onclick="toggleHistoryView()" class="btn-edit" style="width:auto;">History</button></div><div id="admin-queue-manage-list"></div><div id="admin-queue-history-list" style="display:none; border-top:1px solid #444; padding-top:10px; margin-top:10px;"><h4 style="color:#aaa; margin-top:0;">History</h4><div id="history-content"></div></div></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="challenge-admin-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header"><h2 style="color:white; margin:0;">Edit Challenge</h2><button onclick="document.getElementById('challenge-admin-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="modal-body">
+                <label style="color:#aaa; font-size:0.8rem;">Type:</label>
+                <select id="chal-type" class="admin-input">
+                    <option value="MakeCode Arcade">MakeCode Arcade</option>
+                    <option value="Roblox">Roblox</option>
+                    <option value="Minecraft">Minecraft</option>
+                    <option value="Robotics">Robotics</option>
+                    <option value="3D Printing">3D Printing</option>
+                </select>
+                <input type="text" id="chal-desc" class="admin-input" placeholder="Description (e.g. Build a red house)">
+                <input type="text" id="chal-reward" class="admin-input" placeholder="Reward (e.g. +5 Coins)">
+                <label style="color:#aaa; font-size:0.8rem;">Deadline (Leave empty for Indefinite):</label>
+                <input type="text" id="chal-duration" class="admin-input" placeholder="e.g. 2 Days Left">
+                <button onclick="saveChallenge()" class="btn-blue" style="margin-top:10px;">SAVE CHALLENGE</button>
             </div>
         </div>
     </div>

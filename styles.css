@@ -466,40 +466,6 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .admin-lb-name { flex-grow: 1; color: white; }
 .admin-lb-points { color: var(--color-games); font-weight: bold; }
 
-@media (max-width: 768px) {
-    body { flex-direction: column; }
-    .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; flex-direction: row; justify-content: space-around; background-color: #090a18; border-right: none; border-top: 1px solid #1f2235; padding-top: 0; z-index: 1000; }
-    .nav-item { padding: 0; height: 100%; border-left: none; border-top: 4px solid transparent; }
-    .nav-item.active { border-left: none; border-top-width: 4px; background: transparent; }
-    .nav-item i { font-size: 1.4rem; margin-bottom: 3px; }
-    .nav-item span { font-size: 0.6rem; }
-    .desktop-only { display: none !important; }
-    .mobile-admin-trigger { display: block; }
-    .main-wrapper { height: calc(100vh - 70px); }
-    .content-area { padding: 20px; }
-    header { padding: 15px 20px; }
-    .home-grid { grid-template-columns: 1fr; gap: 20px; height: auto; }
-    #news-feed, #rules-feed { max-height: none; }
-    .news-column { height: auto; overflow: visible; }
-    .scroll-container { overflow-y: visible; }
-    .queue-list { height: auto !important; padding-bottom: 20px; }
-    .lb-container { height: auto !important; padding-bottom: 20px; }
-    .modal-content { width: 95%; max-height: 90vh; }
-    .lb-card { width: 140px; padding: 10px; }
-    .lb-icon { width: 60px; height: 60px; font-size: 1.8rem; }
-    .lb-top-3 { gap: 10px; }
-    .admin-layout { flex-direction: column; }
-    .admin-nav { width: 100%; height: auto; max-height: 150px; flex-direction: row; overflow-x: auto; overflow-y: hidden; border-right: none; border-bottom: 1px solid #34495e; padding-top: 0; }
-    .admin-nav-btn { padding: 10px; white-space: nowrap; border-left: none; border-bottom: 4px solid transparent; display: flex; align-items: center; font-size: 0.8rem; }
-    .admin-nav-btn.active { border-left: none; border-bottom-color: var(--color-admin); background: transparent; }
-    .admin-nav-btn i { margin-right: 5px; }
-    .admin-content { padding: 15px; }
-
-    /* Stack Games Tab Columns */
-    .games-layout { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
-    .games-side-col { height: auto; max-height: 300px; margin-bottom: 20px; }
-}
-
 /* --- LOGIN VIEW STYLES --- */
 #login-view {
     display: flex;
@@ -595,4 +561,97 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
     border-radius: 4px;
     margin-bottom: 15px;
     font-size: 0.8rem;
+}
+
+/* --- CHALLENGES STYLES (NEW) --- */
+.challenges-scroll-list {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-games) #161932;
+}
+.challenges-scroll-list::-webkit-scrollbar { height: 6px; }
+.challenges-scroll-list::-webkit-scrollbar-track { background: #161932; border-radius: 3px; }
+.challenges-scroll-list::-webkit-scrollbar-thumb { background: var(--color-games); border-radius: 3px; }
+
+.challenge-card {
+    background: var(--card-bg);
+    min-width: 250px;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: 0.3s;
+    position: relative;
+    border-top: 4px solid var(--color-games); /* Default Theme Color */
+}
+
+.challenge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    border-color: var(--color-games);
+}
+
+.chal-icon {
+    font-size: 2rem;
+    color: white;
+    background: rgba(255,255,255,0.1);
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 15px;
+    border: 2px solid var(--color-games);
+}
+
+.chal-info h4 { margin: 0 0 5px 0; color: white; font-size: 1.1rem; }
+.chal-info p { margin: 0 0 10px 0; color: #aaa; font-size: 0.85rem; line-height: 1.4; }
+.chal-time { font-size: 0.8rem; color: var(--color-games); font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 5px; }
+
+.chal-reward {
+    margin-top: 15px;
+    background: #f39c12;
+    color: black;
+    font-weight: bold;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    body { flex-direction: column; }
+    .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; flex-direction: row; justify-content: space-around; background-color: #090a18; border-right: none; border-top: 1px solid #1f2235; padding-top: 0; z-index: 1000; }
+    .nav-item { padding: 0; height: 100%; border-left: none; border-top: 4px solid transparent; }
+    .nav-item.active { border-left: none; border-top-width: 4px; background: transparent; }
+    .nav-item i { font-size: 1.4rem; margin-bottom: 3px; }
+    .nav-item span { font-size: 0.6rem; }
+    .desktop-only { display: none !important; }
+    .mobile-admin-trigger { display: block; }
+    .main-wrapper { height: calc(100vh - 70px); }
+    .content-area { padding: 20px; }
+    header { padding: 15px 20px; }
+    .home-grid { grid-template-columns: 1fr; gap: 20px; height: auto; }
+    #news-feed, #rules-feed { max-height: none; }
+    .news-column { height: auto; overflow: visible; }
+    .scroll-container { overflow-y: visible; }
+    .queue-list { height: auto !important; padding-bottom: 20px; }
+    .lb-container { height: auto !important; padding-bottom: 20px; }
+    .modal-content { width: 95%; max-height: 90vh; }
+    .lb-card { width: 140px; padding: 10px; }
+    .lb-icon { width: 60px; height: 60px; font-size: 1.8rem; }
+    .lb-top-3 { gap: 10px; }
+    .admin-layout { flex-direction: column; }
+    .admin-nav { width: 100%; height: auto; max-height: 150px; flex-direction: row; overflow-x: auto; overflow-y: hidden; border-right: none; border-bottom: 1px solid #34495e; padding-top: 0; }
+    .admin-nav-btn { padding: 10px; white-space: nowrap; border-left: none; border-bottom: 4px solid transparent; display: flex; align-items: center; font-size: 0.8rem; }
+    .admin-nav-btn.active { border-left: none; border-bottom-color: var(--color-admin); background: transparent; }
+    .admin-nav-btn i { margin-right: 5px; }
+    .admin-content { padding: 15px; }
+
+    /* Stack Games Tab Columns */
+    .games-layout { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
+    .games-side-col { height: auto; max-height: 300px; margin-bottom: 20px; }
 }
