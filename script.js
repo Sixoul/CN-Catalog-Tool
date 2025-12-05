@@ -1,429 +1,453 @@
-:root {
-    --bg-dark: #0e1025;
-    --bg-sidebar: #090a18;
-    --card-bg: #161932;
-    --text-main: #ffffff;
-    --text-muted: #8b9bb4;
-    --color-home: #2393CD;
-    --color-games: #2ecc71;
-    --color-jams: #f1c40f;
-    --color-catalog: #9b59b6;
-    --color-queue: #e67e22;
-    --color-impact: #1abc9c;
-    --color-academies: #e74c3c;
-    --color-leaderboard: #e74c3c;
-    --color-admin: #c0392b;
-    --coin-silver: #bdc3c7;
-    --coin-gold: #f1c40f;
-    --coin-obsidian: #8e44ad; 
-    --belt-white: #ffffff;
-    --belt-yellow: #f1c40f;
-    --belt-orange: #e67e22;
-    --belt-green: #2ecc71;
-    --belt-blue: #3498db;
-    --belt-purple: #9b59b6;
-    --belt-brown: #795548;
-    --belt-red: #e74c3c;
-    --belt-black: #333333;
+console.log("DASHBOARD SCRIPT STARTING...");
+
+/**
+ * CODE NINJAS DASHBOARD LOGIC
+ * v5.6 - Final Unified Logic
+ */
+
+/* ==========================================================================
+   1. CONFIGURATION & STATE
+   ========================================================================== */
+const APP_VERSION = "5.6";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
+  authDomain: "codeninjas-dashboard.firebaseapp.com",
+  projectId: "codeninjas-dashboard",
+  storageBucket: "codeninjas-dashboard.firebasestorage.app",
+  messagingSenderId: "71590347120",
+  appId: "1:71590347120:web:5f53a55cd7ffc280fd8fb5"
+};
+
+const GITHUB_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME"; 
+
+const DEFAULT_FILAMENTS = [
+    "Jade White", "Light Gray", "Orange", "Sunflower Yellow", "Mistletoe Green", "Cocoa Brown", 
+    "Red", "Cyan", "Cobalt Blue", "Purple", "Blue Grey", "Hot Pink", "Black",
+    "Matte Ivory White", "Matte Lilac Purple", "Matte Mandarin Orange", "Matte Plum", 
+    "Matte Dark Red", "Matte Grass Green", "Matte Dark Blue", "Matte Ash Gray", "Matte Charcoal",
+    "Glow in Dark Blue", "Translucent Red", "Silk Blue Hawaii", "Wood Black Walnut", 
+    "Metal Iridium Gold", "Metal Copper Brown", "Metal Iron Gray", "Silk+ Gold", 
+    "PETG Translucent Clear", "Flashforge Burnt Titanium", "Rock PLA Mars Red", 
+    "Elegoo Burgundy Red", "PLA-CF Burgundy Red", "Polylite PETG Gray"
+];
+
+// State Variables
+let db = null;
+let auth = null;
+let currentUser = null;
+
+let newsData = [];
+let jamsData = [];
+let jamSubmissions = [];
+let rulesData = [];
+let coinsData = [];
+let catalogData = [];
+let requestsData = [];
+let queueData = [];
+let leaderboardData = [];
+let filamentData = DEFAULT_FILAMENTS;
+
+let currentTier = 'tier1';
+let currentRequestItem = null;
+let editingCatId = null;
+let editingId = null;
+let editingNinjaId = null;
+let editingJamId = null;
+let currentJamSubmissionId = null;
+let showHistory = false;
+let clickCount = 0;
+let clickTimer;
+let selectedVariantIdx = 0;
+let carouselIndex = 0;
+
+// Default Mock Data
+const defaultNews = [{ id: "n1", title: "Minecraft Night", date: "Nov 22", badge: "SOON" }];
+const defaultRules = [{ id: "r1", title: "General", desc: "Respect the Dojo equipment.", penalty: "-1 Coin" }];
+const defaultCoins = [{ id: "c1", task: "Wear Uniform", val: "+1", type: "silver" }];
+const defaultCatalog = [{ id: "cat1", name: "Star", cost: "50", tier: "tier1", category: "standard", icon: "fa-star", visible: true }];
+const mockLeaderboard = [{ id: "l1", name: "Asher C.", points: 1250, belt: "Blue", username: "asher.cullin" }];
+
+
+/* ==========================================================================
+   2. HELPER FUNCTIONS
+   ========================================================================== */
+function formatName(name) {
+    if (!name) return 'Ninja';
+    if (name.includes('.') && name.split(' ').length === 2 && name.split(' ')[1].length === 2) return name;
+    const clean = name.replace(/\./g, ' '); 
+    const parts = clean.split(' ').filter(p => p.length > 0);
+    if (parts.length === 0) return 'Ninja';
+    const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+    let lastInitial = "";
+    if (parts.length > 1) { lastInitial = " " + parts[parts.length - 1].charAt(0).toUpperCase() + "."; }
+    return first + lastInitial;
 }
 
-* { box-sizing: border-box; }
-
-body {
-    font-family: 'Poppins', sans-serif;
-    background-color: var(--bg-dark);
-    color: var(--text-main);
-    margin: 0;
-    padding: 0;
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
+function generateUsername(baseName, existingData) {
+    let clean = baseName.replace(/[^a-zA-Z0-9.]/g, '').toLowerCase(); 
+    if (!clean) clean = "ninja" + Math.floor(Math.random() * 1000);
+    let candidate = clean;
+    let counter = 1;
+    const isTaken = (u) => existingData.some(n => (n.username || "").toLowerCase() === u);
+    while (isTaken(candidate)) { candidate = clean + counter; counter++; }
+    return candidate;
 }
 
-/* --- SCROLLBARS --- */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-home); }
-
-/* --- SIDEBAR --- */
-.sidebar {
-    width: 90px;
-    background-color: var(--bg-sidebar);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 10px;
-    border-right: 1px solid #1f2235;
-    z-index: 10;
-    flex-shrink: 0;
-}
-.logo-container { width: 60px; height: 60px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; cursor: default; border-radius: 50%; transition: 0.3s; user-select: none; }
-.cn-logo { font-size: 2rem; color: #fff; }
-
-.nav-item { width: 100%; padding: 15px 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; text-decoration: none; text-align: center; }
-.nav-item i { font-size: 1.3rem; margin-bottom: 6px; }
-.nav-item span { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; line-height: 1.1; }
-.nav-item:hover { background-color: rgba(255,255,255,0.03); color: white; }
-
-.nav-item.home-theme.active { color: var(--color-home); border-left-color: var(--color-home); background: linear-gradient(90deg, rgba(35,147,205,0.1) 0%, transparent 100%); }
-.nav-item.games-theme.active { color: var(--color-games); border-left-color: var(--color-games); background: linear-gradient(90deg, rgba(46,204,113,0.1) 0%, transparent 100%); }
-.nav-item.jams-theme.active { color: var(--color-jams); border-left-color: var(--color-jams); background: linear-gradient(90deg, rgba(241,196,15,0.1) 0%, transparent 100%); }
-.nav-item.catalog-theme.active { color: var(--color-catalog); border-left-color: var(--color-catalog); background: linear-gradient(90deg, rgba(155,89,182,0.1) 0%, transparent 100%); }
-.nav-item.queue-theme.active { color: var(--color-queue); border-left-color: var(--color-queue); background: linear-gradient(90deg, rgba(230,126,34,0.1) 0%, transparent 100%); }
-.nav-item.lb-theme.active { color: var(--color-leaderboard); border-left-color: var(--color-leaderboard); background: linear-gradient(90deg, rgba(231,76,60,0.1) 0%, transparent 100%); }
-
-.nav-spacer { flex-grow: 1; }
-.nav-link-ext { width: 100%; padding: 15px 0; display: flex; flex-direction: column; align-items: center; text-decoration: none; opacity: 0.7; transition: 0.3s; margin-bottom: 5px; }
-.nav-link-ext:hover { opacity: 1; transform: scale(1.05); }
-.impact-link { color: var(--color-impact); }
-.academies-link { color: var(--color-academies); }
-
-/* --- MAIN CONTENT --- */
-.main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: radial-gradient(circle at top right, #1c1f3f 0%, #0e1025 60%); position: relative; }
-header { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
-.welcome-section h1 { margin: 0; font-size: 1.8rem; font-weight: 600; }
-.welcome-section p { margin: 5px 0 0; color: var(--text-muted); font-size: 0.9rem; }
-.location-badge { margin-top: 10px; display: inline-flex; align-items: center; color: var(--text-main); font-weight: 600; }
-.location-badge i { margin-right: 8px; color: var(--color-home); }
-
-.content-area { flex: 1; padding: 0 40px 40px 40px; overflow-y: hidden; display: flex; flex-direction: column; }
-.section-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-
-.tab-content { display: none; animation: fadeIn 0.3s ease-in-out; height: 100%; overflow-y: auto; padding-right: 10px; }
-.tab-content.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-.home-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 25px; align-items: start; height: 100%; }
-.news-column { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-.scroll-container { overflow-y: auto; padding-right: 5px; }
-#news-feed { max-height: 35vh; margin-bottom: 20px; }
-#rules-feed { max-height: 35vh; } 
-.rules-group-header { width: 100%; margin: 20px 0 10px 0; color: var(--color-home); border-bottom: 1px solid #333; padding-bottom: 5px; }
-.rules-group-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-
-.list-card { background-color: var(--card-bg); border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid transparent; transition: 0.2s; }
-.list-card:hover { transform: translateX(5px); background-color: #1b1e3a; }
-.card-info h3 { margin: 0 0 5px 0; font-size: 1rem; color: white; }
-.card-info p { margin: 0; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-.status-badge { font-size: 0.7rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; white-space: nowrap; }
-
-.coins-column { height: 100%; }
-.coin-panel { background-color: var(--card-bg); border-radius: 8px; padding: 20px; border-top: 4px solid var(--color-jams); box-shadow: 0 4px 15px rgba(0,0,0,0.2); height: 100%; overflow-y: auto; }
-.coin-list { list-style: none; padding: 0; margin: 0; }
-.coin-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; color: #ccc; }
-.coin-val { font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; display: inline-block; text-align: center; min-width: 24px; }
-.coin-val.silver { color: var(--coin-silver); border: 1px solid var(--coin-silver); background: rgba(189, 195, 199, 0.1); }
-.coin-val.gold { color: var(--coin-gold); border: 1px solid var(--coin-gold); background: rgba(241, 196, 15, 0.1); }
-.coin-val.obsidian { color: white; border: 1px solid var(--coin-obsidian); background: linear-gradient(135deg, #1a0b2e 0%, #000 100%); box-shadow: 0 0 8px var(--coin-obsidian); text-shadow: 0 0 3px var(--coin-obsidian); }
-
-/* --- GAME JAM CAROUSEL (UPDATED v5.5) --- */
-.jam-carousel-container {
-    position: relative;
-    max-width: 1000px; /* Scaled for 8.5" reference */
-    margin: 0 auto 60px auto; /* Extra bottom margin for overlapping box */
-    aspect-ratio: 8.5 / 3.91;
-    background: transparent;
-    border-radius: 0;
-    overflow: visible; 
+function parseCSVLine(text) {
+    let results = []; let entry = []; let inQuote = false;
+    for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        if (char === '"') { inQuote = !inQuote; } 
+        else if (char === ',' && !inQuote) { results.push(entry.join('')); entry = []; } 
+        else { entry.push(char); }
+    }
+    results.push(entry.join(''));
+    return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); 
 }
 
-.jam-carousel-track { position: relative; width: 100%; height: 100%; }
-
-.jam-slide {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    display: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-}
-.jam-slide.active { display: block; opacity: 1; z-index: 2; }
-
-/* Hero Image Layer */
-.jam-hero-image {
-    width: 100%;
-    height: 100%; /* Full height of container */
-    background-size: cover;
-    background-position: center;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    position: relative;
+function parseMarkdown(text, customColor) {
+    if(!text) return "";
+    const color = customColor || '#f1c40f';
+    return text.replace(/\*\*(.*?)\*\*/g, `<span style="color:${color}; font-weight:900; text-shadow:0 0 10px ${color}80;">$1</span>`);
 }
 
-/* NEW: Top Center Title Overlay */
-.jam-top-title {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 2rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    z-index: 15;
-    text-align: center;
-    width: 90%;
-    text-shadow: 0 4px 10px rgba(0,0,0,0.9);
-    pointer-events: none;
+function formatCostDisplay(costVal) {
+    const cost = parseInt(costVal) || 0;
+    if (cost === 0) return "Free";
+    if (cost % 5 === 0) { return `<span style="color:var(--coin-obsidian); font-weight:bold;">${cost/5} Obsidian Coin${cost/5 > 1 ? 's' : ''}</span>`; }
+    if (cost > 5) { const obs = Math.floor(cost / 5); const gold = cost % 5; return `<span style="color:var(--coin-obsidian); font-weight:bold;">${obs} Obsidian</span> <span style="color:var(--coin-gold); font-weight:bold;">${gold} Gold</span>`; }
+    return `<span style="color:var(--coin-gold); font-weight:bold;">${cost} Gold Coin${cost > 1 ? 's' : ''}</span>`;
 }
 
-/* Content Box Layer (Overlapping Bottom) */
-.jam-content-box {
-    position: absolute;
-    bottom: 0; 
-    left: 50%;
-    transform: translate(-50%, 50%); /* Midpoint aligned with bottom edge */
-    width: 80%;
-    background: #1a1d3a;
-    border: 1px solid #34495e;
-    border-radius: 12px;
-    padding: 25px;
-    text-align: center;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.8);
-    z-index: 20;
+function formatCoinBreakdown(valStr) {
+    if(!valStr) return '';
+    if(valStr.includes('-')) return `<span class="coin-val" style="color:#e74c3c; border-color:#e74c3c;">${valStr}</span>`;
+    const num = parseInt(valStr.replace(/\D/g, '')) || 0;
+    if(num === 0) return `<span class="coin-val silver">0</span>`;
+    let html = '';
+    const obsVal = Math.floor(num / 25);
+    let rem = num % 25;
+    const goldVal = Math.floor(rem / 5);
+    const silverVal = rem % 5;
+    if(obsVal > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsVal}</span>`;
+    if(goldVal > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${goldVal}</span>`;
+    if(silverVal > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silverVal}</span>`;
+    return html;
 }
 
-.jam-type-badge {
-    background: var(--color-jams); color: black; font-weight: bold; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; text-transform: uppercase; display: inline-block; margin-bottom: 10px;
+function getBeltColor(belt) { const b = (belt || 'white').toLowerCase(); if(b.includes('jr')) return 'var(--belt-white)'; const map = { 'white': 'var(--belt-white)', 'yellow': 'var(--belt-yellow)', 'orange': 'var(--belt-orange)', 'green': 'var(--belt-green)', 'blue': 'var(--belt-blue)', 'purple': 'var(--belt-purple)', 'brown': 'var(--belt-brown)', 'red': 'var(--belt-red)', 'black': 'var(--belt-black)' }; return map[b] || 'var(--belt-white)'; }
+function getIconClass(belt) { const b = (belt||'white').toLowerCase(); if(b.includes('robot')) return 'fa-robot'; if(b.includes('ai')) return 'fa-microchip'; if(b.includes('jr')) return 'fa-child'; return 'fa-user-ninja'; }
+function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+function showAlert(t, m) { document.getElementById('alert-title').innerText = t; document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
+function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText = m; const b = document.getElementById('confirm-yes-btn'); const n = b.cloneNode(true); b.parentNode.replaceChild(n, b); n.onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; cb(); }; document.getElementById('confirm-modal').style.display = 'flex'; }
+function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); }
+
+
+/* ==========================================================================
+   3. AUTHENTICATION
+   ========================================================================== */
+function toggleAdminLogin() { const n = document.getElementById('ninja-login-form'); const a = document.getElementById('admin-login-form'); if(n.style.display === 'none') { n.style.display = 'block'; a.style.display = 'none'; } else { n.style.display = 'none'; a.style.display = 'block'; document.getElementById('admin-pass').focus(); } }
+function attemptNinjaLogin() { const input = document.getElementById('login-username').value.trim().toLowerCase(); if(!input) return; const u = leaderboardData.find(l => (l.username && l.username.toLowerCase() === input) || (!l.username && l.name.toLowerCase() === input)); if(u){ currentUser = u; localStorage.setItem('cn_user', JSON.stringify(u)); enterDashboard(); } else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. kane.leung)'; } }
+function attemptAdminLogin() { const e = document.getElementById('admin-email').value; const p = document.getElementById('admin-pass').value; if(p === "@2633Ninjas") { loginAsAdmin(); return; } if(auth) { auth.signInWithEmailAndPassword(e, p).then(() => loginAsAdmin()).catch(err => { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied.'; }); } else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied (Offline).'; } }
+function loginAsAdmin() { currentUser = { name: "Sensei", isAdmin: true }; localStorage.setItem('cn_user', JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); }
+function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(auth) auth.signOut(); location.reload(); }
+
+
+/* ==========================================================================
+   4. RENDERERS
+   ========================================================================== */
+function enterDashboard() { document.getElementById('login-view').style.display = 'none'; document.getElementById('main-app').style.display = 'flex'; if(currentUser && currentUser.name) document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; if(currentUser && currentUser.isAdmin) document.getElementById('floating-admin-toggle').style.display = 'flex'; else document.getElementById('floating-admin-toggle').style.display = 'none'; refreshAll(); }
+function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
+
+// --- GAME JAMS (CAROUSEL & PAST) ---
+function renderJams() {
+    const track = document.getElementById('jam-carousel-track');
+    const pastGrid = document.getElementById('past-jams-grid');
+    if(!track || !pastGrid) return;
+
+    track.innerHTML = '';
+    pastGrid.innerHTML = '';
+
+    const now = Date.now();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    const sixMonths = 180 * 24 * 60 * 60 * 1000;
+
+    const activeJams = [];
+    const pastJams = [];
+
+    jamsData.forEach(jam => {
+        const isRevealed = jam.status === 'revealed';
+        const revealTime = jam.revealedAt || 0;
+        if (jam.status === 'active' || (isRevealed && (now - revealTime < oneWeek))) {
+            activeJams.push(jam);
+        } else if (isRevealed && (now - revealTime < sixMonths)) {
+            pastJams.push(jam);
+        }
+    });
+
+    if(activeJams.length === 0) {
+        track.innerHTML = '<div class="jam-slide active" style="display:flex; align-items:center; justify-content:center; background:#111;"><h2 style="color:#666;">No Active Events</h2></div>';
+    } else {
+        activeJams.forEach((jam, idx) => {
+            const isWinnerMode = jam.status === 'revealed';
+            const themeColor = jam.color || '#f1c40f';
+            
+            // WINNERS OVERLAY - Now displays Game Title Prominently & is Clickable
+            let winnerHtml = '';
+            if(isWinnerMode && jam.winners && jam.winners.length > 0) {
+                winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${themeColor}; text-shadow:0 0 20px ${themeColor}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
+                jam.winners.forEach(w => {
+                    // Changed to show GAME TITLE first, name smaller below
+                    winnerHtml += `
+                    <div class="winner-card" style="border-color:${themeColor}; cursor:pointer;" onclick="viewWinner('${w.id}', event)">
+                        <i class="fa-solid fa-gamepad" style="color:${themeColor}; font-size:1.5rem; margin-bottom:5px;"></i>
+                        <span style="display:block; font-size:1rem; color:white;">${w.gameTitle}</span>
+                        <span style="display:block; font-size:0.7rem; color:#aaa; font-weight:normal; margin-top:2px;">by ${formatName(w.ninjaName)}</span>
+                    </div>`;
+                });
+                winnerHtml += `</div></div>`;
+            }
+
+            const activeClass = idx === carouselIndex ? 'active' : '';
+            track.innerHTML += `
+            <div class="jam-slide ${activeClass}" onclick="openJamSubmission('${jam.id}', ${isWinnerMode})">
+                <div class="jam-hero-image" style="background-image: url('${jam.image || ''}');">
+                    <div class="jam-top-title" style="text-shadow: 0 0 10px ${themeColor};">${jam.title}</div>
+                </div>
+                <div class="jam-content-box">
+                    <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); background:${themeColor}; color:black; font-weight:bold; padding:4px 12px; border-radius:20px; font-size:0.8rem; text-transform:uppercase; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
+                        ${jam.type || 'Game Jam'} | ${jam.dates}
+                    </div>
+                    <h1 class="jam-header" style="margin-top:10px;">${parseMarkdown(jam.header, themeColor)}</h1>
+                    <p class="jam-desc">${jam.desc}</p>
+                    <div class="jam-details" style="color:${themeColor};">${jam.details}</div>
+                </div>
+                ${winnerHtml}
+            </div>`;
+        });
+    }
+
+    if(pastJams.length === 0) {
+        pastGrid.innerHTML = '<p style="color:#666; grid-column:span 2; text-align:center;">No history yet.</p>';
+    } else {
+        pastJams.forEach(jam => {
+            // Past Jams: Clicking opens the winner viewer too
+            const themeColor = jam.color || '#f1c40f';
+            let topWinnerName = "No Winner";
+            let winnerAction = "";
+            
+            if(jam.winners && jam.winners.length > 0) {
+                topWinnerName = jam.winners[0].gameTitle; // Show Game Title here too
+                winnerAction = `onclick="viewWinner('${jam.winners[0].id}', event)"`;
+            }
+
+            pastGrid.innerHTML += `
+            <div class="past-jam-card" ${winnerAction}>
+                <div class="pj-img" style="background-image:url('${jam.image}');"></div>
+                <div class="pj-info">
+                    <h4>${jam.title}</h4>
+                    <p>Winner: <span style="color:${themeColor}; font-weight:bold;">${topWinnerName}</span></p>
+                </div>
+            </div>`;
+        });
+    }
 }
-.jam-header { font-size: 1.8rem; margin: 10px 0; color: white; font-weight: 800; text-transform: uppercase; line-height: 1; }
-.jam-desc { font-size: 1rem; color: #ccc; margin: 0 0 8px 0; }
-.jam-details { font-size: 0.9rem; font-weight: bold; letter-spacing: 0.5px; }
-.highlight-text { text-shadow: 0 0 15px currentColor; }
 
-/* Carousel Buttons */
-.carousel-btn {
-    position: absolute;
-    top: 0; bottom: 0; /* Full Height */
-    width: 50px;
-    background: rgba(0,0,0,0.2);
-    color: white;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    z-index: 20;
-    transition: 0.2s;
-    display: flex; align-items: center; justify-content: center;
+function moveCarousel(dir) {
+    const slides = document.querySelectorAll('.jam-slide');
+    if(slides.length < 2) return;
+    slides[carouselIndex].classList.remove('active');
+    carouselIndex += dir;
+    if(carouselIndex < 0) carouselIndex = slides.length - 1;
+    if(carouselIndex >= slides.length) carouselIndex = 0;
+    slides[carouselIndex].classList.add('active');
 }
-.carousel-btn:hover { background: rgba(241, 196, 15, 0.9); color: black; }
-.carousel-btn.prev { left: -60px; border-radius: 8px 0 0 8px; }
-.carousel-btn.next { right: -60px; border-radius: 0 8px 8px 0; }
 
-/* Winner Overlay */
-.winner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; background: rgba(0,0,0,0.85); z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.5s; }
-.winner-title { font-size: 2.5rem; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 4px; }
-.winner-avatars { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
-.winner-card { background: rgba(255,255,255,0.05); border: 2px solid gold; padding: 20px 30px; border-radius: 15px; text-align: center; min-width: 160px; transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-.winner-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.1); }
-.winner-card i { font-size: 2.5rem; margin-bottom: 15px; display: block; }
-.winner-card span { font-weight: bold; color: white; font-size: 1.2rem; }
+function viewWinner(submissionId, event) {
+    if(event) event.stopPropagation(); // Stop carousel click
 
-/* Past Jams Grid */
-.past-jams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding-bottom: 40px; margin-top: 80px; /* Push down for box overlap */ }
-.past-jam-card { background: var(--card-bg); border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #333; }
-.past-jam-card:hover { transform: translateY(-5px); border-color: var(--color-jams); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-.pj-img { height: 140px; background-size: cover; background-position: center; position: relative; }
-.pj-info { padding: 15px; }
-.pj-info h4 { margin: 0 0 5px 0; color: white; font-size: 1rem; }
-.pj-info p { margin: 0; color: #888; font-size: 0.8rem; }
+    // Find the submission in the global list (or search inside jamsData winners if needed)
+    let sub = jamSubmissions.find(s => s.id === submissionId);
+    
+    // Fallback: Search inside jamsData if not found in main list (e.g. old local data)
+    if(!sub) {
+        jamsData.forEach(j => {
+            if(j.winners) {
+                const found = j.winners.find(w => w.id === submissionId);
+                if(found) sub = found;
+            }
+        });
+    }
 
-/* ... (Keep the rest of Catalog, Queue, Admin, etc.) ... */
-/* --- CATALOG & MODALS --- */
-.tier-tabs { display: flex; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
-.tier-btn { background: var(--card-bg); border: none; color: var(--text-muted); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-.tier-btn:hover { background: #2a2e45; color: white; }
-.tier-btn.active { background: var(--color-catalog); color: white; box-shadow: 0 0 10px rgba(155,89,182,0.4); }
-.store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; padding-bottom: 20px; }
-.store-card { background-color: var(--card-bg); border-radius: 12px; padding: 20px; display: flex; align-items: center; transition: 0.3s; border: 1px solid transparent; }
-.store-card:hover { transform: translateY(-5px); border-color: var(--color-catalog); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-.store-icon-circle { width: 60px; height: 60px; border-radius: 50%; background: #0e1025; border: 2px solid var(--color-catalog); display: flex; align-items: center; justify-content: center; margin-right: 15px; flex-shrink: 0; overflow: hidden; }
-.store-icon-circle i { font-size: 1.5rem; color: white; }
-.store-icon-circle img { width: 100%; height: 100%; object-fit: cover; } 
-.store-info { flex-grow: 1; }
-.store-info h4 { margin: 0 0 5px 0; font-size: 1rem; color: white; font-weight: 600; }
-.store-info p { margin: 0; font-size: 0.8rem; color: var(--color-games); display: flex; align-items: center; }
-.store-action { margin-left: 10px; }
-.btn-req { background: var(--color-catalog); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; transition: 0.2s; }
-.btn-req:hover { background: #8e44ad; }
+    if(!sub) return;
 
-/* Limited Time Glow */
-@keyframes glow-pulse { 0% { box-shadow: 0 0 5px #e74c3c, 0 0 10px #e74c3c; border-color: #e74c3c; } 50% { box-shadow: 0 0 20px #ff6b6b, 0 0 30px #ff6b6b; border-color: #ff6b6b; } 100% { box-shadow: 0 0 5px #e74c3c, 0 0 10px #e74c3c; border-color: #e74c3c; } }
-.limited-card { animation: glow-pulse 2s infinite; background: linear-gradient(135deg, var(--card-bg) 0%, rgba(231, 76, 60, 0.1) 100%); border: 1px solid #e74c3c; }
-.badge-limited { font-size: 0.6rem; color: white; background: #e74c3c; padding: 2px 6px; border-radius: 3px; margin-left: 5px; font-weight: bold; box-shadow: 0 0 5px #e74c3c; animation: fadeIn 0.5s ease-in-out; }
+    // Find parent jam for coloring
+    const jam = jamsData.find(j => j.id === sub.jamId);
+    const color = jam ? (jam.color || '#f1c40f') : '#f1c40f';
 
-/* Queue Styles */
-.queue-list { display: flex; flex-direction: column; gap: 15px; }
-.queue-card { background-color: var(--card-bg); border-radius: 4px; padding: 20px; display: flex; align-items: center; justify-content: space-between; border-left: 4px solid #444; transition: 0.2s; }
-.queue-card:hover { background-color: #1b1e3a; }
-.queue-card.ready-pickup { background-color: rgba(46, 204, 113, 0.15); border-left-color: var(--belt-green); border: 1px solid var(--belt-green); }
-.queue-card.ready-pickup .q-status { color: var(--belt-green); font-weight: 800; font-size: 1rem; }
-.q-left { display: flex; align-items: center; gap: 20px; }
-.q-number { width: 40px; height: 40px; background: #0e1025; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #aaa; border: 2px solid #333; }
-.q-info h3 { margin: 0; font-size: 1.1rem; color: white; }
-.q-info p { margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-.q-status { font-weight: bold; font-size: 0.8rem; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
-.status-waiting-payment { color: #e74c3c; }
-.status-waiting-print { color: #3498db; }
-.status-printing { color: #9b59b6; }
-.status-ready { color: #2ecc71; }
-.printing-anim { animation: pulse 2s infinite; }
-@keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+    document.getElementById('win-game-title').innerText = sub.gameTitle;
+    document.getElementById('win-game-title').style.color = color;
+    document.getElementById('win-ninja').innerText = `Created by ${formatName(sub.ninjaName)}`;
+    
+    const linkBtn = document.getElementById('win-link');
+    linkBtn.href = sub.link;
+    linkBtn.style.background = color;
+    linkBtn.style.color = (color === '#ffffff' || color === '#f1c40f') ? 'black' : 'white'; // Contrast check basic
 
-/* Leaderboard Styles */
-.lb-container { padding-top: 20px; }
-.lb-top-3 { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-bottom: 40px; }
-.lb-card { background: var(--card-bg); width: 200px; padding: 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; position: relative; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: 0.3s; }
-.lb-card:hover { transform: translateY(-10px); }
-.lb-card.rank-1 { height: 260px; border-color: gold; background: linear-gradient(180deg, #161932 0%, rgba(255,215,0,0.1) 100%); z-index: 2; }
-.lb-card.rank-1 .lb-badge { background: gold; color: black; }
-.lb-card.rank-1 .lb-icon { border-color: gold; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
-.lb-card.rank-2 { height: 230px; border-color: silver; }
-.lb-card.rank-2 .lb-badge { background: silver; color: black; }
-.lb-card.rank-2 .lb-icon { border-color: silver; }
-.lb-card.rank-3 { height: 210px; border-color: #cd7f32; }
-.lb-card.rank-3 .lb-badge { background: #cd7f32; color: black; }
-.lb-card.rank-3 .lb-icon { border-color: #cd7f32; }
-.lb-badge { position: absolute; top: -15px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
-.lb-icon { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #444; margin-bottom: 15px; background: #0e1025; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; position: relative; }
-.lb-icon i { z-index: 2; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
-.lb-name { font-weight: bold; font-size: 1.1rem; text-align: center; margin-bottom: 5px; color: white; }
-.lb-points { font-size: 0.9rem; color: var(--color-games); font-weight: bold; text-transform: uppercase; }
-.lb-list { max-width: 800px; margin: 0 auto; }
-.lb-row { display: flex; align-items: center; padding: 10px 25px; background: var(--card-bg); margin-bottom: 10px; border-radius: 8px; border-left: 4px solid transparent; transition: 0.2s; }
-.lb-row:hover { background: #1e2240; transform: translateX(5px); }
-.lb-row-rank { font-weight: bold; color: #666; width: 40px; font-size: 1.1rem; }
-.lb-row-belt { width: 35px; height: 35px; border-radius: 50%; background: #111; margin-right: 15px; border: 2px solid #444; display: flex; align-items: center; justify-content: center; }
-.lb-row-belt i { font-size: 1.2rem; }
-.lb-row-name { flex-grow: 1; font-weight: 600; color: white; }
-.lb-row-points { font-weight: bold; color: var(--color-games); }
-
-/* Modal Overlay */
-.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 200000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-.modal-content { background: var(--bg-dark); width: 90%; max-width: 600px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 40px rgba(0,0,0,0.7); }
-.modal-header { padding: 20px 30px; background: #161932; border-bottom: 2px solid var(--color-catalog); display: flex; justify-content: space-between; align-items: center; }
-.modal-body { padding: 30px; overflow-y: auto; flex-grow: 1; }
-
-/* Form Elements */
-.req-img-container { width: 100%; height: 200px; background: #111; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #333; position: relative; }
-.req-img-container img { width: 100%; height: 100%; object-fit: contain; }
-.req-img-container i { font-size: 4rem; color: #333; }
-.req-gallery { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; justify-content: center; }
-.req-thumb { width: 60px; height: 60px; border: 2px solid #444; border-radius: 6px; cursor: pointer; overflow: hidden; flex-shrink: 0; transition: 0.2s; opacity: 0.6; }
-.req-thumb:hover { border-color: var(--color-catalog); opacity: 0.8; }
-.req-thumb.active { border-color: var(--color-catalog); opacity: 1; transform: scale(1.05); box-shadow: 0 0 10px rgba(155, 89, 182, 0.4); }
-.req-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.req-label { color: white; font-size: 0.9rem; margin-bottom: 5px; display: block; font-weight: 600; }
-.req-input { width: 100%; padding: 10px; background: #111; border: 1px solid #444; color: white; border-radius: 4px; margin-bottom: 15px; font-family: inherit; }
-.variant-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; }
-
-/* ADMIN Layout */
-#admin-view { display: none; background: radial-gradient(circle at top right, #1c1f3f 0%, #0e1025 60%); height: 100vh; width: 100vw; position: fixed; top: 0; left: 0; z-index: 100000; flex-direction: column; }
-#admin-view.active { display: flex; }
-.admin-top-bar { width: 100%; height: 50px; background-color: var(--color-admin); color: white; text-align: center; line-height: 50px; font-weight: 700; letter-spacing: 1px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); flex-shrink: 0; }
-.admin-layout { display: flex; flex: 1; height: calc(100vh - 50px); overflow: hidden; }
-.admin-nav { width: 250px; background: #0a0c18; border-right: 1px solid #34495e; padding-top: 20px; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
-.admin-nav-btn { padding: 15px 20px; color: #aaa; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-weight: 600; }
-.admin-nav-btn:hover { background: rgba(255,255,255,0.05); color: white; }
-.admin-nav-btn.active { background: rgba(192, 57, 43, 0.1); color: white; border-left-color: var(--color-admin); }
-.admin-nav-btn i { width: 25px; text-align: center; margin-right: 10px; }
-.admin-content { flex: 1; padding: 30px; overflow-y: auto; background: rgba(0,0,0,0.1); }
-.admin-section { display: none; animation: fadeIn 0.3s; }
-.admin-section.active { display: block; }
-.admin-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid #34495e; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-.admin-card h3 { margin-top: 0; color: white; border-bottom: 1px solid #34495e; padding-bottom: 10px; font-size: 1.1rem; display: flex; justify-content: space-between; }
-.admin-input { width: 100%; padding: 10px; margin-bottom: 10px; background: #0e1025; border: 1px solid #34495e; color: white; border-radius: 6px; font-family: inherit; }
-.admin-btn { width: 100%; padding: 10px; cursor: pointer; font-weight: bold; border: none; border-radius: 6px; margin-top: 5px; transition: 0.2s; }
-.admin-btn:hover { filter: brightness(1.1); }
-.btn-add { background: var(--color-games); color: white; }
-.btn-edit { background: #f39c12; color: black; width:auto; padding:5px 10px; margin-right: 5px; }
-.btn-sync { background: #2980b9; color: white; text-decoration: none; display: block; text-align: center; margin-bottom: 10px; border-radius: 6px; padding: 10px; font-weight: bold; }
-.admin-list-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.admin-list-wrapper .list-card { flex-grow: 1; margin-bottom: 0; cursor: default; }
-.btn-mini { padding: 8px 12px; border-radius: 6px; border: none; color: white; cursor: pointer; font-size: 0.8rem; font-weight: bold; transition: 0.2s; }
-.btn-mini:hover { transform: scale(1.05); }
-.btn-arrow { background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer; padding: 2px; }
-.btn-arrow:hover { color: white; transform: scale(1.2); }
-.btn-arrow-placeholder { width: 20px; height: 20px; display: block; }
-.admin-tier-header { display: flex; align-items: center; color: var(--color-catalog); font-size: 1.2rem; font-weight: bold; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 1px; }
-.admin-tier-header::after { content: ""; flex-grow: 1; height: 2px; background: var(--color-catalog); margin-left: 15px; opacity: 0.3; }
-.admin-store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-.admin-store-card { background: var(--card-bg); border-radius: 8px; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid #34495e; position: relative; }
-.admin-store-card.hidden { opacity: 0.5; border-style: dashed; }
-.admin-store-card.hidden::after { content: "HIDDEN"; position: absolute; top: 5px; right: 5px; background: #e74c3c; color: white; font-size: 0.6rem; padding: 2px 4px; border-radius: 4px; }
-.admin-store-icon { width: 50px; height: 50px; border-radius: 50%; background: #0e1025; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; overflow: hidden; }
-.admin-store-icon img { width: 100%; height: 100%; object-fit: cover; }
-.admin-store-icon i { font-size: 1.2rem; color: white; }
-.admin-store-actions { width: 100%; display: flex; gap: 5px; margin-top: 10px; }
-.admin-store-actions button { flex: 1; }
-
-/* Admin Interest */
-#admin-interest-list { display: flex; gap: 15px; overflow-x: auto; padding: 10px 5px 20px 5px; width: 100%; scrollbar-width: thin; scrollbar-color: var(--color-home) #161932; }
-#admin-interest-list::-webkit-scrollbar { height: 6px; }
-#admin-interest-list::-webkit-scrollbar-track { background: #161932; border-radius: 3px; }
-#admin-interest-list::-webkit-scrollbar-thumb { background: var(--color-home); border-radius: 3px; }
-.interest-card-square { background-color: var(--card-bg); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid #34495e; position: relative; min-width: 120px; width: 120px; height: 140px; flex-shrink: 0; justify-content: space-between; transition: transform 0.2s; }
-.interest-card-square:hover { transform: translateY(-5px); border-color: var(--color-home); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-.interest-visual { width: 35px; height: 35px; border-radius: 50%; background: #161932; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--color-home); flex-shrink: 0; margin-bottom: 10px; }
-.interest-visual img { width: 100%; height: 100%; object-fit: cover; }
-.interest-visual i { font-size: 1.2rem; color: white; }
-.interest-count-badge { color: #aaa; font-size: 0.8rem; margin-bottom: 15px; }
-.interest-reset-btn { background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 8px 0; width: 100%; font-size: 0.9rem; font-weight: 700; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: background 0.2s; }
-.interest-reset-btn:hover { background: #c0392b; }
-
-.admin-lb-preview-row { display: flex; align-items: center; padding: 8px 15px; background: #1a1d3a; border-bottom: 1px solid #2a2e45; font-size: 0.9rem; }
-.admin-lb-preview-row:last-child { border-bottom: none; }
-.admin-lb-rank { color: #888; width: 30px; font-weight: bold; }
-.admin-lb-name { flex-grow: 1; color: white; }
-.admin-lb-points { color: var(--color-games); font-weight: bold; }
-
-/* LOGIN VIEW */
-#login-view { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; width: 100vw; background: radial-gradient(circle at 50% 50%, #2393CD 0%, #005b96 100%); position: fixed; top: 0; left: 0; z-index: 300000; }
-.bg-circle { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.05); pointer-events: none; }
-.circle-1 { width: 600px; height: 600px; top: -100px; left: -100px; }
-.circle-2 { width: 400px; height: 400px; bottom: -50px; right: -50px; }
-.circle-3 { width: 200px; height: 200px; bottom: 20%; left: 20%; }
-.login-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 40px; border-radius: 12px; width: 400px; text-align: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.2); position: relative; z-index: 2; }
-.login-version-badge { display: none; background: #2ecc71; color: black; font-weight: bold; padding: 8px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; animation: fadeIn 0.5s ease; }
-.login-logo { font-size: 3rem; color: white; margin-bottom: 10px; }
-.login-title { color: white; font-size: 1.5rem; font-weight: 600; margin-bottom: 30px; letter-spacing: 1px; }
-.login-input { width: 100%; padding: 12px; border-radius: 4px; border: none; margin-bottom: 15px; font-size: 1rem; text-align: center; }
-.btn-login { width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
-.btn-login:hover { background-color: #219150; }
-.login-toggle { margin-top: 20px; color: rgba(255, 255, 255, 0.8); font-size: 0.85rem; cursor: pointer; text-decoration: underline; }
-.login-toggle:hover { color: white; }
-.login-error { color: #ff6b6b; font-size: 0.9rem; margin-bottom: 15px; display: none; }
-.mobile-admin-trigger { display: none; font-size: 1.5rem; color: #444; cursor: pointer; margin-right: 10px; }
-.floating-admin-btn { display: none; position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: var(--color-admin); color: white; border-radius: 50%; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.5); z-index: 200000; cursor: pointer; align-items: center; justify-content: center; font-size: 1.5rem; transition: transform 0.3s; }
-.floating-admin-btn:hover { transform: scale(1.1) rotate(90deg); }
-
-@media (max-width: 768px) {
-    body { flex-direction: column; }
-    .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; flex-direction: row; justify-content: space-around; background-color: #090a18; border-right: none; border-top: 1px solid #1f2235; padding-top: 0; z-index: 1000; }
-    .nav-item { padding: 0; height: 100%; border-left: none; border-top: 4px solid transparent; }
-    .nav-item.active { border-left: none; border-top-width: 4px; background: transparent; }
-    .nav-item i { font-size: 1.4rem; margin-bottom: 3px; }
-    .nav-item span { font-size: 0.6rem; }
-    .desktop-only { display: none !important; }
-    .mobile-admin-trigger { display: block; }
-    .main-wrapper { height: calc(100vh - 70px); }
-    .content-area { padding: 20px; }
-    header { padding: 15px 20px; }
-    .home-grid { grid-template-columns: 1fr; gap: 20px; height: auto; }
-    #news-feed, #rules-feed { max-height: none; }
-    .news-column { height: auto; overflow: visible; }
-    .scroll-container { overflow-y: visible; }
-    .queue-list { height: auto !important; padding-bottom: 20px; }
-    .lb-container { height: auto !important; padding-bottom: 20px; }
-    .modal-content { width: 95%; max-height: 90vh; }
-    .lb-card { width: 140px; padding: 10px; }
-    .lb-icon { width: 60px; height: 60px; font-size: 1.8rem; }
-    .lb-top-3 { gap: 10px; }
-    .admin-layout { flex-direction: column; }
-    .admin-nav { width: 100%; height: auto; max-height: 150px; flex-direction: row; overflow-x: auto; overflow-y: hidden; border-right: none; border-bottom: 1px solid #34495e; padding-top: 0; }
-    .admin-nav-btn { padding: 10px; white-space: nowrap; border-left: none; border-bottom: 4px solid transparent; display: flex; align-items: center; font-size: 0.8rem; }
-    .admin-nav-btn.active { border-left: none; border-bottom-color: var(--color-admin); background: transparent; }
-    .admin-nav-btn i { margin-right: 5px; }
-    .admin-content { padding: 15px; }
+    document.getElementById('winner-modal').style.display = 'flex';
 }
+
+function openJamSubmission(jamId, isWinnerView) {
+    if(isWinnerView) return; 
+    if(!currentUser) { showAlert("Log In", "Please log in to submit."); return; }
+    currentJamSubmissionId = jamId;
+    const jam = jamsData.find(j => j.id === jamId);
+    if(!jam) return;
+    document.getElementById('js-title').innerText = jam.title;
+    document.getElementById('js-title').style.color = jam.color || '#f1c40f';
+    const btn = document.querySelector('#jam-submit-modal .btn-blue');
+    if(btn) btn.style.background = jam.color || '#f1c40f';
+    document.getElementById('js-game-title').value = '';
+    document.getElementById('js-link').value = '';
+    document.getElementById('jam-submit-modal').style.display = 'flex';
+}
+
+function submitJamEntry() {
+    const title = document.getElementById('js-game-title').value;
+    const link = document.getElementById('js-link').value;
+    if(!title || !link) return showAlert("Error", "Title and Link required.");
+    const entry = { jamId: currentJamSubmissionId, ninjaName: currentUser.name, username: currentUser.username || currentUser.name, gameTitle: title, link: link, createdAt: Date.now() };
+    if(db) { db.collection("jamSubmissions").add(entry); } 
+    else { jamSubmissions.push({id:"local_sub_"+Date.now(), ...entry}); saveLocal('cn_jam_subs', jamSubmissions); }
+    document.getElementById('jam-submit-modal').style.display = 'none';
+    showAlert("Success", "Good luck, Ninja!");
+}
+
+// ... (Admin Jam Functions & Standard Renderers - Same as before) ...
+
+function openAdminJamModal(id=null) { editingJamId = id; document.getElementById('jam-submissions-area').style.display = 'none'; if(id) { const j = jamsData.find(x => x.id === id); document.getElementById('jam-modal-header').innerText = "Edit Jam"; document.getElementById('jam-title').value = j.title; document.getElementById('jam-dates').value = j.dates; document.getElementById('jam-type').value = j.type; document.getElementById('jam-image').value = j.image; document.getElementById('jam-header').value = j.header; document.getElementById('jam-desc').value = j.desc; document.getElementById('jam-details').value = j.details; document.getElementById('jam-color').value = j.color || '#f1c40f'; document.getElementById('jam-submissions-area').style.display = 'block'; renderJamSubmissionsList(id, j.winners || []); } else { document.getElementById('jam-modal-header').innerText = "Create Jam"; document.getElementById('jam-title').value = ''; document.getElementById('jam-dates').value = ''; document.getElementById('jam-image').value = ''; document.getElementById('jam-header').value = ''; document.getElementById('jam-desc').value = ''; document.getElementById('jam-details').value = ''; document.getElementById('jam-color').value = '#f1c40f'; } document.getElementById('jam-admin-modal').style.display = 'flex'; }
+function saveJam() { const data = { title: document.getElementById('jam-title').value, dates: document.getElementById('jam-dates').value, type: document.getElementById('jam-type').value, image: document.getElementById('jam-image').value, header: document.getElementById('jam-header').value, desc: document.getElementById('jam-desc').value, details: document.getElementById('jam-details').value, color: document.getElementById('jam-color').value, status: 'active' }; if(!data.title) return; if(db) { if(editingJamId) db.collection("jams").doc(editingJamId).update(data); else db.collection("jams").add({...data, createdAt: Date.now()}); } else { if(editingJamId) { const idx = jamsData.findIndex(j=>j.id===editingJamId); jamsData[idx] = {...jamsData[idx], ...data}; } else { jamsData.push({id:"local_jam_"+Date.now(), ...data, createdAt:Date.now()}); } saveLocal('cn_jams', jamsData); renderJams(); renderAdminLists(); } document.getElementById('jam-admin-modal').style.display = 'none'; }
+function renderJamSubmissionsList(jamId, currentWinners) { const list = document.getElementById('jam-subs-list'); list.innerHTML = ''; const subs = jamSubmissions.filter(s => s.jamId === jamId); if(subs.length === 0) { list.innerHTML = '<p style="color:#666;">No submissions yet.</p>'; return; } subs.forEach(s => { const isWinner = currentWinners.some(w => w.id === s.id); const check = isWinner ? 'checked' : ''; list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${s.id}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${s.ninjaName}</div><div style="color:#888; font-size:0.7rem;">${s.gameTitle}</div></div><a href="${s.link}" target="_blank" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`; }); }
+function revealWinners() { if(!editingJamId) return; const checkboxes = document.querySelectorAll('.winner-check:checked'); const winnerIds = Array.from(checkboxes).map(c => c.value); const winners = jamSubmissions.filter(s => winnerIds.includes(s.id)); const update = { status: 'revealed', revealedAt: Date.now(), winners: winners }; if(db) { db.collection("jams").doc(editingJamId).update(update).then(() => showAlert("Success", "Winners Revealed!")); } else { const idx = jamsData.findIndex(j=>j.id===editingJamId); jamsData[idx] = {...jamsData[idx], ...update}; saveLocal('cn_jams', jamsData); renderJams(); showAlert("Success", "Winners Revealed (Local)!"); } document.getElementById('jam-admin-modal').style.display = 'none'; }
+function renderAdminJamsList() { const c = document.getElementById('admin-jams-list'); if(!c) return; c.innerHTML = ''; jamsData.forEach(j => { const color = j.color || '#2ecc71'; c.innerHTML += `<div class="admin-list-wrapper" onclick="openAdminJamModal('${j.id}')" style="cursor:pointer;"><div class="list-card" style="margin:0; border-left-color:${color};"><div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div><div class="status-badge" style="color:${color}">${j.status || 'Active'}</div></div></div>`; }); }
+function renderNews() { const c = document.getElementById('news-feed'); if(!c) return; c.innerHTML=''; newsData.forEach(i => c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); }
+function renderRules() { const c = document.getElementById('rules-feed'); if(!c) return; c.innerHTML=''; const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if(!groups[cat]) groups[cat] = []; groups[cat].push(r); }); for (const [category, items] of Object.entries(groups)) { c.innerHTML += `<h3 class="rules-group-header">${category}</h3>`; let gridHtml = `<div class="rules-group-grid">`; items.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${r.desc}</h3></div>${b}</div>`; }); gridHtml += `</div>`; c.innerHTML += gridHtml; } }
+function renderCoins() { const c = document.getElementById('coin-feed'); if(!c) return; c.innerHTML=''; coinsData.forEach(i => c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); }
+function filterCatalog(tier, btn) { currentTier = tier; document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active')); if(btn) btn.classList.add('active'); renderCatalog(); }
+function renderCatalog() { const c = document.getElementById('catalog-feed'); if(!c) return; c.innerHTML=''; if(!currentTier) currentTier = 'tier1'; const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false); if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier.</p>'; else f.forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon || 'fa-cube'}"></i>`; let btnText = "Request"; let btnAction = `onclick="initRequest('${i.id}')"`; let catBadge = ''; let specialClass = ''; if(i.category === 'custom') { btnText = "Custom Print"; catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`; } else if(i.category === 'premium') { btnText = "View Options"; catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`; } else if(i.category === 'limited') { btnText = "Get It Now!"; catBadge = `<span class="badge-limited">LIMITED</span>`; specialClass = 'limited-card'; } c.innerHTML += `<div class="store-card ${specialClass}"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`; }); }
+function renderQueue() { const c = document.getElementById('queue-list'); if(!c) return; c.innerHTML=''; let q = !showHistory ? queueData.filter(i => i.status.toLowerCase() !== 'picked up') : [...queueData].sort((a,b) => b.createdAt - a.createdAt); if(q.length === 0) c.innerHTML = '<p style="color:#666;text-align:center;">Empty.</p>'; else q.forEach((i,x) => { let s = i.status, cl = 'status-pending', icon = 'fa-clock', cc = 'queue-card'; const sLow = s.toLowerCase(); if(sLow.includes('ready')){ cl='status-ready'; icon='fa-check'; cc+=' ready-pickup'; } else if(sLow.includes('printing')){ cl='status-printing printing-anim'; icon='fa-print'; } else if(sLow.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } const detHtml = i.details ? `<span style="opacity:0.6">| ${i.details}</span>` : ''; c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} ${detHtml}</p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; }); }
+function renderLeaderboard() { const p = document.getElementById('lb-podium'); const l = document.getElementById('lb-list'); if(!p || !l) return; p.innerHTML = ''; l.innerHTML = ''; const s = [...leaderboardData].sort((a,b) => b.points - a.points); const v = []; if(s[1]) v.push({...s[1], rank: 2}); if(s[0]) v.push({...s[0], rank: 1}); if(s[2]) v.push({...s[2], rank: 3}); v.forEach(i => p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`); s.slice(3).forEach((i,x) => l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${formatName(i.name)}</div><div class="lb-row-points">${i.points}</div></div>`); renderAdminLbPreview(); }
+function renderAdminLists() { renderAdminNews(); renderAdminRules(); renderAdminCoins(); renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview(); renderAdminInterest(); renderAdminJamsList(); }
+function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
+function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
+function renderAdminCoins() { const cList = document.getElementById('admin-coins-list'); if(cList){ cList.innerHTML=''; coinsData.forEach((c, index) => { const upBtn = index > 0 ? `<button onclick="moveCoin(${index}, -1)" class="btn-arrow">⬆</button>` : '<span class="btn-arrow-placeholder"></span>'; const downBtn = index < coinsData.length - 1 ? `<button onclick="moveCoin(${index}, 1)" class="btn-arrow">⬇</button>` : '<span class="btn-arrow-placeholder"></span>'; cList.innerHTML += `<div class="admin-list-wrapper"><div style="display:flex; flex-direction:column; margin-right:5px;">${upBtn}${downBtn}</div><div style="flex-grow:1;background:#161932;padding:10px;border-radius:6px;display:flex;justify-content:space-between;align-items:center;"><span style="color:white;font-weight:bold;">${c.task}</span><div>${formatCoinBreakdown(c.val)}</div></div><button onclick="openCoinModal('${c.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCoin('${c.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
+function renderAdminInterest() { const intList = document.getElementById('admin-interest-list'); if(!intList) return; intList.innerHTML = ''; const st = catalogData.filter(c => (c.category === 'standard' || c.category === 'limited') && (c.interest || 0) > 0); if(st.length === 0) { intList.innerHTML = '<p style="color:#666; width:100%; text-align:center; padding:20px; font-size:0.9rem;">No active interest.</p>'; } else { st.sort((a, b) => b.interest - a.interest); st.forEach(s => { let img = s.image && s.image.length > 5 ? `<img src="${s.image}">` : `<i class="fa-solid ${s.icon}"></i>`; let extraClass = s.category === 'limited' ? 'style="border:1px solid #e74c3c;"' : ''; let namePrefix = s.category === 'limited' ? '<span style="color:#e74c3c;font-size:0.7rem;">[LTD]</span> ' : ''; intList.innerHTML += `<div class="interest-card-square" ${extraClass}><div class="interest-visual">${img}</div><div style="width:100%;"><h4 style="margin:5px 0; color:white; font-size:0.9rem;">${namePrefix}${s.name}</h4><div class="interest-count-badge">${s.interest} Requests</div></div><div style="width:100%;"><button class="interest-reset-btn" onclick="resetInterest('${s.id}')">RESET</button></div></div>`; }); } }
+function renderAdminCatalog() { const catList = document.getElementById('admin-cat-list'); if(!catList) return; catList.innerHTML=''; const tiers = ['tier1','tier2','tier3','tier4']; const tierNames = {'tier1':'Tier 1','tier2':'Tier 2','tier3':'Tier 3','tier4':'Tier 4'}; tiers.forEach(t => { catList.innerHTML += `<div class="admin-tier-header">${tierNames[t]}</div>`; let g = `<div class="admin-store-grid">`; catalogData.filter(i => i.tier === t).forEach(i => { let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon}"></i>`; let h = i.visible === false ? 'hidden' : ''; let typeBadge = i.category === 'custom' ? 'CUSTOM' : (i.category === 'premium' ? 'PREMIUM' : (i.category === 'limited' ? 'LIMITED' : 'STD')); g += `<div class="admin-store-card ${h}"><div class="admin-store-icon">${img}</div><div style="flex-grow:1;"><h4 style="margin:0;color:white;font-size:0.9rem;">${i.name}</h4><div style="font-size:0.6rem; color:#aaa;">${typeBadge} | ${i.cost} Gold</div></div><div class="admin-store-actions"><button onclick="editCatItem('${i.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteCatItem('${i.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div></div>`; }); g += `</div>`; catList.innerHTML += g; }); }
+function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; const pending = requestsData.filter(r => r.status === 'Waiting for Payment'); if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No incoming payment requests.</p>'; return; } pending.forEach(r => { c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`; }); }
+function renderAdminQueue() { const qList = document.getElementById('admin-queue-manage-list'); if(!qList) return; qList.innerHTML=''; const activeQ = queueData.filter(q => q.status !== 'Picked Up' && q.status !== 'Waiting for Payment'); activeQ.sort((a,b) => (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt)); activeQ.forEach(q => { const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; const detHtml = q.details ? `| ${q.details}` : ''; qList.innerHTML += `<div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e;"><div style="display:flex;justify-content:space-between;"><strong>${q.name}</strong> <span class="status-badge" style="color:white; background:#333;">${q.status}</span></div><div style="color:#aaa;font-size:0.8rem;">${q.item} ${detHtml}</div><div style="margin-top:5px; display:flex; gap:5px;"><button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#555;">Pend</button><button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#9b59b6;">Print</button><button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#2ecc71;">Ready</button><button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto;padding:2px 8px;font-size:0.7rem;background:#1abc9c;">Done</button></div></div>`; }); }
+function renderAdminLbPreview() { const c = document.getElementById('admin-lb-preview-list'); if(!c) return; c.innerHTML = ''; const sorted = [...leaderboardData].sort((a,b) => b.points - a.points); if (sorted.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No ninjas yet.</p>'; return; } sorted.forEach((ninja, index) => { const u = ninja.username ? ` <span style="font-size:0.7rem; color:#aaa;">(${ninja.username})</span>` : ''; c.innerHTML += `<div class="admin-lb-preview-row"><div class="admin-lb-rank">#${index + 1}</div><div class="admin-lb-name">${formatName(ninja.name)}${u}</div><div class="admin-lb-points">${ninja.points}</div></div>`; }); }
+function initRequest(id) { currentRequestItem = catalogData.find(x => x.id === id); if(!currentRequestItem) return; document.getElementById('req-item-name').innerText = currentRequestItem.name; const container = document.getElementById('req-dynamic-fields'); const gallery = document.getElementById('req-gallery'); const mainImg = document.querySelector('#req-img-container img'); const mainIcon = document.querySelector('#req-img-container i'); const nameContainer = document.getElementById('req-name-container'); container.innerHTML = ''; gallery.innerHTML = ''; gallery.style.display = 'none'; if(currentRequestItem.image) { mainImg.src = currentRequestItem.image; mainImg.style.display='block'; mainIcon.style.display='none'; } else { mainImg.style.display='none'; mainIcon.style.display='block'; } if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') { nameContainer.style.display = 'none'; } else { nameContainer.style.display = 'block'; if(currentUser && currentUser.name !== "Sensei") { document.getElementById('req-ninja-name').value = currentUser.name; } } if (currentRequestItem.category === 'custom') { const labelUrl = document.createElement('label'); labelUrl.className = 'req-label'; labelUrl.innerText = 'Tinkercad Link:'; const inputUrl = document.createElement('input'); inputUrl.type='text'; inputUrl.id = 'req-url'; inputUrl.className = 'req-input'; inputUrl.placeholder = "https://www.tinkercad.com/..."; container.appendChild(labelUrl); container.appendChild(inputUrl); const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:'; if(currentRequestItem.colorFee && parseInt(currentRequestItem.colorFee) > 0) labelCol.innerHTML += ` <span style="color:#e74c3c; font-size:0.8rem;">(+${currentRequestItem.colorFee} Gold Fee)</span>`; const select = document.createElement('select'); select.id = 'req-color'; select.className = 'req-input'; const optRand = document.createElement('option'); optRand.value = "Random"; optRand.innerText = "Random (No Extra Fee)"; select.appendChild(optRand); filamentData.forEach(color => { const opt = document.createElement('option'); opt.value = color; opt.innerText = color; select.appendChild(opt); }); container.appendChild(labelCol); container.appendChild(select); } else if (currentRequestItem.category === 'premium') { if (currentRequestItem.variations && currentRequestItem.variations.length > 0) { selectedVariantIdx = 0; const vars = currentRequestItem.variations; if(vars[0].image) mainImg.src = vars[0].image; const labelVar = document.createElement('label'); labelVar.className = 'req-label'; labelVar.innerText = 'Select Style:'; const select = document.createElement('select'); select.id = 'req-variant'; select.className = 'req-input'; select.onchange = (e) => updatePremiumPreview(e.target.selectedIndex); vars.forEach((v, idx) => { const opt = document.createElement('option'); opt.value = idx; opt.innerText = v.name; select.appendChild(opt); }); container.appendChild(labelVar); container.appendChild(select); gallery.style.display = 'flex'; vars.forEach((v, idx) => { const thumb = document.createElement('div'); thumb.className = idx === 0 ? 'req-thumb active' : 'req-thumb'; thumb.onclick = () => { document.getElementById('req-variant').selectedIndex = idx; updatePremiumPreview(idx); }; thumb.innerHTML = `<img src="${v.image || ''}">`; gallery.appendChild(thumb); }); } if (currentRequestItem.colorSelection) { const labelCol = document.createElement('label'); labelCol.className = 'req-label'; labelCol.innerText = 'Select Color:'; labelCol.style.marginTop = '10px'; if(currentRequestItem.colorFee && parseInt(currentRequestItem.colorFee) > 0) { labelCol.innerHTML += ` <span style="color:#e74c3c; font-size:0.8rem;">(+${currentRequestItem.colorFee} Gold Fee)</span>`; } const select = document.createElement('select'); select.id = 'req-prem-color'; select.className = 'req-input'; const optRand = document.createElement('option'); optRand.value = "Random"; optRand.innerText = "Random (No Extra Fee)"; select.appendChild(optRand); filamentData.forEach(color => { const opt = document.createElement('option'); opt.value = color; opt.innerText = color; select.appendChild(opt); }); container.appendChild(labelCol); container.appendChild(select); } } document.getElementById('req-modal').style.display = 'flex'; }
+function updatePremiumPreview(idx) { selectedVariantIdx = idx; const item = currentRequestItem.variations[idx]; const mainImg = document.querySelector('#req-img-container img'); if(item.image) mainImg.src = item.image; document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); }
+function submitRequest() { const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') { const today = new Date().toDateString(); const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] }; if (localRec.date !== today) { localRec.date = today; localRec.ids = []; } if (localRec.ids.includes(currentRequestItem.id)) { showAlert("Notice", "You already requested this today."); return; } if (localRec.ids.length >= 3) { showAlert("Limit Reached", "Max 3 requests per day."); return; } incrementInterest(currentRequestItem.id, localRec); closeReqModal(); return; } if(!name) return showAlert("Error","Name required"); let finalItemName = currentRequestItem.name; let details = ""; if (currentRequestItem.category === 'custom') { const url = document.getElementById('req-url').value; const color = document.getElementById('req-color').value; if(!url) return showAlert("Error", "Tinkercad Link required"); details = `Color: ${color} | Link: ${url}`; } else if (currentRequestItem.category === 'premium') { let variantsPart = ""; let colorPart = ""; if (currentRequestItem.variations && currentRequestItem.variations[selectedVariantIdx]) { const v = currentRequestItem.variations[selectedVariantIdx]; variantsPart = `Variant: ${v.name}`; } if (currentRequestItem.colorSelection) { const colorEl = document.getElementById('req-prem-color'); if (colorEl && colorEl.value) { colorPart = `Color: ${colorEl.value}`; } } if (variantsPart && colorPart) details = `${variantsPart} | ${colorPart}`; else if (variantsPart) details = variantsPart; else if (colorPart) details = colorPart; else details = ""; } const req = { name, item: finalItemName, details, status: "Waiting for Payment", createdAt: Date.now() }; if(db) { db.collection("requests").add(req); } else { requestsData.push({id: "local_" + Date.now(), ...req}); saveLocal('cn_requests', requestsData); renderAdminRequests(); } closeReqModal(); showAlert("Sent!", "Please pay the Sensei to start your print."); }
+function closeReqModal() { document.getElementById('req-modal').style.display='none'; }
+function incrementInterest(id, localRec) { const item = catalogData.find(x => x.id === id); if(!item) return; if(db) { db.collection("catalog").doc(id).update({ interest: firebase.firestore.FieldValue.increment(1) }).then(() => { localRec.ids.push(id); localStorage.setItem('cn_std_reqs', JSON.stringify(localRec)); showAlert("Requested", "Sensei notified!"); }); } else { item.interest = (item.interest || 0) + 1; localRec.ids.push(id); localStorage.setItem('cn_std_reqs', JSON.stringify(localRec)); saveLocal('cn_catalog', catalogData); renderAdminLists(); showAlert("Requested", "Sensei notified! (Local)"); } }
+function resetInterest(id) { const item = catalogData.find(x => x.id === id); if(!item) return; showConfirm("Reset count for " + item.name + "?", () => { if(db) { db.collection("catalog").doc(id).update({ interest: 0 }); } else { item.interest = 0; saveLocal('cn_catalog', catalogData); renderAdminLists(); } }); }
+function approveRequest(id) { const r = requestsData.find(x => x.id === id); if(!r) return; const qItem = { name: r.name, item: r.item, details: r.details, status: "Pending", createdAt: r.createdAt, paidAt: Date.now() }; if(db) { db.collection("queue").add(qItem); db.collection("requests").doc(id).delete(); } else { queueData.push({id: "local_q_"+Date.now(), ...qItem}); requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_queue', queueData); saveLocal('cn_requests', requestsData); refreshAll(); } }
+function deleteRequest(id) { showConfirm("Delete Request?", () => { if(db) db.collection("requests").doc(id).delete(); else { requestsData = requestsData.filter(x => x.id !== id); saveLocal('cn_requests', requestsData); renderAdminLists(); renderAdminRequests(); } }); }
+function updateQueueStatus(id, s) { if(db){ if(s==='Picked Up') db.collection("queue").doc(id).update({status:s, pickedUpAt: Date.now()}); else db.collection("queue").doc(id).update({status:s}); } else { let idx=-1; if(typeof id==='string' && id.startsWith('local_')) idx=queueData.findIndex(x=>x.id===id); else idx=parseInt(id); if(idx>-1 && queueData[idx]){ queueData[idx].status = s; if(s === 'Picked Up') queueData[idx].pickedUpAt = Date.now(); saveLocal('cn_queue',queueData); renderQueue(); renderAdminLists(); } } }
+function showAddCatModal() { editingCatId = null; document.getElementById('cat-modal-title').innerText = "Add Prize"; document.getElementById('ce-name').value=''; document.getElementById('ce-cost').value=''; document.getElementById('ce-img').value=''; document.getElementById('ce-desc').value=''; document.getElementById('ce-visible').checked=true; document.getElementById('ce-category').value='standard'; document.getElementById('ce-variants-list').innerHTML = ''; document.getElementById('ce-prem-color-check').checked = false; document.getElementById('ce-prem-color-fee').value = ''; document.getElementById('ce-prem-fee-wrap').style.display = 'none'; toggleCatOptions('standard'); document.getElementById('cat-edit-modal').style.display='flex'; }
+function addVariantRow(name='', img='') { const div = document.createElement('div'); div.className = 'variant-row'; div.innerHTML = `<input type="text" class="admin-input var-name" placeholder="Name" value="${name}" style="margin:0; flex:1;"><input type="text" class="admin-input var-img" placeholder="Image URL" value="${img}" style="margin:0; flex:2;"><button onclick="this.parentElement.remove()" class="btn-mini" style="background:#e74c3c; width:30px;">X</button>`; document.getElementById('ce-variants-list').appendChild(div); }
+function editCatItem(id) { editingCatId = id; const item = catalogData.find(x => x.id === id); if (!item) return; document.getElementById('cat-modal-title').innerText = "Edit Prize"; document.getElementById('ce-name').value = item.name; document.getElementById('ce-cost').value = item.cost; document.getElementById('ce-tier').value = item.tier; document.getElementById('ce-img').value = item.image || ''; document.getElementById('ce-desc').value = item.desc || ''; document.getElementById('ce-visible').checked = item.visible !== false; const catSelect = document.getElementById('ce-category'); catSelect.value = item.category || 'standard'; toggleCatOptions(item.category); if(item.colorFee) { document.getElementById('ce-color-fee').value = item.colorFee; document.getElementById('ce-prem-color-fee').value = item.colorFee; } if(item.category === 'premium') { const hasColor = item.colorSelection === true; document.getElementById('ce-prem-color-check').checked = hasColor; document.getElementById('ce-prem-fee-wrap').style.display = hasColor ? 'block' : 'none'; } document.getElementById('ce-variants-list').innerHTML = ''; if (item.variations) { item.variations.forEach(v => addVariantRow(v.name, v.image)); } document.getElementById('cat-edit-modal').style.display='flex'; }
+function saveCatItem() { const n = document.getElementById('ce-name').value; const c = document.getElementById('ce-cost').value; const t = document.getElementById('ce-tier').value; const im = document.getElementById('ce-img').value; const d = document.getElementById('ce-desc').value; const vis = document.getElementById('ce-visible').checked; const cat = document.getElementById('ce-category').value; let variations = []; let colorFee = 0; let colorSelection = false; if (cat === 'premium') { document.querySelectorAll('#ce-variants-list .variant-row').forEach(row => { const vName = row.querySelector('.var-name').value.trim(); const vImg = row.querySelector('.var-img').value.trim(); if(vName) variations.push({name: vName, image: vImg}); }); colorSelection = document.getElementById('ce-prem-color-check').checked; if(colorSelection) { colorFee = document.getElementById('ce-prem-color-fee').value; } } if (cat === 'custom') { colorFee = document.getElementById('ce-color-fee').value; } if(n) { const data = { name:n, cost:c, tier:t, icon:'fa-cube', category:cat, desc: d, image:im, visible:vis, variations: variations, colorFee: colorFee, colorSelection: colorSelection }; if(db) { if(editingCatId) db.collection("catalog").doc(editingCatId).update(data); else db.collection("catalog").add({...data, createdAt: Date.now(), interest: 0}); } else { if(editingCatId) { const idx = catalogData.findIndex(x => x.id === editingCatId); if(idx > -1) catalogData[idx] = {id: editingCatId, ...data, interest: catalogData[idx].interest}; } else { catalogData.push({id: "local_" + Date.now(), ...data, interest: 0}); } saveLocal('cn_catalog', catalogData); renderCatalog(); renderAdminLists(); } closeCatModal(); } }
+function deleteCatItem(id) { showConfirm("Delete?", () => { if(db) db.collection("catalog").doc(id).delete(); else { catalogData = catalogData.filter(x => x.id !== id); saveLocal('cn_catalog', catalogData); renderCatalog(); renderAdminLists(); } }); }
+function closeCatModal() { document.getElementById('cat-edit-modal').style.display='none'; }
+function toggleCatOptions(v) { document.getElementById('ce-options-container').style.display = v === 'premium' ? 'block' : 'none'; document.getElementById('ce-custom-container').style.display = v === 'custom' ? 'block' : 'none'; }
+function openNewsModal(id=null) { editingId=id; if(id){const i=newsData.find(n=>n.id===id); document.getElementById('news-input-title').value=i.title; document.getElementById('news-input-date').value=i.date; document.getElementById('news-input-badge').value=i.badge;}else{document.getElementById('news-input-title').value='';document.getElementById('news-input-date').value='';document.getElementById('news-input-badge').value='';} document.getElementById('news-modal').style.display='flex'; }
+function closeNewsModal() { document.getElementById('news-modal').style.display = 'none'; }
+function saveNews() { const t=document.getElementById('news-input-title').value; const d=document.getElementById('news-input-date').value; const b=document.getElementById('news-input-badge').value; if(t){ if(db){ if(editingId) db.collection("news").doc(editingId).update({title:t,date:d,badge:b}); else db.collection("news").add({title:t,date:d,badge:b,createdAt:Date.now()}); } else { if(editingId){const idx=newsData.findIndex(n=>n.id===editingId); newsData[idx]={id:editingId,title:t,date:d,badge:b};} else {newsData.unshift({id:"l"+Date.now(),title:t,date:d,badge:b});} saveLocal('cn_news',newsData); renderAdminLists(); renderNews(); } closeNewsModal(); showAlert("Success", "News saved!"); } }
+function deleteNews(id) { showConfirm("Delete?", () => { if(db) db.collection("news").doc(id).delete(); else { newsData = newsData.filter(n => n.id !== id); saveLocal('cn_news', newsData); renderAdminLists(); renderNews(); } }); }
+function openRulesModal(id=null) { editingId=id; const ti=document.getElementById('rule-input-title'); const di=document.getElementById('rule-input-desc'); ti.placeholder="Category"; di.placeholder="Rule"; if(id){const i=rulesData.find(r=>r.id===id); ti.value=i.title; di.value=i.desc; document.getElementById('rule-input-penalty').value=i.penalty;}else{ti.value='';di.value='';document.getElementById('rule-input-penalty').value='';} document.getElementById('rules-modal').style.display='flex'; }
+function closeRulesModal() { document.getElementById('rules-modal').style.display='none'; }
+function saveRule() { const title=document.getElementById('rule-input-title').value; const desc=document.getElementById('rule-input-desc').value; const penalty=document.getElementById('rule-input-penalty').value; if(title){ if(db){ if(editingId) db.collection("rules").doc(editingId).update({title,desc,penalty}); else db.collection("rules").add({title,desc,penalty,createdAt:Date.now()}); } else { if(editingId){ const idx=rulesData.findIndex(r=>r.id===editingId); if(idx>-1) rulesData[idx]={id:editingId,title,desc,penalty}; } else { rulesData.push({id:"local_"+Date.now(),title,desc,penalty}); } saveLocal('cn_rules',rulesData); renderAdminLists(); renderRules(); } closeRulesModal(); showAlert("Success", "Rule saved!"); } }
+function deleteRule(id) { showConfirm("Delete?", () => { if(db) db.collection("rules").doc(id).delete(); else { rulesData = rulesData.filter(r => r.id !== id); saveLocal('cn_rules', rulesData); renderAdminLists(); renderRules(); } }); }
+function openCoinModal(id=null) { editingId=id; if(id){const i=coinsData.find(c=>c.id===id); document.getElementById('coin-input-task').value=i.task; document.getElementById('coin-input-val').value=i.val;}else{document.getElementById('coin-input-task').value='';document.getElementById('coin-input-val').value='';} document.getElementById('coin-modal').style.display='flex'; }
+function closeCoinModal() { document.getElementById('coin-modal').style.display='none'; }
+function saveCoin() { const task=document.getElementById('coin-input-task').value; const val=document.getElementById('coin-input-val').value; if(task){ if(db){ if(editingId) db.collection("coins").doc(editingId).update({task,val}); else db.collection("coins").add({task,val}); } else { if(editingId){ const idx=coinsData.findIndex(c=>c.id===editingId); if(idx>-1) coinsData[idx]={id:editingId,task,val}; } else { coinsData.push({id:"local_"+Date.now(),task,val}); } saveLocal('cn_coins',coinsData); renderAdminLists(); renderCoins(); } closeCoinModal(); showAlert("Success", "Task saved!"); } }
+function deleteCoin(id) { showConfirm("Delete?", () => { if(db) db.collection("coins").doc(id).delete(); else { coinsData = coinsData.filter(c => c.id !== id); saveLocal('cn_coins', coinsData); renderAdminLists(); renderCoins(); } }); }
+function moveCoin(index, dir) { if (index + dir < 0 || index + dir >= coinsData.length) return; const temp = coinsData[index]; coinsData[index] = coinsData[index + dir]; coinsData[index + dir] = temp; saveLocal('cn_coins', coinsData); renderAdminLists(); renderCoins(); }
+function manageFilaments() { const list = prompt("Edit Filament Colors (Comma Separated):", filamentData.join(', ')); if(list) { filamentData = list.split(',').map(s => s.trim()).filter(s => s); if(db) { db.collection("settings").doc("filaments").set({ colors: filamentData }); } else { saveLocal('cn_filaments', filamentData); } showAlert("Updated", "Filament list updated."); } }
+function toggleHistoryView() { showHistory = !showHistory; const b = document.querySelector('#admin-queue .btn-edit'); if(b) b.innerText = showHistory ? "Hide History" : "History"; const h = document.getElementById('admin-queue-history-list'); if(h) { h.style.display = showHistory ? 'block' : 'none'; renderQueueHistory(); } }
+function renderQueueHistory() { const h = document.getElementById('history-content'); if(!h) return; h.innerHTML = ''; const p = queueData.filter(q => q.status === 'Picked Up'); if(p.length === 0) h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>'; else p.forEach(q => { const detHtml = q.details ? ` - ${q.details}` : ''; h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} ${detHtml} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`; }); }
+function adminSearchNinja() { const q = document.getElementById('admin-lb-search').value.toLowerCase(); const resDiv = document.getElementById('admin-lb-results'); resDiv.innerHTML = ''; if(q.length < 2) return; const found = leaderboardData.filter(n => n.name.toLowerCase().includes(q) || (n.username && n.username.toLowerCase().includes(q))); found.slice(0, 5).forEach(n => { const u = n.username ? ` (${n.username})` : ''; resDiv.innerHTML += `<div style="background:#111; padding:10px; margin-bottom:5px; border-radius:4px; cursor:pointer; border:1px solid #333;" onclick="selectNinjaToEdit('${n.id}')">${formatName(n.name)} <span style="color:#888; font-size:0.8rem;">${u}</span> <span style="color:var(--color-games); font-weight:bold; float:right;">${n.points} pts</span></div>`; }); }
+function selectNinjaToEdit(id) { const n = leaderboardData.find(x => x.id === id); if(!n) return; editingNinjaId = id; document.getElementById('admin-lb-results').innerHTML = ''; document.getElementById('admin-lb-search').value = ''; document.getElementById('admin-lb-edit').style.display = 'block'; document.getElementById('admin-lb-name').innerText = formatName(n.name) + (n.username ? ` (${n.username})` : ''); document.getElementById('admin-lb-current').innerText = n.points; }
+function adminUpdatePoints() { if(!editingNinjaId) return; const val = parseInt(document.getElementById('admin-lb-adjust').value); if(isNaN(val)) return; const n = leaderboardData.find(x => x.id === editingNinjaId); if(!n) return; const newPoints = (n.points || 0) + val; if(db) { db.collection("leaderboard").doc(editingNinjaId).update({ points: newPoints }); } else { const idx = leaderboardData.findIndex(x => x.id === editingNinjaId); leaderboardData[idx].points = newPoints; saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-lb-edit').style.display = 'none'; document.getElementById('admin-lb-adjust').value = ''; showAlert("Success", `Updated ${formatName(n.name)} to ${newPoints} pts`); }
+function adminAddNinja() { const name = document.getElementById('admin-roster-add-name').value; if(!name) return; const formatted = formatName(name); const username = generateUsername(name, leaderboardData); const data = { name: formatted, username: username, points: 0, belt: 'White' }; if(db) { db.collection("leaderboard").add(data); } else { leaderboardData.push({id: "local_n_"+Date.now(), ...data}); saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } document.getElementById('admin-roster-add-name').value = ''; showAlert("Success", `Added ${formatted} (User: ${username})`); }
+function processCSVFile() { const fileInput = document.getElementById('csv-file-input'); const file = fileInput.files[0]; if (!file) { showAlert("Error", "Please select a CSV file first."); return; } const reader = new FileReader(); reader.onload = function(e) { const text = e.target.result; const lines = text.split('\n'); if (lines.length < 2) { showAlert("Error", "CSV is empty or missing headers."); return; } const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase()); const idxFirst = headers.indexOf('participant first name'); const idxLast = headers.indexOf('participant last name'); const idxRank = headers.indexOf('rank'); const idxMem = headers.indexOf('membership'); const idxUser = headers.indexOf('ninja username'); if (idxFirst === -1 || idxLast === -1) { showAlert("Error", "CSV missing 'Participant First Name' or 'Participant Last Name'"); return; } let addedCount = 0; let sessionNinjas = [...leaderboardData]; for (let i = 1; i < lines.length; i++) { const line = lines[i].trim(); if (!line) continue; const parts = parseCSVLine(line); const getVal = (idx) => (idx !== -1 && idx < parts.length) ? parts[idx] : ""; const fName = getVal(idxFirst); const lName = getVal(idxLast); if (!fName) continue; const displayName = formatName(fName + " " + lName); let belt = getVal(idxRank); if (!belt) { const mem = getVal(idxMem).toLowerCase(); if (mem.includes('jr')) belt = "JR White"; else if (mem.includes('robotics')) belt = "Robotics"; else if (mem.includes('ai academy')) belt = "AI"; else belt = "White"; } let username = getVal(idxUser); if (!username) { username = generateUsername(fName + "." + lName, sessionNinjas); } const exists = sessionNinjas.some(n => (n.username && n.username.toLowerCase() === username.toLowerCase()) || n.name === displayName); if (!exists) { const newNinja = { name: displayName, username: username, points: 0, belt: belt, createdAt: Date.now() }; if (db) { db.collection("leaderboard").add(newNinja); } else { leaderboardData.push({id: "local_n_" + Date.now() + Math.random(), ...newNinja}); } sessionNinjas.push(newNinja); addedCount++; } } if (!db) { saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); } showAlert("Sync Complete", `Added ${addedCount} new ninjas.`); fileInput.value = ''; }; reader.readAsText(file); }
+function clearZeroPointNinjas() { showConfirm("Remove all ninjas with 0 points?", () => { if(db) { const batch = db.batch(); let count = 0; leaderboardData.forEach(n => { if(n.points === 0) { const ref = db.collection("leaderboard").doc(n.id); batch.delete(ref); count++; } }); batch.commit().then(() => showAlert("Cleared", `Removed ${count} entries.`)); } else { const before = leaderboardData.length; leaderboardData = leaderboardData.filter(n => n.points > 0); const diff = before - leaderboardData.length; saveLocal('cn_leaderboard', leaderboardData); renderLeaderboard(); showAlert("Cleared", `Removed ${diff} entries.`); } }); }
+function openJamModal(id) { const j=jamsData.find(x=>x.id===id); if(!j)return; document.getElementById('modal-title').innerText=j.title; document.getElementById('modal-desc').innerText=`Details for ${j.title}`; document.getElementById('modal-deadline').innerText=j.deadline; document.getElementById('jam-modal').style.display='flex'; }
+function closeJamModal() { document.getElementById('jam-modal').style.display='none'; }
+function openGitHubUpload() { if (GITHUB_REPO_URL.includes("github.com")) window.open(GITHUB_REPO_URL.replace(/\/$/, "") + "/upload/main", '_blank'); else showAlert("Error", "Configure GITHUB_REPO_URL"); }
+function toggleAdminViewMode() { const adminView = document.getElementById('admin-view'); const floatingBtn = document.getElementById('floating-admin-toggle'); if (adminView.classList.contains('active')) { adminView.classList.remove('active'); floatingBtn.style.display = 'flex'; } else { adminView.classList.add('active'); floatingBtn.style.display = 'flex'; } }
+function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
+function handleLogoClick() { if(window.innerWidth < 768) return; clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); if(clickCount === 3) { clickCount = 0; toggleAdminLogin(); } }
+
+// --- INITIALIZATION ---
+window.onload = function() { 
+    console.log("Window loaded. Initializing...");
+    const storedVer = localStorage.getItem('cn_app_version'); 
+    const msgEl = document.getElementById('login-version-msg'); 
+    if (storedVer !== APP_VERSION) { 
+        if(msgEl) { msgEl.innerText = `🚀 Update Detected! Welcome to v${APP_VERSION}`; msgEl.style.display = 'block'; } 
+        localStorage.setItem('cn_app_version', APP_VERSION); 
+    } else { if(msgEl) msgEl.style.display = 'none'; } 
+    
+    try { 
+        if (typeof firebase !== 'undefined') { 
+            firebase.initializeApp(firebaseConfig); 
+            db = firebase.firestore(); 
+            auth = firebase.auth(); 
+            console.log("Firebase Initialized"); 
+        } 
+    } catch (e) { console.log("Demo Mode (No Firebase):", e); } 
+    
+    const savedUser = localStorage.getItem('cn_user'); 
+    if (savedUser) { 
+        try { currentUser = JSON.parse(savedUser); enterDashboard(); } 
+        catch (e) { console.error("Error parsing user", e); localStorage.removeItem('cn_user'); } 
+    } else { 
+        document.getElementById('login-view').style.display = 'flex'; 
+        document.getElementById('main-app').style.display = 'none'; 
+    } 
+    subscribeToData(); 
+};
+
+function subscribeToData() { 
+    if (db) { 
+        db.collection("news").orderBy("createdAt", "desc").onSnapshot(snap => { newsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderNews(); renderAdminLists(); }); 
+        db.collection("rules").orderBy("createdAt", "asc").onSnapshot(snap => { rulesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderRules(); renderAdminLists(); }); 
+        db.collection("coins").onSnapshot(snap => { coinsData = snap.docs.map(d => ({id: d.id, ...d.data()})); coinsData.sort((a, b) => (a.order || 0) - (b.order || 0)); renderCoins(); renderAdminLists(); }); 
+        db.collection("catalog").onSnapshot(snap => { catalogData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderCatalog(); renderAdminLists(); }); 
+        db.collection("requests").orderBy("createdAt", "desc").onSnapshot(snap => { requestsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderAdminRequests(); }); 
+        db.collection("queue").orderBy("createdAt", "asc").onSnapshot(snap => { queueData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderQueue(); renderAdminLists(); }); 
+        db.collection("leaderboard").onSnapshot(snap => { leaderboardData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderLeaderboard(); }); 
+        db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); renderAdminJamsList(); });
+        db.collection("jamSubmissions").onSnapshot(snap => { jamSubmissions = snap.docs.map(d => ({id: d.id, ...d.data()})); });
+        db.collection("settings").doc("filaments").onSnapshot(doc => { if(doc.exists) { filamentData = doc.data().colors || DEFAULT_FILAMENTS; } }); 
+    } else { 
+        newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews; 
+        rulesData = JSON.parse(localStorage.getItem('cn_rules')) || defaultRules; 
+        coinsData = JSON.parse(localStorage.getItem('cn_coins')) || defaultCoins; 
+        catalogData = JSON.parse(localStorage.getItem('cn_catalog')) || defaultCatalog; 
+        requestsData = JSON.parse(localStorage.getItem('cn_requests')) || []; 
+        queueData = JSON.parse(localStorage.getItem('cn_queue')) || []; 
+        leaderboardData = JSON.parse(localStorage.getItem('cn_leaderboard')) || mockLeaderboard; 
+        jamsData = JSON.parse(localStorage.getItem('cn_jams')) || []; 
+        jamSubmissions = JSON.parse(localStorage.getItem('cn_jam_subs')) || [];
+        const storedFilaments = JSON.parse(localStorage.getItem('cn_filaments')); 
+        if(storedFilaments) filamentData = storedFilaments; 
+        refreshAll(); 
+    } 
+}
+
+console.log("DASHBOARD SCRIPT LOADED SUCCESSFULLY");
