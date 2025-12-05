@@ -117,10 +117,10 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .coin-val.gold { color: var(--coin-gold); border: 1px solid var(--coin-gold); background: rgba(241, 196, 15, 0.1); }
 .coin-val.obsidian { color: white; border: 1px solid var(--coin-obsidian); background: linear-gradient(135deg, #1a0b2e 0%, #000 100%); box-shadow: 0 0 8px var(--coin-obsidian); text-shadow: 0 0 3px var(--coin-obsidian); }
 
-/* --- GAME JAM CAROUSEL --- */
+/* --- GAME JAM CAROUSEL (UPDATED v5.4) --- */
 .jam-carousel-container {
     position: relative;
-    max-width: 850px; /* Scale Down */
+    max-width: 1000px; /* Scaled up from 850px */
     margin: 0 auto 30px auto; /* Center */
     aspect-ratio: 8.5 / 3.91;
     background: transparent;
@@ -379,7 +379,6 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .floating-admin-btn { display: none; position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background-color: var(--color-admin); color: white; border-radius: 50%; box-shadow: 0 4px 15px rgba(192, 57, 43, 0.5); z-index: 200000; cursor: pointer; align-items: center; justify-content: center; font-size: 1.5rem; transition: transform 0.3s; }
 .floating-admin-btn:hover { transform: scale(1.1) rotate(90deg); }
 
-/* RESPONSIVE */
 @media (max-width: 768px) {
     body { flex-direction: column; }
     .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; flex-direction: row; justify-content: space-around; background-color: #090a18; border-right: none; border-top: 1px solid #1f2235; padding-top: 0; z-index: 1000; }
