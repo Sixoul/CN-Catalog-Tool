@@ -117,11 +117,11 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .coin-val.gold { color: var(--coin-gold); border: 1px solid var(--coin-gold); background: rgba(241, 196, 15, 0.1); }
 .coin-val.obsidian { color: white; border: 1px solid var(--coin-obsidian); background: linear-gradient(135deg, #1a0b2e 0%, #000 100%); box-shadow: 0 0 8px var(--coin-obsidian); text-shadow: 0 0 3px var(--coin-obsidian); }
 
-/* --- GAME JAM CAROUSEL (UPDATED v5.4) --- */
+/* --- GAME JAM CAROUSEL (UPDATED v5.5) --- */
 .jam-carousel-container {
     position: relative;
-    max-width: 1000px; /* Scaled up from 850px */
-    margin: 0 auto 30px auto; /* Center */
+    max-width: 1000px; /* Scaled for 8.5" reference */
+    margin: 0 auto 60px auto; /* Extra bottom margin for overlapping box */
     aspect-ratio: 8.5 / 3.91;
     background: transparent;
     border-radius: 0;
@@ -143,7 +143,7 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 /* Hero Image Layer */
 .jam-hero-image {
     width: 100%;
-    height: 85%; /* Space for overlapping box */
+    height: 100%; /* Full height of container */
     background-size: cover;
     background-position: center;
     border-radius: 12px;
@@ -151,59 +151,77 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
     position: relative;
 }
 
-/* Content Box Layer */
+/* NEW: Top Center Title Overlay */
+.jam-top-title {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    z-index: 15;
+    text-align: center;
+    width: 90%;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.9);
+    pointer-events: none;
+}
+
+/* Content Box Layer (Overlapping Bottom) */
 .jam-content-box {
     position: absolute;
     bottom: 0; 
     left: 50%;
-    transform: translate(-50%, 20%); /* Overlap Bottom */
-    width: 85%;
+    transform: translate(-50%, 50%); /* Midpoint aligned with bottom edge */
+    width: 80%;
     background: #1a1d3a;
     border: 1px solid #34495e;
-    border-radius: 8px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 25px;
     text-align: center;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-    z-index: 10;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+    z-index: 20;
 }
 
 .jam-type-badge {
     background: var(--color-jams); color: black; font-weight: bold; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; text-transform: uppercase; display: inline-block; margin-bottom: 10px;
 }
 .jam-header { font-size: 1.8rem; margin: 10px 0; color: white; font-weight: 800; text-transform: uppercase; line-height: 1; }
-.jam-desc { font-size: 0.9rem; color: #ccc; margin: 0 0 5px 0; }
-.jam-details { font-size: 0.85rem; font-weight: bold; }
-.highlight-text { text-shadow: 0 0 10px currentColor; }
+.jam-desc { font-size: 1rem; color: #ccc; margin: 0 0 8px 0; }
+.jam-details { font-size: 0.9rem; font-weight: bold; letter-spacing: 0.5px; }
+.highlight-text { text-shadow: 0 0 15px currentColor; }
 
 /* Carousel Buttons */
 .carousel-btn {
     position: absolute;
-    top: 10%; bottom: 25%; /* Match image height roughly */
-    width: 40px;
-    background: rgba(0,0,0,0.3);
+    top: 0; bottom: 0; /* Full Height */
+    width: 50px;
+    background: rgba(0,0,0,0.2);
     color: white;
     border: none;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     cursor: pointer;
     z-index: 20;
     transition: 0.2s;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 4px;
 }
-.carousel-btn:hover { background: rgba(241, 196, 15, 0.8); color: black; }
-.carousel-btn.prev { left: -50px; }
-.carousel-btn.next { right: -50px; }
+.carousel-btn:hover { background: rgba(241, 196, 15, 0.9); color: black; }
+.carousel-btn.prev { left: -60px; border-radius: 8px 0 0 8px; }
+.carousel-btn.next { right: -60px; border-radius: 0 8px 8px 0; }
 
 /* Winner Overlay */
-.winner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 85%; border-radius: 12px; background: rgba(0,0,0,0.8); z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); animation: fadeIn 0.5s; }
-.winner-title { font-size: 2rem; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
-.winner-avatars { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
-.winner-card { background: rgba(255,255,255,0.1); border: 2px solid gold; padding: 15px 25px; border-radius: 12px; text-align: center; min-width: 120px; }
-.winner-card i { font-size: 2rem; margin-bottom: 10px; display: block; }
-.winner-card span { font-weight: bold; color: white; font-size: 1.1rem; }
+.winner-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 12px; background: rgba(0,0,0,0.85); z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.5s; }
+.winner-title { font-size: 2.5rem; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 4px; }
+.winner-avatars { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
+.winner-card { background: rgba(255,255,255,0.05); border: 2px solid gold; padding: 20px 30px; border-radius: 15px; text-align: center; min-width: 160px; transition: 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.winner-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.1); }
+.winner-card i { font-size: 2.5rem; margin-bottom: 15px; display: block; }
+.winner-card span { font-weight: bold; color: white; font-size: 1.2rem; }
 
 /* Past Jams Grid */
-.past-jams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding-bottom: 40px; margin-top: 60px; /* Push down for overlap */ }
+.past-jams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding-bottom: 40px; margin-top: 80px; /* Push down for box overlap */ }
 .past-jam-card { background: var(--card-bg); border-radius: 10px; overflow: hidden; cursor: pointer; transition: 0.3s; border: 1px solid #333; }
 .past-jam-card:hover { transform: translateY(-5px); border-color: var(--color-jams); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 .pj-img { height: 140px; background-size: cover; background-position: center; position: relative; }
@@ -211,6 +229,7 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 .pj-info h4 { margin: 0 0 5px 0; color: white; font-size: 1rem; }
 .pj-info p { margin: 0; color: #888; font-size: 0.8rem; }
 
+/* ... (Keep the rest of Catalog, Queue, Admin, etc.) ... */
 /* --- CATALOG & MODALS --- */
 .tier-tabs { display: flex; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; flex-shrink: 0; }
 .tier-btn { background: var(--card-bg); border: none; color: var(--text-muted); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; transition: 0.3s; }
