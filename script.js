@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v4.15 - Strict Category Logic (Interest vs Ticket)
+ * v4.16 - Name Hidden for Standard/Limited Items
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "4.15";
+const APP_VERSION = "4.16";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -103,15 +103,23 @@ function generateUsername(baseName, existingData) {
     return candidate;
 }
 
+// ROBUST CSV PARSER
 function parseCSVLine(text) {
     let results = [];
     let entry = [];
     let inQuote = false;
+    
     for (let i = 0; i < text.length; i++) {
         let char = text[i];
-        if (char === '"') { inQuote = !inQuote; } 
-        else if (char === ',' && !inQuote) { results.push(entry.join('')); entry = []; } 
-        else { entry.push(char); }
+        
+        if (char === '"') {
+            inQuote = !inQuote;
+        } else if (char === ',' && !inQuote) {
+            results.push(entry.join(''));
+            entry = [];
+        } else {
+            entry.push(char);
+        }
     }
     results.push(entry.join(''));
     return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); 
@@ -465,17 +473,29 @@ function initRequest(id) {
     currentRequestItem = catalogData.find(x => x.id === id);
     if(!currentRequestItem) return;
     
-    // UNIFIED MODAL - ALL ITEMS OPEN HERE FIRST
+    // UNIFIED MODAL FOR ALL ITEMS
     document.getElementById('req-item-name').innerText = currentRequestItem.name;
     const container = document.getElementById('req-dynamic-fields');
     const gallery = document.getElementById('req-gallery');
     const mainImg = document.querySelector('#req-img-container img');
     const mainIcon = document.querySelector('#req-img-container i');
+    const nameContainer = document.getElementById('req-name-container'); // NEW WRAPPER
+
     container.innerHTML = ''; gallery.innerHTML = ''; gallery.style.display = 'none';
     
     if(currentRequestItem.image) { mainImg.src = currentRequestItem.image; mainImg.style.display='block'; mainIcon.style.display='none'; } 
     else { mainImg.style.display='none'; mainIcon.style.display='block'; }
     
+    // LOGIC: Hide Name Input for Standard/Limited Items
+    if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') {
+        nameContainer.style.display = 'none';
+    } else {
+        nameContainer.style.display = 'block';
+        if(currentUser && currentUser.name !== "Sensei") { 
+            document.getElementById('req-ninja-name').value = currentUser.name; 
+        }
+    }
+
     if (currentRequestItem.category === 'custom') {
         const labelUrl = document.createElement('label'); labelUrl.className = 'req-label'; labelUrl.innerText = 'Tinkercad Link:';
         const inputUrl = document.createElement('input'); inputUrl.type='text'; inputUrl.id = 'req-url'; inputUrl.className = 'req-input'; inputUrl.placeholder = "https://www.tinkercad.com/...";
@@ -518,7 +538,6 @@ function initRequest(id) {
         }
     }
     
-    if(currentUser && currentUser.name !== "Sensei") { const nameInput = document.getElementById('req-ninja-name'); if(nameInput) nameInput.value = currentUser.name; }
     document.getElementById('req-modal').style.display = 'flex';
 }
 
@@ -530,12 +549,11 @@ function updatePremiumPreview(idx) {
     document.querySelectorAll('.req-thumb').forEach((t, i) => { if(i === idx) t.classList.add('active'); else t.classList.remove('active'); }); 
 }
 
-// STRICT SUBMISSION LOGIC
 function submitRequest() { 
-    const nameInput = document.getElementById('req-ninja-name'); const name = nameInput ? nameInput.value : ''; 
-    if(!name) return showAlert("Error","Name required"); 
+    const nameInput = document.getElementById('req-ninja-name'); 
+    const name = nameInput ? nameInput.value : ''; 
     
-    // PATH 1: STANDARD / LIMITED -> INTEREST TRACKER
+    // PATH 1: STANDARD / LIMITED (No Name Check Required)
     if (currentRequestItem.category === 'standard' || currentRequestItem.category === 'limited') {
         const today = new Date().toDateString();
         const localRec = JSON.parse(localStorage.getItem('cn_std_reqs')) || { date: today, ids: [] };
@@ -549,7 +567,9 @@ function submitRequest() {
         return; 
     }
 
-    // PATH 2: CUSTOM / PREMIUM -> PRINT QUEUE
+    // PATH 2: CUSTOM / PREMIUM (Name Required)
+    if(!name) return showAlert("Error","Name required"); 
+
     let finalItemName = currentRequestItem.name;
     let details = ""; 
 

@@ -21,7 +21,7 @@
             <div id="login-error-msg" class="login-error">User not found or Incorrect Password</div>
             <div id="ninja-login-form">
                 <p style="color:white; margin-bottom:10px;">Ready to Code?</p>
-                <input type="text" id="login-username" class="login-input" placeholder="Enter Username" onkeydown="if(event.key==='Enter') attemptNinjaLogin()">
+                <input type="text" id="login-username" class="login-input" placeholder="Enter Username (e.g. royce.magcamit)" onkeydown="if(event.key==='Enter') attemptNinjaLogin()">
                 <button onclick="attemptNinjaLogin()" class="btn-login">LOG IN</button>
                 <div class="login-toggle" onclick="toggleAdminLogin()">Log in as Sensei (Admin)</div>
             </div>
@@ -181,7 +181,15 @@
         </div>
     </div>
 
-    <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"><img src="" alt="Prize" style="display:none;"><i class="fa-solid fa-cube"></i></div><div id="req-gallery" class="req-gallery"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3><label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label><input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name"><div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SUBMIT REQUEST</button></div></div></div>
+    <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"><img src="" alt="Prize" style="display:none;"><i class="fa-solid fa-cube"></i></div><div id="req-gallery" class="req-gallery"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3>
+    
+    <div id="req-name-container">
+        <label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label>
+        <input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name">
+    </div>
+
+    <div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SUBMIT REQUEST</button></div></div></div>
+    
     <div id="news-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit News</h2><button onclick="closeNewsModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="news-input-title" class="admin-input" placeholder="Title"><input type="text" id="news-input-date" class="admin-input" placeholder="Date"><input type="text" id="news-input-badge" class="admin-input" placeholder="Badge"><button onclick="saveNews()" class="admin-btn btn-add">SAVE</button></div></div></div>
     <div id="rules-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Rule</h2><button onclick="closeRulesModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="rule-input-title" class="admin-input" placeholder="Category"><input type="text" id="rule-input-desc" class="admin-input" placeholder="Rule Description"><input type="text" id="rule-input-penalty" class="admin-input" placeholder="Penalty"><button onclick="saveRule()" class="admin-btn btn-add">SAVE</button></div></div></div>
     <div id="coin-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Coin Task</h2><button onclick="closeCoinModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="coin-input-task" class="admin-input" placeholder="Task Name"><input type="text" id="coin-input-val" class="admin-input" placeholder="Value (+5)"><button onclick="saveCoin()" class="admin-btn btn-add">SAVE</button></div></div></div>
