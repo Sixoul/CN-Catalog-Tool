@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v5.0 - Game Jam System (Carousel, Winners, Admin)
+ * v5.1 - Game Jam Dynamic Colors
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "5.0";
+const APP_VERSION = "5.1";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -106,10 +106,12 @@ function parseCSVLine(text) {
     return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); 
 }
 
-function parseMarkdown(text) {
+// DYNAMIC MARKDOWN: Accepts custom color
+function parseMarkdown(text, customColor) {
     if(!text) return "";
-    // Replaces **text** with <span class="highlight-text">text</span>
-    return text.replace(/\*\*(.*?)\*\*/g, '<span class="highlight-text">$1</span>');
+    const color = customColor || '#f1c40f';
+    // Replaces **text** with styled span (Gold/Custom Color + Bold + Glow)
+    return text.replace(/\*\*(.*?)\*\*/g, `<span style="color:${color}; font-weight:900; text-shadow:0 0 10px ${color}80;">$1</span>`);
 }
 
 function formatCostDisplay(costVal) {
@@ -179,15 +181,12 @@ function renderJams() {
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
     const sixMonths = 180 * 24 * 60 * 60 * 1000;
 
-    // Filter Active/Recent Winners vs Past
     const activeJams = [];
     const pastJams = [];
 
     jamsData.forEach(jam => {
         const isRevealed = jam.status === 'revealed';
         const revealTime = jam.revealedAt || 0;
-        
-        // Show in Carousel if: Active OR (Revealed within last 7 days)
         if (jam.status === 'active' || (isRevealed && (now - revealTime < oneWeek))) {
             activeJams.push(jam);
         } else if (isRevealed && (now - revealTime < sixMonths)) {
@@ -195,19 +194,19 @@ function renderJams() {
         }
     });
 
-    // RENDER CAROUSEL
     if(activeJams.length === 0) {
         track.innerHTML = '<div class="jam-slide" style="display:flex; align-items:center; justify-content:center;"><h2 style="color:#666;">No Active Events</h2></div>';
     } else {
         activeJams.forEach((jam, idx) => {
             const isWinnerMode = jam.status === 'revealed';
+            const themeColor = jam.color || '#f1c40f'; // Use Custom Color
             
-            // Build Winners Overlay HTML
+            // WINNER OVERLAY (Dynamic Color)
             let winnerHtml = '';
             if(isWinnerMode && jam.winners && jam.winners.length > 0) {
-                winnerHtml = `<div class="winner-overlay"><h2 class="winner-title">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
+                winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${themeColor}; text-shadow:0 0 20px ${themeColor}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
                 jam.winners.forEach(w => {
-                    winnerHtml += `<div class="winner-card"><i class="fa-solid fa-trophy"></i><span>${formatName(w.ninjaName)}</span></div>`;
+                    winnerHtml += `<div class="winner-card" style="border-color:${themeColor};"><i class="fa-solid fa-trophy" style="color:${themeColor};"></i><span>${formatName(w.ninjaName)}</span></div>`;
                 });
                 winnerHtml += `</div></div>`;
             }
@@ -216,32 +215,30 @@ function renderJams() {
             track.innerHTML += `
             <div class="jam-slide ${activeClass}" style="background-image: url('${jam.image || ''}');" onclick="openJamSubmission('${jam.id}', ${isWinnerMode})">
                 <div class="jam-content">
-                    <div class="jam-type-badge">${jam.type || 'Game Jam'}</div>
+                    <div class="jam-type-badge" style="background-color:${themeColor};">${jam.type || 'Game Jam'}</div>
                     <div class="jam-dates">${jam.dates}</div>
-                    <h1 class="jam-header">${parseMarkdown(jam.header)}</h1>
+                    <h1 class="jam-header">${parseMarkdown(jam.header, themeColor)}</h1>
                     <p class="jam-desc">${jam.desc}</p>
-                    <div class="jam-details">${jam.details}</div>
+                    <div class="jam-details" style="color:${themeColor};">${jam.details}</div>
                 </div>
                 ${winnerHtml}
             </div>`;
         });
     }
 
-    // RENDER PAST JAMS
     if(pastJams.length === 0) {
         pastGrid.innerHTML = '<p style="color:#666; grid-column:span 2; text-align:center;">No history yet.</p>';
     } else {
         pastJams.forEach(jam => {
-            // Find Top Winner Name for display
             let topWinner = "View Winners";
             if(jam.winners && jam.winners.length > 0) topWinner = formatName(jam.winners[0].ninjaName);
-
+            const themeColor = jam.color || '#f1c40f';
             pastGrid.innerHTML += `
             <div class="past-jam-card" onclick="openWinnerModal('${jam.id}')">
                 <div class="pj-img" style="background-image:url('${jam.image}');"></div>
                 <div class="pj-info">
                     <h4>${jam.title}</h4>
-                    <p>Winner: <span style="color:var(--color-jams)">${topWinner}</span></p>
+                    <p>Winner: <span style="color:${themeColor}">${topWinner}</span></p>
                 </div>
             </div>`;
         });
@@ -259,9 +256,7 @@ function moveCarousel(dir) {
 }
 
 function openJamSubmission(jamId, isWinnerView) {
-    if(isWinnerView) return; // Do nothing if viewing winners on carousel (or open winners modal?)
-    
-    // Check if logged in
+    if(isWinnerView) return; 
     if(!currentUser) { showAlert("Log In", "Please log in to submit."); return; }
 
     currentJamSubmissionId = jamId;
@@ -269,6 +264,12 @@ function openJamSubmission(jamId, isWinnerView) {
     if(!jam) return;
 
     document.getElementById('js-title').innerText = jam.title;
+    document.getElementById('js-title').style.color = jam.color || '#f1c40f'; // Dynamic Color
+    
+    // Style the submit button dynamically
+    const btn = document.querySelector('#jam-submit-modal .btn-blue');
+    if(btn) btn.style.background = jam.color || '#f1c40f';
+
     document.getElementById('js-game-title').value = '';
     document.getElementById('js-link').value = '';
     document.getElementById('jam-submit-modal').style.display = 'flex';
@@ -301,21 +302,20 @@ function submitJamEntry() {
 function openWinnerModal(jamId) {
     const jam = jamsData.find(j => j.id === jamId);
     if(!jam || !jam.winners || jam.winners.length === 0) return;
-    
-    // For simplicity, showing the FIRST winner. 
-    // Ideally, a list if multiple.
     const w = jam.winners[0]; 
     document.getElementById('win-game-title').innerText = w.gameTitle;
+    document.getElementById('win-game-title').style.color = jam.color || '#f1c40f';
     document.getElementById('win-ninja').innerText = `By ${formatName(w.ninjaName)}`;
     const linkBtn = document.getElementById('win-link');
     linkBtn.href = w.link;
+    linkBtn.style.background = jam.color || '#f1c40f';
     document.getElementById('winner-modal').style.display = 'flex';
 }
 
 // --- ADMIN JAM FUNCTIONS ---
 function openAdminJamModal(id=null) {
     editingJamId = id;
-    document.getElementById('jam-submissions-area').style.display = 'none'; // Hide sub area initially
+    document.getElementById('jam-submissions-area').style.display = 'none'; 
     
     if(id) {
         const j = jamsData.find(x => x.id === id);
@@ -327,19 +327,19 @@ function openAdminJamModal(id=null) {
         document.getElementById('jam-header').value = j.header;
         document.getElementById('jam-desc').value = j.desc;
         document.getElementById('jam-details').value = j.details;
+        document.getElementById('jam-color').value = j.color || '#f1c40f'; // Populate Color
         
-        // Show Submissions Area
         document.getElementById('jam-submissions-area').style.display = 'block';
         renderJamSubmissionsList(id, j.winners || []);
     } else {
         document.getElementById('jam-modal-header').innerText = "Create Jam";
-        // Clear fields
         document.getElementById('jam-title').value = '';
         document.getElementById('jam-dates').value = '';
         document.getElementById('jam-image').value = '';
         document.getElementById('jam-header').value = '';
         document.getElementById('jam-desc').value = '';
         document.getElementById('jam-details').value = '';
+        document.getElementById('jam-color').value = '#f1c40f';
     }
     document.getElementById('jam-admin-modal').style.display = 'flex';
 }
@@ -353,7 +353,8 @@ function saveJam() {
         header: document.getElementById('jam-header').value,
         desc: document.getElementById('jam-desc').value,
         details: document.getElementById('jam-details').value,
-        status: 'active' // Default to active on save/create
+        color: document.getElementById('jam-color').value, // Save Color
+        status: 'active' 
     };
 
     if(!data.title) return;
@@ -378,14 +379,9 @@ function saveJam() {
 function renderJamSubmissionsList(jamId, currentWinners) {
     const list = document.getElementById('jam-subs-list');
     list.innerHTML = '';
-    
-    // Filter submissions for this jam
     const subs = jamSubmissions.filter(s => s.jamId === jamId);
     
-    if(subs.length === 0) {
-        list.innerHTML = '<p style="color:#666;">No submissions yet.</p>';
-        return;
-    }
+    if(subs.length === 0) { list.innerHTML = '<p style="color:#666;">No submissions yet.</p>'; return; }
 
     subs.forEach(s => {
         const isWinner = currentWinners.some(w => w.id === s.id);
@@ -404,23 +400,14 @@ function renderJamSubmissionsList(jamId, currentWinners) {
 
 function revealWinners() {
     if(!editingJamId) return;
-    
-    // Gather selected IDs
     const checkboxes = document.querySelectorAll('.winner-check:checked');
     const winnerIds = Array.from(checkboxes).map(c => c.value);
-    
-    // Get full submission objects
     const winners = jamSubmissions.filter(s => winnerIds.includes(s.id));
     
-    const update = {
-        status: 'revealed',
-        revealedAt: Date.now(),
-        winners: winners
-    };
+    const update = { status: 'revealed', revealedAt: Date.now(), winners: winners };
 
-    if(db) {
-        db.collection("jams").doc(editingJamId).update(update).then(() => showAlert("Success", "Winners Revealed!"));
-    } else {
+    if(db) { db.collection("jams").doc(editingJamId).update(update).then(() => showAlert("Success", "Winners Revealed!")); } 
+    else {
         const idx = jamsData.findIndex(j=>j.id===editingJamId);
         jamsData[idx] = {...jamsData[idx], ...update};
         saveLocal('cn_jams', jamsData);
@@ -431,27 +418,21 @@ function revealWinners() {
 }
 
 function renderAdminJamsList() {
-    const c = document.getElementById('admin-jams-list');
-    if(!c) return;
-    c.innerHTML = '';
+    const c = document.getElementById('admin-jams-list'); if(!c) return; c.innerHTML = '';
     jamsData.forEach(j => {
-        const statusColor = j.status === 'revealed' ? '#e74c3c' : '#2ecc71';
+        // Admin List uses the custom color for the border/status
+        const color = j.color || '#2ecc71'; 
         c.innerHTML += `
         <div class="admin-list-wrapper" onclick="openAdminJamModal('${j.id}')" style="cursor:pointer;">
-            <div class="list-card" style="margin:0; border-left-color:${statusColor};">
-                <div class="card-info">
-                    <h3>${j.title}</h3>
-                    <p>${j.dates}</p>
-                </div>
-                <div class="status-badge" style="color:${statusColor}">${j.status || 'Active'}</div>
+            <div class="list-card" style="margin:0; border-left-color:${color};">
+                <div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div>
+                <div class="status-badge" style="color:${color}">${j.status || 'Active'}</div>
             </div>
         </div>`;
     });
 }
 
-// ... (KEEP ALL EXISTING RENDER FUNCTIONS FROM v4.16 - Catalog, News, Rules, etc.) ...
-// I will just paste the core renderers here for completeness in the file integration.
-
+// ... (STANDARD RENDER FUNCTIONS UNCHANGED - Just ensuring they are present in the full file build)
 function renderNews() { const c = document.getElementById('news-feed'); if(!c) return; c.innerHTML=''; newsData.forEach(i => c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); }
 function renderRules() { const c = document.getElementById('rules-feed'); if(!c) return; c.innerHTML=''; const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if(!groups[cat]) groups[cat] = []; groups[cat].push(r); }); for (const [category, items] of Object.entries(groups)) { c.innerHTML += `<h3 class="rules-group-header">${category}</h3>`; let gridHtml = `<div class="rules-group-grid">`; items.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${r.desc}</h3></div>${b}</div>`; }); gridHtml += `</div>`; c.innerHTML += gridHtml; } }
 function renderCoins() { const c = document.getElementById('coin-feed'); if(!c) return; c.innerHTML=''; coinsData.forEach(i => c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); }
@@ -557,7 +538,6 @@ function subscribeToData() {
         db.collection("requests").orderBy("createdAt", "desc").onSnapshot(snap => { requestsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderAdminRequests(); }); 
         db.collection("queue").orderBy("createdAt", "asc").onSnapshot(snap => { queueData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderQueue(); renderAdminLists(); }); 
         db.collection("leaderboard").onSnapshot(snap => { leaderboardData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderLeaderboard(); }); 
-        // NEW: Jams and Submissions
         db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); renderAdminJamsList(); });
         db.collection("jamSubmissions").onSnapshot(snap => { jamSubmissions = snap.docs.map(d => ({id: d.id, ...d.data()})); });
         db.collection("settings").doc("filaments").onSnapshot(doc => { if(doc.exists) { filamentData = doc.data().colors || DEFAULT_FILAMENTS; } }); 
