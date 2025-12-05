@@ -2,21 +2,21 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v6.0 - Full System (Jams, Games, Catalog, Roster)
+ * v6.1 - Expanded Format (Fixes Syntax Errors)
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "6.0";
+const APP_VERSION = "6.1";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
-  authDomain: "codeninjas-dashboard.firebaseapp.com",
-  projectId: "codeninjas-dashboard",
-  storageBucket: "codeninjas-dashboard.firebasestorage.app",
-  messagingSenderId: "71590347120",
-  appId: "1:71590347120:web:5f53a55cd7ffc280fd8fb5"
+    apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
+    authDomain: "codeninjas-dashboard.firebaseapp.com",
+    projectId: "codeninjas-dashboard",
+    storageBucket: "codeninjas-dashboard.firebasestorage.app",
+    messagingSenderId: "71590347120",
+    appId: "1:71590347120:web:5f53a55cd7ffc280fd8fb5"
 };
 
 const GITHUB_REPO_URL = "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME"; 
@@ -144,7 +144,14 @@ function getBeltColor(belt) {
     return map[b] || 'var(--belt-white)'; 
 }
 
-function getIconClass(belt) { const b = (belt||'white').toLowerCase(); if(b.includes('robot')) return 'fa-robot'; if(b.includes('ai')) return 'fa-microchip'; if(b.includes('jr')) return 'fa-child'; return 'fa-user-ninja'; }
+function getIconClass(belt) { 
+    const b = (belt||'white').toLowerCase(); 
+    if(b.includes('robot')) return 'fa-robot'; 
+    if(b.includes('ai')) return 'fa-microchip'; 
+    if(b.includes('jr')) return 'fa-child'; 
+    return 'fa-user-ninja'; 
+}
+
 function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 function showAlert(t, m) { document.getElementById('alert-title').innerText = t; document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
 function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText = m; const b = document.getElementById('confirm-yes-btn'); const n = b.cloneNode(true); b.parentNode.replaceChild(n, b); n.onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; cb(); }; document.getElementById('confirm-modal').style.display = 'flex'; }
@@ -154,18 +161,137 @@ function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>
 /* ==========================================================================
    3. AUTHENTICATION
    ========================================================================== */
-function toggleAdminLogin() { const n = document.getElementById('ninja-login-form'); const a = document.getElementById('admin-login-form'); if(n.style.display === 'none') { n.style.display = 'block'; a.style.display = 'none'; } else { n.style.display = 'none'; a.style.display = 'block'; document.getElementById('admin-pass').focus(); } }
-function attemptNinjaLogin() { const input = document.getElementById('login-username').value.trim().toLowerCase(); if(!input) return; const u = leaderboardData.find(l => (l.username && l.username.toLowerCase() === input) || (!l.username && l.name.toLowerCase() === input)); if(u){ currentUser = u; localStorage.setItem('cn_user', JSON.stringify(u)); enterDashboard(); } else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. kane.leung)'; } }
-function attemptAdminLogin() { const e = document.getElementById('admin-email').value; const p = document.getElementById('admin-pass').value; if(p === "@2633Ninjas") { loginAsAdmin(); return; } if(auth) { auth.signInWithEmailAndPassword(e, p).then(() => loginAsAdmin()).catch(err => { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied.'; }); } else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied (Offline).'; } }
-function loginAsAdmin() { currentUser = { name: "Sensei", isAdmin: true }; localStorage.setItem('cn_user', JSON.stringify(currentUser)); enterDashboard(); document.getElementById('admin-view').classList.add('active'); }
-function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(auth) auth.signOut(); location.reload(); }
+function toggleAdminLogin() { 
+    const n = document.getElementById('ninja-login-form'); 
+    const a = document.getElementById('admin-login-form'); 
+    if(n.style.display === 'none') { n.style.display = 'block'; a.style.display = 'none'; } 
+    else { n.style.display = 'none'; a.style.display = 'block'; document.getElementById('admin-pass').focus(); } 
+}
+
+function attemptNinjaLogin() { 
+    const input = document.getElementById('login-username').value.trim().toLowerCase(); 
+    if(!input) return; 
+    const u = leaderboardData.find(l => (l.username && l.username.toLowerCase() === input) || (!l.username && l.name.toLowerCase() === input)); 
+    if(u){ currentUser = u; localStorage.setItem('cn_user', JSON.stringify(u)); enterDashboard(); } 
+    else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'User not found. Try username (e.g. kane.leung)'; } 
+}
+
+function attemptAdminLogin() { 
+    const e = document.getElementById('admin-email').value; 
+    const p = document.getElementById('admin-pass').value; 
+    if(p === "@2633Ninjas") { loginAsAdmin(); return; } 
+    if(auth) { auth.signInWithEmailAndPassword(e, p).then(() => loginAsAdmin()).catch(err => { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied.'; }); } 
+    else { document.getElementById('login-error-msg').style.display = 'block'; document.getElementById('login-error-msg').innerText = 'Access Denied (Offline).'; } 
+}
+
+function loginAsAdmin() { 
+    currentUser = { name: "Sensei", isAdmin: true }; 
+    localStorage.setItem('cn_user', JSON.stringify(currentUser)); 
+    enterDashboard(); 
+    document.getElementById('admin-view').classList.add('active'); 
+}
+
+function logout() { 
+    localStorage.removeItem('cn_user'); 
+    currentUser = null; 
+    if(auth) auth.signOut(); 
+    location.reload(); 
+}
 
 
 /* ==========================================================================
    4. RENDERERS
    ========================================================================== */
-function enterDashboard() { document.getElementById('login-view').style.display = 'none'; document.getElementById('main-app').style.display = 'flex'; if(currentUser && currentUser.name) document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; if(currentUser && currentUser.isAdmin) document.getElementById('floating-admin-toggle').style.display = 'flex'; else document.getElementById('floating-admin-toggle').style.display = 'none'; refreshAll(); }
-function refreshAll() { renderNews(); renderJams(); renderGames(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
+function enterDashboard() { 
+    document.getElementById('login-view').style.display = 'none'; 
+    document.getElementById('main-app').style.display = 'flex'; 
+    if(currentUser && currentUser.name) document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; 
+    if(currentUser && currentUser.isAdmin) document.getElementById('floating-admin-toggle').style.display = 'flex'; 
+    else document.getElementById('floating-admin-toggle').style.display = 'none'; 
+    refreshAll(); 
+}
+
+function refreshAll() { 
+    renderNews(); renderJams(); renderGames(); renderRules(); renderCoins(); 
+    renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); 
+}
+
+function renderNews() { 
+    const c = document.getElementById('news-feed'); if(!c) return; c.innerHTML=''; 
+    newsData.forEach(i => c.innerHTML+=`<div class="list-card passed"><div class="card-info"><h3>${i.title}</h3><p>${i.date}</p></div><div class="status-badge" style="color:var(--color-games)">${i.badge} ></div></div>`); 
+}
+
+function renderRules() { 
+    const c = document.getElementById('rules-feed'); if(!c) return; c.innerHTML=''; 
+    const groups = {}; rulesData.forEach(r => { const cat = r.title || 'General'; if(!groups[cat]) groups[cat] = []; groups[cat].push(r); }); 
+    for (const [category, items] of Object.entries(groups)) { 
+        c.innerHTML += `<h3 class="rules-group-header">${category}</h3>`; 
+        let gridHtml = `<div class="rules-group-grid">`; 
+        items.forEach(r => { 
+            const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; 
+            gridHtml += `<div class="list-card pending" style="margin:0;"><div class="card-info"><h3>${r.desc}</h3></div>${b}</div>`; 
+        }); 
+        gridHtml += `</div>`; c.innerHTML += gridHtml; 
+    } 
+}
+
+function renderCoins() { 
+    const c = document.getElementById('coin-feed'); if(!c) return; c.innerHTML=''; 
+    coinsData.forEach(i => c.innerHTML+=`<li class="coin-item"><span>${i.task}</span><div>${formatCoinBreakdown(i.val)}</div></li>`); 
+}
+
+function renderCatalog() { 
+    const c = document.getElementById('catalog-feed'); if(!c) return; c.innerHTML=''; 
+    if(!currentTier) currentTier = 'tier1'; 
+    const f = catalogData.filter(i => i.tier === currentTier && i.visible !== false); 
+    if(f.length === 0) c.innerHTML = '<p style="color:#666">No items available in this tier.</p>'; 
+    else f.forEach(i => { 
+        let img = i.image && i.image.length > 5 ? `<img src="${i.image}">` : `<i class="fa-solid ${i.icon || 'fa-cube'}"></i>`; 
+        let btnText = "Request"; let btnAction = `onclick="initRequest('${i.id}')"`; 
+        let catBadge = ''; let specialClass = ''; 
+        if(i.category === 'custom') { btnText = "Custom Print"; catBadge = `<span style="font-size:0.6rem; color:var(--color-jams); border:1px solid var(--color-jams); padding:2px 4px; border-radius:3px; margin-left:5px;">CUSTOM</span>`; } 
+        else if(i.category === 'premium') { btnText = "View Options"; catBadge = `<span style="font-size:0.6rem; color:var(--color-catalog); border:1px solid var(--color-catalog); padding:2px 4px; border-radius:3px; margin-left:5px;">PREMIUM</span>`; } 
+        else if(i.category === 'limited') { btnText = "Get It Now!"; catBadge = `<span class="badge-limited">LIMITED</span>`; specialClass = 'limited-card'; } 
+        c.innerHTML += `<div class="store-card ${specialClass}"><div class="store-icon-circle">${img}</div><div class="store-info"><h4>${i.name} ${catBadge}</h4><p>${formatCostDisplay(i.cost)}</p><div style="font-size:0.75rem; color:#888; margin-top:4px; line-height:1.2;">${i.desc || ''}</div></div><div class="store-action"><button class="btn-req" ${btnAction}>${btnText}</button></div></div>`; 
+    }); 
+}
+
+function filterCatalog(tier, btn) { 
+    currentTier = tier; 
+    document.querySelectorAll('.tier-btn').forEach(b => b.classList.remove('active')); 
+    if(btn) btn.classList.add('active'); 
+    renderCatalog(); 
+}
+
+function renderQueue() { 
+    const c = document.getElementById('queue-list'); if(!c) return; c.innerHTML=''; 
+    let q = !showHistory ? queueData.filter(i => i.status.toLowerCase() !== 'picked up') : [...queueData].sort((a,b) => b.createdAt - a.createdAt); 
+    if(q.length === 0) c.innerHTML = '<p style="color:#666;text-align:center;">Empty.</p>'; 
+    else q.forEach((i,x) => { 
+        let s = i.status, cl = 'status-pending', icon = 'fa-clock', cc = 'queue-card'; 
+        const sLow = s.toLowerCase(); 
+        if(sLow.includes('ready')){ cl='status-ready'; icon='fa-check'; cc+=' ready-pickup'; } 
+        else if(sLow.includes('printing')){ cl='status-printing printing-anim'; icon='fa-print'; } 
+        else if(sLow.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } 
+        else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
+        else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } 
+        const detHtml = i.details ? `<span style="opacity:0.6">| ${i.details}</span>` : ''; 
+        c.innerHTML += `<div class="${cc}"><div class="q-left"><div class="q-number">${x+1}</div><div class="q-info"><h3>${formatName(i.name)}</h3><p>${i.item} ${detHtml}</p></div></div><div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div></div>`; 
+    }); 
+}
+
+function renderLeaderboard() { 
+    const p = document.getElementById('lb-podium'); const l = document.getElementById('lb-list'); 
+    if(!p || !l) return; p.innerHTML = ''; l.innerHTML = ''; 
+    const s = [...leaderboardData].sort((a,b) => b.points - a.points); 
+    const v = []; 
+    if(s[1]) v.push({...s[1], rank: 2}); 
+    if(s[0]) v.push({...s[0], rank: 1}); 
+    if(s[2]) v.push({...s[2], rank: 3}); 
+    v.forEach(i => p.innerHTML += `<div class="lb-card rank-${i.rank}"><div class="lb-badge">${i.rank}</div><div class="lb-icon" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-name">${formatName(i.name)}</div><div class="lb-points">${i.points} pts</div></div>`); 
+    s.slice(3).forEach((i,x) => l.innerHTML += `<div class="lb-row"><div class="lb-row-rank">#${x+4}</div><div class="lb-row-belt" style="border-color:${getBeltColor(i.belt)}"><i class="fa-solid ${getIconClass(i.belt)}" style="color:${getBeltColor(i.belt)}"></i></div><div class="lb-row-name">${formatName(i.name)}</div><div class="lb-row-points">${i.points}</div></div>`); 
+    renderAdminLbPreview(); 
+}
 
 // --- GAMES OF THE MONTH ---
 function renderGames() {
@@ -234,7 +360,7 @@ function renderGames() {
     }
 }
 
-// --- GAME JAMS (CAROUSEL & PAST) ---
+// --- GAME JAMS ---
 function renderJams() {
     const track = document.getElementById('jam-carousel-track');
     const pastGrid = document.getElementById('past-jams-grid');
@@ -384,7 +510,18 @@ function submitJamEntry() {
 }
 
 // --- ADMIN FUNCTIONS ---
-function renderAdminLists() { renderAdminNews(); renderAdminRules(); renderAdminCoins(); renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview(); renderAdminInterest(); renderAdminJamsList(); renderAdminGames(); }
+function renderAdminLists() { 
+    renderAdminNews(); 
+    renderAdminRules(); 
+    renderAdminCoins(); 
+    renderAdminCatalog(); 
+    renderAdminRequests(); 
+    renderAdminQueue(); 
+    renderAdminLbPreview(); 
+    renderAdminInterest(); 
+    renderAdminJamsList(); 
+    renderAdminGames(); 
+}
 
 function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
 function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
@@ -554,6 +691,7 @@ function subscribeToData() {
         db.collection("leaderboard").onSnapshot(snap => { leaderboardData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderLeaderboard(); }); 
         db.collection("jams").onSnapshot(snap => { jamsData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderJams(); renderAdminJamsList(); });
         db.collection("jamSubmissions").onSnapshot(snap => { jamSubmissions = snap.docs.map(d => ({id: d.id, ...d.data()})); });
+        db.collection("games").onSnapshot(snap => { gamesData = snap.docs.map(d => ({id: d.id, ...d.data()})); renderGames(); renderAdminGames(); });
         db.collection("settings").doc("filaments").onSnapshot(doc => { if(doc.exists) { filamentData = doc.data().colors || DEFAULT_FILAMENTS; } }); 
     } else { 
         newsData = JSON.parse(localStorage.getItem('cn_news')) || defaultNews; 
@@ -565,6 +703,7 @@ function subscribeToData() {
         leaderboardData = JSON.parse(localStorage.getItem('cn_leaderboard')) || mockLeaderboard; 
         jamsData = JSON.parse(localStorage.getItem('cn_jams')) || []; 
         jamSubmissions = JSON.parse(localStorage.getItem('cn_jam_subs')) || [];
+        gamesData = JSON.parse(localStorage.getItem('cn_games')) || [];
         const storedFilaments = JSON.parse(localStorage.getItem('cn_filaments')); 
         if(storedFilaments) filamentData = storedFilaments; 
         refreshAll(); 
