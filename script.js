@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v5.2 - Hero Image & Overlapping Text Box Layout
+ * v5.3 - Winner Title Display & Clickable Cards
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "5.2";
+const APP_VERSION = "5.3";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -106,7 +106,6 @@ function parseCSVLine(text) {
     return results.map(r => r.trim().replace(/^"|"$/g, '').trim()); 
 }
 
-// DYNAMIC MARKDOWN
 function parseMarkdown(text, customColor) {
     if(!text) return "";
     const color = customColor || '#f1c40f';
@@ -159,7 +158,7 @@ function logout() { localStorage.removeItem('cn_user'); currentUser = null; if(a
 function enterDashboard() { document.getElementById('login-view').style.display = 'none'; document.getElementById('main-app').style.display = 'flex'; if(currentUser && currentUser.name) document.getElementById('current-user-name').innerText = currentUser.name.split(' ')[0]; if(currentUser && currentUser.isAdmin) document.getElementById('floating-admin-toggle').style.display = 'flex'; else document.getElementById('floating-admin-toggle').style.display = 'none'; refreshAll(); }
 function refreshAll() { renderNews(); renderJams(); renderRules(); renderCoins(); renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); }
 
-// --- NEW GAME JAM RENDERER (UPDATED LAYOUT) ---
+// --- GAME JAMS (CAROUSEL & PAST) ---
 function renderJams() {
     const track = document.getElementById('jam-carousel-track');
     const pastGrid = document.getElementById('past-jams-grid');
@@ -192,24 +191,26 @@ function renderJams() {
             const isWinnerMode = jam.status === 'revealed';
             const themeColor = jam.color || '#f1c40f';
             
-            // Winners Overlay
+            // WINNERS OVERLAY - Now displays Game Title Prominently & is Clickable
             let winnerHtml = '';
             if(isWinnerMode && jam.winners && jam.winners.length > 0) {
                 winnerHtml = `<div class="winner-overlay"><h2 class="winner-title" style="color:${themeColor}; text-shadow:0 0 20px ${themeColor}80;">🎉 WINNERS 🎉</h2><div class="winner-avatars">`;
                 jam.winners.forEach(w => {
-                    winnerHtml += `<div class="winner-card" style="border-color:${themeColor};"><i class="fa-solid fa-trophy" style="color:${themeColor};"></i><span>${formatName(w.ninjaName)}</span></div>`;
+                    // Changed to show GAME TITLE first, name smaller below
+                    winnerHtml += `
+                    <div class="winner-card" style="border-color:${themeColor}; cursor:pointer;" onclick="viewWinner('${w.id}', event)">
+                        <i class="fa-solid fa-gamepad" style="color:${themeColor}; font-size:1.5rem; margin-bottom:5px;"></i>
+                        <span style="display:block; font-size:1rem; color:white;">${w.gameTitle}</span>
+                        <span style="display:block; font-size:0.7rem; color:#aaa; font-weight:normal; margin-top:2px;">by ${formatName(w.ninjaName)}</span>
+                    </div>`;
                 });
                 winnerHtml += `</div></div>`;
             }
 
             const activeClass = idx === carouselIndex ? 'active' : '';
-            
-            // NEW STRUCTURE: Slide > Hero Image + Content Box (Overlapping)
             track.innerHTML += `
             <div class="jam-slide ${activeClass}" onclick="openJamSubmission('${jam.id}', ${isWinnerMode})">
-                
                 <div class="jam-hero-image" style="background-image: url('${jam.image || ''}');"></div>
-                
                 <div class="jam-content-box">
                     <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); background:${themeColor}; color:black; font-weight:bold; padding:4px 12px; border-radius:20px; font-size:0.8rem; text-transform:uppercase; box-shadow:0 2px 5px rgba(0,0,0,0.3);">
                         ${jam.type || 'Game Jam'} | ${jam.dates}
@@ -218,7 +219,6 @@ function renderJams() {
                     <p class="jam-desc">${jam.desc}</p>
                     <div class="jam-details" style="color:${themeColor};">${jam.details}</div>
                 </div>
-
                 ${winnerHtml}
             </div>`;
         });
@@ -228,15 +228,22 @@ function renderJams() {
         pastGrid.innerHTML = '<p style="color:#666; grid-column:span 2; text-align:center;">No history yet.</p>';
     } else {
         pastJams.forEach(jam => {
-            let topWinner = "View Winners";
-            if(jam.winners && jam.winners.length > 0) topWinner = formatName(jam.winners[0].ninjaName);
+            // Past Jams: Clicking opens the winner viewer too
             const themeColor = jam.color || '#f1c40f';
+            let topWinnerName = "No Winner";
+            let winnerAction = "";
+            
+            if(jam.winners && jam.winners.length > 0) {
+                topWinnerName = jam.winners[0].gameTitle; // Show Game Title here too
+                winnerAction = `onclick="viewWinner('${jam.winners[0].id}', event)"`;
+            }
+
             pastGrid.innerHTML += `
-            <div class="past-jam-card" onclick="openWinnerModal('${jam.id}')">
+            <div class="past-jam-card" ${winnerAction}>
                 <div class="pj-img" style="background-image:url('${jam.image}');"></div>
                 <div class="pj-info">
                     <h4>${jam.title}</h4>
-                    <p>Winner: <span style="color:${themeColor}">${topWinner}</span></p>
+                    <p>Winner: <span style="color:${themeColor}; font-weight:bold;">${topWinnerName}</span></p>
                 </div>
             </div>`;
         });
@@ -253,12 +260,68 @@ function moveCarousel(dir) {
     slides[carouselIndex].classList.add('active');
 }
 
-// ... (KEEP ALL EXISTING LOGIC: initRequest, submitRequest, Admin Functions, etc.) ...
-// Just repeating the core logic below for file completeness
+function viewWinner(submissionId, event) {
+    if(event) event.stopPropagation(); // Stop carousel click
 
-function openJamSubmission(jamId, isWinnerView) { if(isWinnerView) return; if(!currentUser) { showAlert("Log In", "Please log in to submit."); return; } currentJamSubmissionId = jamId; const jam = jamsData.find(j => j.id === jamId); if(!jam) return; document.getElementById('js-title').innerText = jam.title; document.getElementById('js-title').style.color = jam.color || '#f1c40f'; const btn = document.querySelector('#jam-submit-modal .btn-blue'); if(btn) btn.style.background = jam.color || '#f1c40f'; document.getElementById('js-game-title').value = ''; document.getElementById('js-link').value = ''; document.getElementById('jam-submit-modal').style.display = 'flex'; }
-function submitJamEntry() { const title = document.getElementById('js-game-title').value; const link = document.getElementById('js-link').value; if(!title || !link) return showAlert("Error", "Title and Link required."); const entry = { jamId: currentJamSubmissionId, ninjaName: currentUser.name, username: currentUser.username || currentUser.name, gameTitle: title, link: link, createdAt: Date.now() }; if(db) { db.collection("jamSubmissions").add(entry); } else { jamSubmissions.push({id:"local_sub_"+Date.now(), ...entry}); saveLocal('cn_jam_subs', jamSubmissions); } document.getElementById('jam-submit-modal').style.display = 'none'; showAlert("Success", "Good luck, Ninja!"); }
-function openWinnerModal(jamId) { const jam = jamsData.find(j => j.id === jamId); if(!jam || !jam.winners || jam.winners.length === 0) return; const w = jam.winners[0]; document.getElementById('win-game-title').innerText = w.gameTitle; document.getElementById('win-game-title').style.color = jam.color || '#f1c40f'; document.getElementById('win-ninja').innerText = `By ${formatName(w.ninjaName)}`; const linkBtn = document.getElementById('win-link'); linkBtn.href = w.link; linkBtn.style.background = jam.color || '#f1c40f'; document.getElementById('winner-modal').style.display = 'flex'; }
+    // Find the submission in the global list (or search inside jamsData winners if needed)
+    let sub = jamSubmissions.find(s => s.id === submissionId);
+    
+    // Fallback: Search inside jamsData if not found in main list (e.g. old local data)
+    if(!sub) {
+        jamsData.forEach(j => {
+            if(j.winners) {
+                const found = j.winners.find(w => w.id === submissionId);
+                if(found) sub = found;
+            }
+        });
+    }
+
+    if(!sub) return;
+
+    // Find parent jam for coloring
+    const jam = jamsData.find(j => j.id === sub.jamId);
+    const color = jam ? (jam.color || '#f1c40f') : '#f1c40f';
+
+    document.getElementById('win-game-title').innerText = sub.gameTitle;
+    document.getElementById('win-game-title').style.color = color;
+    document.getElementById('win-ninja').innerText = `Created by ${formatName(sub.ninjaName)}`;
+    
+    const linkBtn = document.getElementById('win-link');
+    linkBtn.href = sub.link;
+    linkBtn.style.background = color;
+    linkBtn.style.color = (color === '#ffffff' || color === '#f1c40f') ? 'black' : 'white'; // Contrast check basic
+
+    document.getElementById('winner-modal').style.display = 'flex';
+}
+
+function openJamSubmission(jamId, isWinnerView) {
+    if(isWinnerView) return; 
+    if(!currentUser) { showAlert("Log In", "Please log in to submit."); return; }
+    currentJamSubmissionId = jamId;
+    const jam = jamsData.find(j => j.id === jamId);
+    if(!jam) return;
+    document.getElementById('js-title').innerText = jam.title;
+    document.getElementById('js-title').style.color = jam.color || '#f1c40f';
+    const btn = document.querySelector('#jam-submit-modal .btn-blue');
+    if(btn) btn.style.background = jam.color || '#f1c40f';
+    document.getElementById('js-game-title').value = '';
+    document.getElementById('js-link').value = '';
+    document.getElementById('jam-submit-modal').style.display = 'flex';
+}
+
+function submitJamEntry() {
+    const title = document.getElementById('js-game-title').value;
+    const link = document.getElementById('js-link').value;
+    if(!title || !link) return showAlert("Error", "Title and Link required.");
+    const entry = { jamId: currentJamSubmissionId, ninjaName: currentUser.name, username: currentUser.username || currentUser.name, gameTitle: title, link: link, createdAt: Date.now() };
+    if(db) { db.collection("jamSubmissions").add(entry); } 
+    else { jamSubmissions.push({id:"local_sub_"+Date.now(), ...entry}); saveLocal('cn_jam_subs', jamSubmissions); }
+    document.getElementById('jam-submit-modal').style.display = 'none';
+    showAlert("Success", "Good luck, Ninja!");
+}
+
+// ... (Admin Jam Functions & Standard Renderers - Same as before) ...
+
 function openAdminJamModal(id=null) { editingJamId = id; document.getElementById('jam-submissions-area').style.display = 'none'; if(id) { const j = jamsData.find(x => x.id === id); document.getElementById('jam-modal-header').innerText = "Edit Jam"; document.getElementById('jam-title').value = j.title; document.getElementById('jam-dates').value = j.dates; document.getElementById('jam-type').value = j.type; document.getElementById('jam-image').value = j.image; document.getElementById('jam-header').value = j.header; document.getElementById('jam-desc').value = j.desc; document.getElementById('jam-details').value = j.details; document.getElementById('jam-color').value = j.color || '#f1c40f'; document.getElementById('jam-submissions-area').style.display = 'block'; renderJamSubmissionsList(id, j.winners || []); } else { document.getElementById('jam-modal-header').innerText = "Create Jam"; document.getElementById('jam-title').value = ''; document.getElementById('jam-dates').value = ''; document.getElementById('jam-image').value = ''; document.getElementById('jam-header').value = ''; document.getElementById('jam-desc').value = ''; document.getElementById('jam-details').value = ''; document.getElementById('jam-color').value = '#f1c40f'; } document.getElementById('jam-admin-modal').style.display = 'flex'; }
 function saveJam() { const data = { title: document.getElementById('jam-title').value, dates: document.getElementById('jam-dates').value, type: document.getElementById('jam-type').value, image: document.getElementById('jam-image').value, header: document.getElementById('jam-header').value, desc: document.getElementById('jam-desc').value, details: document.getElementById('jam-details').value, color: document.getElementById('jam-color').value, status: 'active' }; if(!data.title) return; if(db) { if(editingJamId) db.collection("jams").doc(editingJamId).update(data); else db.collection("jams").add({...data, createdAt: Date.now()}); } else { if(editingJamId) { const idx = jamsData.findIndex(j=>j.id===editingJamId); jamsData[idx] = {...jamsData[idx], ...data}; } else { jamsData.push({id:"local_jam_"+Date.now(), ...data, createdAt:Date.now()}); } saveLocal('cn_jams', jamsData); renderJams(); renderAdminLists(); } document.getElementById('jam-admin-modal').style.display = 'none'; }
 function renderJamSubmissionsList(jamId, currentWinners) { const list = document.getElementById('jam-subs-list'); list.innerHTML = ''; const subs = jamSubmissions.filter(s => s.jamId === jamId); if(subs.length === 0) { list.innerHTML = '<p style="color:#666;">No submissions yet.</p>'; return; } subs.forEach(s => { const isWinner = currentWinners.some(w => w.id === s.id); const check = isWinner ? 'checked' : ''; list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${s.id}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${s.ninjaName}</div><div style="color:#888; font-size:0.7rem;">${s.gameTitle}</div></div><a href="${s.link}" target="_blank" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`; }); }
