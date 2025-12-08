@@ -470,4 +470,9 @@ function subscribeToData() {
     } 
 }
 
+function refreshAll() { 
+    renderNews(); renderJams(); renderGames(); renderRules(); renderCoins(); 
+    renderCatalog(); renderQueue(); renderLeaderboard(); renderAdminLists(); 
+}
+
 console.log("DASHBOARD SCRIPT LOADED SUCCESSFULLY");
