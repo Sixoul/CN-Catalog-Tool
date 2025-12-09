@@ -2,10 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v9.0 - GitHub Removal & Nav Order Update
+ * v8.0 - Optimized Firebase Reads & Performance (Fixed Syntax)
  */
 
-const APP_VERSION = "9.0";
+/* ==========================================================================
+   1. CONFIGURATION & STATE
+   ========================================================================== */
+const APP_VERSION = "8.0";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -15,8 +18,6 @@ const firebaseConfig = {
   messagingSenderId: "71590347120",
   appId: "1:71590347120:web:5f53a55cd7ffc280fd8fb5"
 };
-
-// REMOVED GITHUB_REPO_URL
 
 const DEFAULT_FILAMENTS = [
     "Jade White", "Light Gray", "Orange", "Sunflower Yellow", "Mistletoe Green", "Cocoa Brown", 
@@ -34,6 +35,7 @@ let db = null;
 let auth = null;
 let currentUser = null;
 
+// Data Stores
 let newsData = [];
 let jamsData = [];
 let jamSubmissions = [];
@@ -47,6 +49,7 @@ let queueData = [];
 let leaderboardData = [];
 let filamentData = DEFAULT_FILAMENTS;
 
+// UI State
 let currentTier = 'tier1';
 let currentRequestItem = null;
 let editingCatId = null;
@@ -62,6 +65,7 @@ let clickTimer;
 let selectedVariantIdx = 0;
 let carouselIndex = 0;
 
+// Listener Trackers (For Optimization)
 let listeners = {
     news: null,
     jams: null,
@@ -163,6 +167,7 @@ function getIconClass(belt) { const b = (belt||'white').toLowerCase(); if(b.incl
 function saveLocal(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 function showAlert(t, m) { document.getElementById('alert-title').innerText = t; document.getElementById('alert-msg').innerText = m; document.getElementById('alert-modal').style.display = 'flex'; }
 function showConfirm(m, cb) { document.getElementById('confirm-msg').innerText = m; const b = document.getElementById('confirm-yes-btn'); const n = b.cloneNode(true); b.parentNode.replaceChild(n, b); n.onclick = () => { document.getElementById('confirm-modal').style.display = 'none'; cb(); }; document.getElementById('confirm-modal').style.display = 'flex'; }
+function showTab(id, el) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); el.classList.add('active'); if (db) { if (id === 'catalog') loadCatalog(); else if (id === 'queue') loadQueue(); else if (id === 'leaderboard') loadLeaderboard(); else if (id === 'jams') loadJams(); else if (id === 'games') loadGames(); } }
 
 
 /* ==========================================================================
@@ -185,22 +190,6 @@ function enterDashboard() { document.getElementById('login-view').style.display 
 function toggleAdminViewMode() { const adminView = document.getElementById('admin-view'); const floatingBtn = document.getElementById('floating-admin-toggle'); if (adminView.classList.contains('active')) { adminView.classList.remove('active'); floatingBtn.style.display = 'flex'; } else { adminView.classList.add('active'); floatingBtn.style.display = 'flex'; } }
 function showAdminSection(id, btn) { document.querySelectorAll('.admin-section').forEach(e => e.classList.remove('active')); document.getElementById(id).classList.add('active'); document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderAdminLists(); }
 function handleLogoClick() { if(window.innerWidth < 768) return; clickCount++; clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); if(clickCount === 3) { clickCount = 0; toggleAdminLogin(); } }
-
-// --- TAB SWITCHING ---
-function showTab(id, el) { 
-    document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); 
-    document.getElementById(id).classList.add('active'); 
-    document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); 
-    el.classList.add('active'); 
-    
-    if (db) {
-        if (id === 'catalog') loadCatalog();
-        else if (id === 'queue') loadQueue();
-        else if (id === 'leaderboard') loadLeaderboard();
-        else if (id === 'jams') loadJams();
-        else if (id === 'games') loadGames();
-    }
-}
 
 
 /* ==========================================================================
@@ -261,6 +250,8 @@ function moveCarousel(dir) { const slides = document.querySelectorAll('.jam-slid
 function viewWinner(submissionId, event) { if(event) event.stopPropagation(); let sub = jamSubmissions.find(s => s.id === submissionId); if(!sub) { jamsData.forEach(j => { if(j.winners) { const found = j.winners.find(w => w.id === submissionId); if(found) sub = found; } }); } if(!sub) return; const jam = jamsData.find(j => j.id === sub.jamId); const color = jam ? (jam.color || '#f1c40f') : '#f1c40f'; document.getElementById('win-game-title').innerText = sub.gameTitle; document.getElementById('win-game-title').style.color = color; document.getElementById('win-ninja').innerText = `Created by ${formatName(sub.ninjaName)}`; const linkBtn = document.getElementById('win-link'); linkBtn.href = sub.link; linkBtn.style.background = color; linkBtn.style.color = (color === '#ffffff' || color === '#f1c40f') ? 'black' : 'white'; document.getElementById('winner-modal').style.display = 'flex'; }
 function openJamSubmission(jamId, isWinnerView) { if(isWinnerView) return; if(!currentUser) { showAlert("Log In", "Please log in to submit."); return; } currentJamSubmissionId = jamId; const jam = jamsData.find(j => j.id === jamId); if(!jam) return; document.getElementById('js-title').innerText = jam.title; document.getElementById('js-title').style.color = jam.color || '#f1c40f'; const btn = document.querySelector('#jam-submit-modal .btn-blue'); if(btn) btn.style.background = jam.color || '#f1c40f'; document.getElementById('js-game-title').value = ''; document.getElementById('js-link').value = ''; document.getElementById('jam-submit-modal').style.display = 'flex'; }
 function submitJamEntry() { const title = document.getElementById('js-game-title').value; const link = document.getElementById('js-link').value; if(!title || !link) return showAlert("Error", "Title and Link required."); const entry = { jamId: currentJamSubmissionId, ninjaName: currentUser.name, username: currentUser.username || currentUser.name, gameTitle: title, link: link, createdAt: Date.now() }; if(db) { db.collection("jamSubmissions").add(entry); } else { jamSubmissions.push({id:"local_sub_"+Date.now(), ...entry}); saveLocal('cn_jam_subs', jamSubmissions); } document.getElementById('jam-submit-modal').style.display = 'none'; showAlert("Success", "Good luck, Ninja!"); }
+
+// --- ADMIN RENDERERS ---
 function renderAdminLists() { renderAdminNews(); renderAdminRules(); renderAdminCoins(); renderAdminCatalog(); renderAdminRequests(); renderAdminQueue(); renderAdminLbPreview(); renderAdminInterest(); renderAdminJamsList(); renderAdminGames(); renderAdminChallenges(); }
 function renderAdminNews() { const nList = document.getElementById('admin-news-list'); if(nList){ nList.innerHTML=''; newsData.forEach(n => nList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card passed" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${n.title}</h3><p>${n.date}</p></div><div class="status-badge" style="color:var(--color-games)">${n.badge} ></div></div><button onclick="openNewsModal('${n.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteNews('${n.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`); } }
 function renderAdminRules() { const rList = document.getElementById('admin-rules-list'); if(rList){ rList.innerHTML=''; rulesData.forEach(r => { const b = r.penalty ? `<div class="status-badge" style="color:#e74c3c;border:1px solid #e74c3c;">${r.penalty}</div>` : ''; rList.innerHTML += `<div class="admin-list-wrapper"><div class="list-card pending" style="pointer-events:none; margin:0;"><div class="card-info"><h3>${r.title}</h3><p>${r.desc}</p></div>${b}</div><button onclick="openRulesModal('${r.id}')" class="btn-mini" style="background:#f39c12;color:black;">Edit</button><button onclick="deleteRule('${r.id}')" class="btn-mini" style="background:#e74c3c;">Del</button></div>`; }); } }
@@ -294,3 +285,4 @@ function refreshAll() {
 }
 
 console.log("DASHBOARD SCRIPT LOADED SUCCESSFULLY");
+}
