@@ -156,9 +156,9 @@ function formatCoinBreakdown(valStr) {
     let rem = num % 25;
     const goldVal = Math.floor(rem / 5);
     const silverVal = rem % 5;
-    if(obsVal > 0) html += `<span class="coin-val obsidian" style="margin-right:4px;">${obsVal}</span>`;
-    if(goldVal > 0) html += `<span class="coin-val gold" style="margin-right:4px;">${goldVal}</span>`;
-    if(silverVal > 0) html += `<span class="coin-val silver" style="margin-right:4px;">${silverVal}</span>`;
+    if(obsVal > 0) html += `<span class="coin-val obsidian"><i class="fa-solid fa-gem"></i> ${obsVal}</span>`;
+    if(goldVal > 0) html += `<span class="coin-val gold"><i class="fa-solid fa-circle"></i> ${goldVal}</span>`;
+    if(silverVal > 0) html += `<span class="coin-val silver"><i class="fa-solid fa-circle"></i> ${silverVal}</span>`;
     return html;
 }
 
