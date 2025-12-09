@@ -226,7 +226,11 @@
                         <div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px; margin-top:10px;">
                             <h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);"></h4>
                             <p>Current: <span id="admin-lb-current">0</span> pts</p>
-                            <input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)">
+                            <div style="display:flex; gap:5px; margin-bottom:10px;">
+                                <input type="number" id="admin-lb-obsidian" class="admin-input" placeholder="Obsidian (25)" style="margin:0;">
+                                <input type="number" id="admin-lb-gold" class="admin-input" placeholder="Gold (5)" style="margin:0;">
+                                <input type="number" id="admin-lb-silver" class="admin-input" placeholder="Silver (1)" style="margin:0;">
+                            </div>
                             <button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button>
                         </div>
                     </div>
