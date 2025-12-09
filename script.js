@@ -2,13 +2,13 @@ console.log("DASHBOARD SCRIPT STARTING...");
 
 /**
  * CODE NINJAS DASHBOARD LOGIC
- * v8.1 - Fixed Syntax Error (Trailing Brace)
+ * v8.2 - Added Total Coin Text
  */
 
 /* ==========================================================================
    1. CONFIGURATION & STATE
    ========================================================================== */
-const APP_VERSION = "8.1";
+const APP_VERSION = "8.2";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAElu-JLX7yAJJ4vEnR4SMZGn0zf93KvCQ",
@@ -159,6 +159,10 @@ function formatCoinBreakdown(valStr) {
     if(obsVal > 0) html += `<span class="coin-val obsidian"><i class="fa-solid fa-gem"></i> ${obsVal}</span>`;
     if(goldVal > 0) html += `<span class="coin-val gold"><i class="fa-solid fa-circle"></i> ${goldVal}</span>`;
     if(silverVal > 0) html += `<span class="coin-val silver"><i class="fa-solid fa-circle"></i> ${silverVal}</span>`;
+    
+    // Append Total Coin Value Text
+    html += `<span style="margin-left:8px; font-size:0.9rem; color:#aaa; font-weight:bold;">${num} Coins</span>`;
+    
     return html;
 }
 
@@ -294,7 +298,7 @@ function openAdminJamModal(id=null) { editingJamId = id; document.getElementById
 function saveJam() { const data = { title: document.getElementById('jam-title').value, dates: document.getElementById('jam-dates').value, type: document.getElementById('jam-type').value, image: document.getElementById('jam-image').value, header: document.getElementById('jam-header').value, desc: document.getElementById('jam-desc').value, details: document.getElementById('jam-details').value, color: document.getElementById('jam-color').value, status: 'active' }; if(!data.title) return; if(db) { if(editingJamId) db.collection("jams").doc(editingJamId).update(data); else db.collection("jams").add({...data, createdAt: Date.now()}); } else { if(editingJamId) { const idx = jamsData.findIndex(j=>j.id===editingJamId); jamsData[idx] = {...jamsData[idx], ...data}; } else { jamsData.push({id:"local_jam_"+Date.now(), ...data, createdAt:Date.now()}); } saveLocal('cn_jams', jamsData); renderJams(); renderAdminLists(); } document.getElementById('jam-admin-modal').style.display = 'none'; }
 function renderJamSubmissionsList(jamId, currentWinners) { const list = document.getElementById('jam-subs-list'); list.innerHTML = ''; const subs = jamSubmissions.filter(s => s.jamId === jamId); if(subs.length === 0) { list.innerHTML = '<p style="color:#666;">No submissions yet.</p>'; return; } subs.forEach(s => { const isWinner = currentWinners.some(w => w.id === s.id); const check = isWinner ? 'checked' : ''; list.innerHTML += `<div style="display:flex; align-items:center; background:#111; padding:5px; margin-bottom:5px; border-radius:4px;"><input type="checkbox" class="winner-check" value="${s.id}" ${check} style="margin-right:10px;"><div style="flex-grow:1;"><div style="color:white;">${s.ninjaName}</div><div style="color:#888; font-size:0.7rem;">${s.gameTitle}</div></div><a href="${s.link}" target="_blank" style="color:var(--color-jams); font-size:0.8rem;">Link</a></div>`; }); }
 function revealWinners() { if(!editingJamId) return; const checkboxes = document.querySelectorAll('.winner-check:checked'); const winnerIds = Array.from(checkboxes).map(c => c.value); const winners = jamSubmissions.filter(s => winnerIds.includes(s.id)); const update = { status: 'revealed', revealedAt: Date.now(), winners: winners }; if(db) { db.collection("jams").doc(editingJamId).update(update).then(() => showAlert("Success", "Winners Revealed!")); } else { const idx = jamsData.findIndex(j=>j.id===editingJamId); jamsData[idx] = {...jamsData[idx], ...update}; saveLocal('cn_jams', jamsData); renderJams(); showAlert("Success", "Winners Revealed (Local)!"); } document.getElementById('jam-admin-modal').style.display = 'none'; }
-function renderAdminJamsList() { const c = document.getElementById('admin-jams-list'); if(!c) return; c.innerHTML = ''; jamsData.forEach(j => { const color = j.color || '#2ecc71'; c.innerHTML += `<div class="admin-list-wrapper" onclick="openAdminJamModal('${j.id}')" style="cursor:pointer;"><div class="list-card" style="margin:0; border-left-color:${color};"><div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div><div class="status-badge" style="color:${color}">${j.status || 'Active'}</div></div></div>`; }); }
+function renderAdminJamsList() { const c = document.getElementById('admin-jams-list'); if(!c) return; c.innerHTML = ''; jamsData.forEach(j => { const color = j.color || '#2ecc71'; c.innerHTML += `<div class="admin-list-wrapper"><div class="list-card" onclick="openAdminJamModal('${j.id}')" style="margin:0; border-left-color:${color}; cursor:pointer; flex-grow:1;"><div class="card-info"><h3>${j.title}</h3><p>${j.dates}</p></div><div class="status-badge" style="color:${color}">${j.status || 'Active'}</div></div></div>`; }); }
 
 // --- ADMIN GAMES (Game of the Month) ---
 function renderAdminGames() {
