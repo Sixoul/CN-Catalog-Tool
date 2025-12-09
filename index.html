@@ -23,12 +23,14 @@
             <div class="login-title">CODE NINJAS DASHBOARD<br><span style="font-size:1rem; font-weight:300;">CERRITOS</span></div>
             <div id="login-version-msg" class="login-version-badge"></div>
             <div id="login-error-msg" class="login-error">User not found or Incorrect Password</div>
+            
             <div id="ninja-login-form">
                 <p style="color:white; margin-bottom:10px;">Ready to Code?</p>
-                <input type="text" id="login-username" class="login-input" placeholder="Enter Username (e.g. firstName.lastName)" onkeydown="if(event.key==='Enter') attemptNinjaLogin()">
+                <input type="text" id="login-username" class="login-input" placeholder="Enter Username (e.g. royce.magcamit)" onkeydown="if(event.key==='Enter') attemptNinjaLogin()">
                 <button onclick="attemptNinjaLogin()" class="btn-login">LOG IN</button>
                 <div class="login-toggle" onclick="toggleAdminLogin()">Log in as Sensei (Admin)</div>
             </div>
+
             <div id="admin-login-form" style="display:none;">
                 <p style="color:white; margin-bottom:10px;">Sensei Access</p>
                 <input type="email" id="admin-email" class="login-input" placeholder="Email">
@@ -40,17 +42,53 @@
     </div>
 
     <div id="main-app" style="display:none; height:100%; width:100%; overflow:hidden; display:flex;">
+        
         <nav class="sidebar">
             <div id="admin-login-btn" class="logo-container desktop-only" style="cursor: default;">
                 <div class="cn-logo"><i class="fa-solid fa-user-ninja"></i></div>
             </div>
-            <div class="nav-item home-theme active" onclick="showTab('home', this)"><i class="fa-solid fa-house"></i><span>Home</span></div>
-            <div class="nav-item lb-theme" onclick="showTab('leaderboard', this)"><i class="fa-solid fa-medal"></i><span>Ranks</span></div>
-            <div class="nav-item jams-theme" onclick="showTab('jams', this)"><i class="fa-solid fa-trophy"></i><span>Jams</span></div>
-            <div class="nav-item catalog-theme" onclick="showTab('catalog', this)"><i class="fa-solid fa-cube"></i><span>Prize</span></div>
-            <div class="nav-item queue-theme" onclick="showTab('queue', this)"><i class="fa-solid fa-list-ol"></i><span>Queue</span></div>
-            <div class="nav-item games-theme" onclick="showTab('games', this)"><i class="fa-solid fa-gamepad"></i><span>Games</span></div>
+            
+            <div class="nav-item home-theme active" onclick="showTab('home', this)">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+            </div>
+
+            <div class="nav-item lb-theme" onclick="showTab('leaderboard', this)">
+                <i class="fa-solid fa-medal"></i>
+                <span>Leaderboard</span>
+            </div>
+
+            <div class="nav-item jams-theme" onclick="showTab('jams', this)">
+                <i class="fa-solid fa-trophy"></i>
+                <span>Game Jam</span>
+            </div>
+
+            <div class="nav-item games-theme" onclick="showTab('games', this)">
+                <i class="fa-solid fa-gamepad"></i>
+                <span>Games</span>
+            </div>
+
+            <div class="nav-item catalog-theme" onclick="showTab('catalog', this)">
+                <i class="fa-solid fa-cube"></i>
+                <span>Prizes</span>
+            </div>
+
+            <div class="nav-item queue-theme" onclick="showTab('queue', this)">
+                <i class="fa-solid fa-list-ol"></i>
+                <span>Queue</span>
+            </div>
+            
             <div class="nav-spacer desktop-only"></div>
+            
+            <a href="https://impact.codeninjas.com" target="_blank" class="nav-link-ext impact-link desktop-only">
+                <i class="fa-solid fa-chart-line fa-2x"></i>
+                <span style="font-size: 0.6rem; margin-top: 5px; font-weight: 600;">IMPACT</span>
+            </a>
+            <a href="https://academies.codeninjas.com" target="_blank" class="nav-link-ext academies-link desktop-only">
+                <i class="fa-solid fa-graduation-cap fa-2x"></i>
+                <span style="font-size: 0.6rem; margin-top: 5px; font-weight: 600;">ACADEMY</span>
+            </a>
+            <br>
         </nav>
 
         <div class="main-wrapper">
@@ -64,6 +102,7 @@
             </header>
 
             <div class="content-area">
+                
                 <div id="home" class="tab-content active">
                     <div class="home-grid">
                         <div class="news-column">
@@ -83,18 +122,14 @@
                 <div id="games" class="tab-content">
                     <div class="section-title">🔥 Active Challenges <span style="font-size:0.8rem; color:#666;">EARN EXTRA COINS</span></div>
                     <div id="challenges-feed" class="challenges-scroll-list"></div>
-
                     <div style="height: 20px;"></div>
-
                     <div class="games-layout">
                         <div class="games-main-col">
                             <div class="section-title">🎮 Game of the Month</div>
                             <div id="active-game-container"></div>
-                            
                             <div class="section-title" style="margin-top:30px;">🏆 Top 10 High Scores</div>
                             <div id="active-game-lb" class="game-lb-table"></div>
                         </div>
-
                         <div class="games-side-col">
                             <div class="section-title">📜 Past Games</div>
                             <div id="games-history-list" class="games-history-list scroll-container"></div>
@@ -154,6 +189,7 @@
                 <div id="nav-admin-cat" class="admin-nav-btn" onclick="showAdminSection('admin-cat', this)"><i class="fa-solid fa-cube"></i> Catalog</div>
                 <div id="nav-admin-queue" class="admin-nav-btn" onclick="showAdminSection('admin-queue', this)"><i class="fa-solid fa-list"></i> Queue & Reqs</div>
                 <div style="flex-grow:1;"></div>
+                <div class="admin-nav-btn" onclick="toggleAdminViewMode()" style="color: var(--color-home); border-top: 1px solid #333;"><i class="fa-solid fa-user-ninja"></i> View as Ninja</div>
                 <div class="admin-nav-btn" onclick="logout()" style="color: #e74c3c;"><i class="fa-solid fa-door-open"></i> Logout</div>
             </div>
 
@@ -168,13 +204,32 @@
                     <div class="admin-card">
                         <h3>☁️ Sync Roster (CSV)</h3>
                         <input type="file" id="csv-file-input" class="admin-input" accept=".csv">
-                        <div style="display:flex; gap:10px;"><button class="btn-sync" onclick="processCSVFile()" style="width:70%">IMPORT & SYNC</button><button class="btn-sync" onclick="clearZeroPointNinjas()" style="width:30%; background:#e74c3c;">CLEAN (0 PTS)</button></div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn-sync" onclick="processCSVFile()" style="width:70%">IMPORT & SYNC</button>
+                            <button class="btn-sync" onclick="clearZeroPointNinjas()" style="width:30%; background:#e74c3c;">CLEAN (0 PTS)</button>
+                        </div>
                     </div>
-                    <div class="admin-card"><h3>➕ Add Single Ninja</h3><div style="display:flex; gap:10px;"><input type="text" id="admin-roster-add-name" class="admin-input" placeholder="Name (e.g. Kai S.)" onkeydown="if(event.key==='Enter') adminAddNinja()"><button class="btn-add" onclick="adminAddNinja()">ADD</button></div></div>
+                    <div class="admin-card">
+                        <h3>➕ Add Single Ninja</h3>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="admin-roster-add-name" class="admin-input" placeholder="Name (e.g. Kai S.)" onkeydown="if(event.key==='Enter') adminAddNinja()">
+                            <button class="btn-add" onclick="adminAddNinja()">ADD</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="admin-lb" class="admin-section">
-                    <div class="admin-card"><h3>🔍 Student Point Manager</h3><input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()"><div id="admin-lb-results"></div><div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px; margin-top:10px;"><h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);"></h4><p>Current: <span id="admin-lb-current">0</span> pts</p><input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)"><button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button></div></div>
+                    <div class="admin-card">
+                        <h3>🔍 Student Point Manager</h3>
+                        <input type="text" id="admin-lb-search" class="admin-input" placeholder="Search Ninja Name..." onkeyup="adminSearchNinja()">
+                        <div id="admin-lb-results"></div>
+                        <div id="admin-lb-edit" style="display:none; background:#111; padding:15px; border-radius:8px; margin-top:10px;">
+                            <h4 id="admin-lb-name" style="margin:0 0 10px 0; color:var(--color-home);"></h4>
+                            <p>Current: <span id="admin-lb-current">0</span> pts</p>
+                            <input type="number" id="admin-lb-adjust" class="admin-input" placeholder="Add (50) or Remove (-20)">
+                            <button class="admin-btn btn-add" onclick="adminUpdatePoints()">UPDATE POINTS</button>
+                        </div>
+                    </div>
                     <div class="admin-card"><h3>🏆 Leaderboard Preview</h3><div id="admin-lb-preview-list" class="req-list"></div></div>
                 </div>
 
@@ -191,7 +246,6 @@
                         <h3>⚡ Manage Challenges <button class="btn-add" onclick="openChallengeModal()">+ Add</button></h3>
                         <div id="admin-challenges-list"></div>
                     </div>
-                    
                     <div class="admin-card">
                         <h3>🎮 Active Game Manager</h3>
                         <div id="admin-active-game-editor" style="background: rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin-bottom:15px;">
@@ -226,27 +280,6 @@
         </div>
     </div>
 
-    <div id="challenge-admin-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width:400px;">
-            <div class="modal-header"><h2 style="color:white; margin:0;">Edit Challenge</h2><button onclick="document.getElementById('challenge-admin-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div>
-            <div class="modal-body">
-                <label style="color:#aaa; font-size:0.8rem;">Type:</label>
-                <select id="chal-type" class="admin-input">
-                    <option value="MakeCode Arcade">MakeCode Arcade</option>
-                    <option value="Roblox">Roblox</option>
-                    <option value="Minecraft">Minecraft</option>
-                    <option value="Robotics">Robotics</option>
-                    <option value="3D Printing">3D Printing</option>
-                </select>
-                <input type="text" id="chal-desc" class="admin-input" placeholder="Description (e.g. Build a red house)">
-                <input type="text" id="chal-reward" class="admin-input" placeholder="Reward (e.g. +5 Coins)">
-                <label style="color:#aaa; font-size:0.8rem;">Deadline (Leave empty for Indefinite):</label>
-                <input type="text" id="chal-duration" class="admin-input" placeholder="e.g. 2 Days Left">
-                <button onclick="saveChallenge()" class="btn-blue" style="margin-top:10px;">SAVE CHALLENGE</button>
-            </div>
-        </div>
-    </div>
-
     <div id="cat-edit-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px; max-height: 90vh;"><div class="modal-header"><h2 style="color:white; margin:0;" id="cat-modal-title">Edit Prize</h2><button onclick="closeCatModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="ce-name" class="admin-input" placeholder="Item Name"><input type="text" id="ce-cost" class="admin-input" placeholder="Cost (Gold Coins)"><textarea id="ce-desc" class="admin-input" placeholder="Short Description" style="resize:vertical; min-height:60px;"></textarea><div style="display:flex; gap:10px; margin-bottom:10px;"><select id="ce-tier" class="admin-input" style="margin-bottom:0;"><option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option><option value="tier4">Tier 4</option></select><select id="ce-category" class="admin-input" style="margin-bottom:0;" onchange="toggleCatOptions(this.value)"><option value="standard">Standard</option><option value="limited">Limited Time!</option><option value="custom">Custom Print</option><option value="premium">Premium</option></select></div><div id="ce-custom-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem;">Color Fee (Optional):</label><input type="number" id="ce-color-fee" class="admin-input" placeholder="0"></div><div id="ce-options-container" style="display:none; background:rgba(255,255,255,0.05); padding:10px; border-radius:4px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem; margin-bottom:5px; display:block;">Manage Variations:</label><div id="ce-variants-list"></div><button onclick="addVariantRow()" class="btn-mini" style="background:#444; width:100%; margin-top:5px; padding:8px;">+ Add Variant Row</button><div style="margin-top:15px; border-top:1px solid #333; padding-top:10px;"><label style="color:white; font-size:0.9rem; display:flex; align-items:center;"><input type="checkbox" id="ce-prem-color-check" style="margin-right:10px;" onchange="document.getElementById('ce-prem-fee-wrap').style.display = this.checked ? 'block' : 'none'"> Allow Color Selection</label><div id="ce-prem-fee-wrap" style="display:none; margin-top:5px; padding-left:20px;"><label style="color:#aaa; font-size:0.8rem;">Extra Color Fee (Gold):</label><input type="number" id="ce-prem-color-fee" class="admin-input" placeholder="0" style="width:100px;"></div></div></div><label style="color:#aaa; font-size:0.8rem;">Main Image URL (Default):</label><input type="text" id="ce-img" class="admin-input" placeholder="https://..."><div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;"><label style="color:white; font-size:0.9rem;"><input type="checkbox" id="ce-visible" checked> Visible</label></div><div style="display:flex;gap:10px;"><button onclick="saveCatItem()" class="admin-btn btn-add">SAVE PRIZE</button></div></div></div></div>
     <div id="req-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="margin:0; color: white;">Request</h2><button onclick="closeReqModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><div id="req-img-container" class="req-img-container"><img src="" alt="Prize" style="display:none;"><i class="fa-solid fa-cube"></i></div><div id="req-gallery" class="req-gallery"></div><h3 id="req-item-name" style="color: var(--color-catalog); margin-top:0;">Item</h3><div id="req-name-container"><label style="color:white; display:block; margin-bottom:5px;">Ninja Name:</label><input type="text" id="req-ninja-name" class="admin-input" placeholder="Your Name"></div><div id="req-dynamic-fields"></div><button onclick="submitRequest()" class="btn-blue" style="width:100%; background: var(--color-catalog); margin-top: 20px;">SUBMIT REQUEST</button></div></div></div>
     <div id="news-modal" class="modal-overlay"><div class="modal-content" style="max-width:500px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit News</h2><button onclick="closeNewsModal()" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="news-input-title" class="admin-input" placeholder="Title"><input type="text" id="news-input-date" class="admin-input" placeholder="Date"><input type="text" id="news-input-badge" class="admin-input" placeholder="Badge"><button onclick="saveNews()" class="admin-btn btn-add">SAVE</button></div></div></div>
@@ -257,6 +290,7 @@
     <div id="jam-admin-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 id="jam-modal-header" style="color:white; margin:0;">Create Jam</h2><button onclick="document.getElementById('jam-admin-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><input type="text" id="jam-title" class="admin-input" placeholder="Title (e.g. Winter Game Jam)"><div style="display:flex; gap:10px; align-items:center;"><input type="text" id="jam-dates" class="admin-input" placeholder="Dates (e.g. Dec 1 - Dec 20)" style="flex-grow:1;"><input type="color" id="jam-color" class="admin-input" style="width:50px; padding:2px; height:42px; cursor:pointer;" value="#f1c40f" title="Theme Color"><select id="jam-type" class="admin-input" style="width:auto;"><option value="Game Jam">Game Jam</option><option value="Contest">Contest</option></select></div><input type="text" id="jam-image" class="admin-input" placeholder="Hero Image URL"><label style="color:#aaa; font-size:0.8rem;">Header (Use **text** for bold/color emphasis):</label><input type="text" id="jam-header" class="admin-input" placeholder="Theme: **EXPLORATION**"><textarea id="jam-desc" class="admin-input" placeholder="Description (Small white text)" style="height:60px;"></textarea><input type="text" id="jam-details" class="admin-input" placeholder="Details (Colored text)"><div id="jam-submissions-area" style="display:none; border-top:1px solid #444; padding-top:10px; margin-top:10px;"><h4 style="color:white; margin:0 0 10px 0;">Manage Submissions & Winners</h4><div id="jam-subs-list" style="max-height:150px; overflow-y:auto; margin-bottom:10px;"></div><button onclick="revealWinners()" class="btn-blue" style="background:#f1c40f; color:black;">REVEAL WINNERS</button></div><button onclick="saveJam()" class="btn-blue" style="margin-top:10px;">SAVE JAM</button></div></div></div>
     <div id="jam-submit-modal" class="modal-overlay"><div class="modal-content"><div class="modal-header"><h2 style="color:white; margin:0;">Submit Entry</h2><button onclick="document.getElementById('jam-submit-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><h3 id="js-title" style="color:var(--color-jams); margin-top:0;">Jam Title</h3><label class="req-label">Game Title:</label><input type="text" id="js-game-title" class="req-input" placeholder="My Awesome Game"><label class="req-label">Link (Scratch/MakeCode/Roblox):</label><input type="text" id="js-link" class="req-input" placeholder="https://..."><button onclick="submitJamEntry()" class="btn-blue" style="background:var(--color-jams); color:black;">SUBMIT</button></div></div></div>
     <div id="winner-modal" class="modal-overlay"><div class="modal-content" style="text-align:center;"><div class="modal-header"><h2 style="color:white; margin:0;">Winner!</h2><button onclick="document.getElementById('winner-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><h2 id="win-game-title" style="color:var(--color-jams); margin:0;">Game Title</h2><p id="win-ninja" style="color:white; font-size:1.2rem; margin:10px 0;">By Ninja</p><a id="win-link" href="#" target="_blank" class="btn-blue" style="display:inline-block; margin-top:20px; text-decoration:none;">PLAY GAME</a></div></div></div>
+    <div id="challenge-admin-modal" class="modal-overlay"><div class="modal-content" style="max-width:400px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Challenge</h2><button onclick="document.getElementById('challenge-admin-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><label style="color:#aaa; font-size:0.8rem;">Type:</label><select id="chal-type" class="admin-input"><option value="MakeCode Arcade">MakeCode Arcade</option><option value="Roblox">Roblox</option><option value="Minecraft">Minecraft</option><option value="Robotics">Robotics</option><option value="3D Printing">3D Printing</option></select><input type="text" id="chal-desc" class="admin-input" placeholder="Description (e.g. Build a red house)"><input type="text" id="chal-reward" class="admin-input" placeholder="Reward (e.g. +5 Coins)"><label style="color:#aaa; font-size:0.8rem;">Deadline (Leave empty for Indefinite):</label><input type="text" id="chal-duration" class="admin-input" placeholder="e.g. 2 Days Left"><button onclick="saveChallenge()" class="btn-blue" style="margin-top:10px;">SAVE CHALLENGE</button></div></div></div>
 
     <script src="script.js" defer></script>
 </body>
