@@ -96,63 +96,78 @@ function renderCatalog() {
     }); 
 }
 
-function renderQueue() { 
-    const c = document.getElementById('queue-list'); if(!c) return; c.innerHTML=''; 
+function renderQueue() {
+    const c = document.getElementById('queue-list');
+    if (!c) return;
     
-    // Define Priority: Lower number = Higher up in the list
-    const priority = {
-        'printing': 1,
-        'ready!': 2,
-        'pending': 3,
-        'waiting for payment': 4,
-        'default': 5
-    };
-
-    let q = [...queueData]; // Copy array to avoid mutating original
-
+    c.innerHTML = '';
+    
+    let q;
+    
+    // 1. Determine List & Sort Order
     if (!showHistory) {
-        // Filter out "Picked Up" and sort by Priority -> Then by Date (Oldest First)
-        q = q.filter(i => i.status.toLowerCase() !== 'picked up');
-        q.sort((a, b) => {
-            const pA = priority[a.status.toLowerCase()] || priority['default'];
-            const pB = priority[b.status.toLowerCase()] || priority['default'];
-            
-            if (pA !== pB) return pA - pB; // Sort by Status Priority
-            return (a.createdAt || 0) - (b.createdAt || 0); // Then by FIFO (First In First Out)
-        });
+        // Active Queue: Filter 'Picked Up', then SORT by Oldest First (Chronological)
+        q = queueData.filter(i => i.status.toLowerCase() !== 'picked up');
+        q.sort((a, b) => a.createdAt - b.createdAt); 
     } else {
-        // History Mode: Sort by Date (Newest First)
-        q.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        // History: Sort by Newest First
+        q = [...queueData].sort((a, b) => b.createdAt - a.createdAt);
+    }
+    
+    if (q.length === 0) {
+        c.innerHTML = '<p style="color:#666;text-align:center;">Empty.</p>';
+        return;
     }
 
-    if(q.length === 0) c.innerHTML = '<p style="color:#666;text-align:center;">Empty.</p>'; 
-    else q.forEach((i,x) => { 
-        let s = i.status, cl = 'status-pending', icon = 'fa-clock', cc = 'queue-card'; 
-        const sLow = s.toLowerCase(); 
-        
-        if(sLow.includes('ready')){ cl='status-ready'; icon='fa-check'; cc+=' ready-pickup'; } 
-        else if(sLow.includes('printing')){ cl='status-printing printing-anim'; icon='fa-print'; } 
-        else if(sLow.includes('waiting')){ cl='status-waiting-print'; icon='fa-hourglass'; } 
-        else if(sLow.includes('payment')){ cl='status-waiting-payment'; icon='fa-circle-dollar-to-slot'; } 
-        else if(sLow.includes('pending')){ cl='status-pending'; icon='fa-clock'; } 
-        
-        const detHtml = i.details ? `<span style="opacity:0.6">| ${i.details}</span>` : ''; 
-        
-        // Admin Badge if added manually
-        const adminBadge = i.addedByAdmin ? `<i class="fa-solid fa-user-shield" title="Added by Sensei" style="color:var(--color-admin); margin-left:5px; font-size:0.7rem;"></i>` : '';
+    // 2. Render with Color Borders
+    q.forEach((i, x) => {
+        let s = i.status;
+        let sLow = s.toLowerCase();
+        let cl = 'status-pending';
+        let icon = 'fa-clock';
+        let cc = 'queue-card';
+        let borderColor = '#444'; // Default Border
 
+        // Determine Color & Icon based on status
+        if (sLow.includes('ready')) {
+            cl = 'status-ready';
+            icon = 'fa-check';
+            cc += ' ready-pickup'; 
+            borderColor = '#2ecc71'; // Green
+        } else if (sLow.includes('printing')) {
+            cl = 'status-printing printing-anim';
+            icon = 'fa-print';
+            borderColor = '#9b59b6'; // Purple
+        } else if (sLow.includes('waiting') && sLow.includes('print')) {
+            cl = 'status-waiting-print';
+            icon = 'fa-hourglass';
+            borderColor = '#3498db'; // Blue
+        } else if (sLow.includes('payment')) {
+            cl = 'status-waiting-payment';
+            icon = 'fa-circle-dollar-to-slot';
+            borderColor = '#e74c3c'; // Red
+        } else if (sLow.includes('pending')) {
+            cl = 'status-pending';
+            icon = 'fa-clock';
+            borderColor = '#7f8c8d'; // Grey
+        }
+
+        const detHtml = i.details ? `<span style="opacity:0.6">| ${i.details}</span>` : '';
+        
         c.innerHTML += `
-        <div class="${cc}">
-            <div class="q-left">
-                <div class="q-number">${x+1}</div>
-                <div class="q-info">
-                    <h3>${formatName(i.name)} ${adminBadge}</h3>
-                    <p>${i.item} ${detHtml}</p>
+            <div class="${cc}" style="border-left-color: ${borderColor};">
+                <div class="q-left">
+                    <div class="q-number">${x + 1}</div>
+                    <div class="q-info">
+                        <h3>${formatName(i.name)}</h3>
+                        <p>${i.item} ${detHtml}</p>
+                    </div>
                 </div>
-            </div>
-            <div class="q-status ${cl}">${s} <i class="fa-solid ${icon}"></i></div>
-        </div>`; 
-    }); 
+                <div class="q-status ${cl}">
+                    ${s} <i class="fa-solid ${icon}"></i>
+                </div>
+            </div>`;
+    });
 }
 
 // In ui.js

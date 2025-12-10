@@ -41,62 +41,64 @@ function renderAdminInterest() { const intList = document.getElementById('admin-
 
 /* === QUEUE & REQUESTS === */
 function renderAdminRequests() { const c = document.getElementById('admin-requests-list'); if(!c) return; c.innerHTML = ''; const pending = requestsData.filter(r => r.status === 'Waiting for Payment'); if(pending.length === 0) { c.innerHTML = '<p style="color:#666; padding:10px;">No incoming payment requests.</p>'; return; } pending.forEach(r => { c.innerHTML += `<div class="req-item"><div style="flex:1;"><div style="color:white; font-weight:bold;">${r.name}</div><div style="color:var(--color-catalog); font-weight:600;">${r.item}</div><div style="color:#888; font-size:0.75rem;">${r.details}</div><div style="color:#aaa; font-size:0.7rem; margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div></div><div class="req-actions"><button onclick="approveRequest('${r.id}')" style="background:#2ecc71; color:black;">PAID</button><button onclick="deleteRequest('${r.id}')" style="background:#e74c3c; color:white;">DEL</button></div></div>`; }); }
-function renderAdminQueue() { 
-    const qList = document.getElementById('admin-queue-manage-list'); 
-    if(!qList) return; 
-    qList.innerHTML=''; 
+function renderAdminQueue() {
+    const qList = document.getElementById('admin-queue-manage-list');
+    if (!qList) return;
     
-    // Filter out "Picked Up" and "Waiting for Payment" for the main active list
-    const activeQ = queueData.filter(q => q.status !== 'Picked Up' && q.status !== 'Waiting for Payment'); 
-    
-    // Sort: Priority (Printing/Ready first) -> Then Date
-    const priority = { 'printing': 1, 'ready!': 2, 'pending': 3, 'default': 4 };
-    
-    activeQ.sort((a,b) => {
-        const pA = priority[a.status.toLowerCase()] || priority['default'];
-        const pB = priority[b.status.toLowerCase()] || priority['default'];
-        if (pA !== pB) return pA - pB;
-        return (a.paidAt || a.createdAt) - (b.paidAt || b.createdAt);
-    });
+    qList.innerHTML = '';
 
-    activeQ.forEach(q => { 
-        const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`; 
-        const detHtml = q.details ? `| ${q.details}` : ''; 
+    // Filter active items
+    const activeQ = queueData.filter(q => 
+        q.status !== 'Picked Up' && q.status !== 'Waiting for Payment'
+    );
+
+    // Sort Chronologically (Oldest First)
+    activeQ.sort((a, b) => a.createdAt - b.createdAt);
+
+    if (activeQ.length === 0) {
+        qList.innerHTML = '<p style="color:#666; padding:10px;">Queue is empty.</p>';
+        return;
+    }
+
+    activeQ.forEach(q => {
+        const id = q.id ? `'${q.id}'` : `'${queueData.indexOf(q)}'`;
+        const detHtml = q.details ? `| ${q.details}` : '';
         
-        // --- STATUS COLORS ---
-        let statusColor = '#34495e'; // Default Dark Blue
-        let badgeBg = '#333';
-        const sLow = q.status.toLowerCase();
-
-        if(sLow.includes('printing')) { 
-            statusColor = '#9b59b6'; // Purple
-            badgeBg = statusColor;
-        } else if(sLow.includes('ready')) { 
-            statusColor = '#2ecc71'; // Green
-            badgeBg = statusColor;
-        } else if(sLow.includes('pending')) { 
-            statusColor = '#e67e22'; // Orange
-            badgeBg = statusColor; // or keep dark for pending if preferred
+        // Determine Color
+        let colorCode = '#444'; 
+        const s = q.status.toLowerCase();
+        
+        if (s.includes('ready')) {
+            colorCode = '#2ecc71'; // Green
+        } else if (s.includes('printing')) {
+            colorCode = '#9b59b6'; // Purple
+        } else if (s.includes('pending')) {
+            colorCode = '#7f8c8d'; // Gray
+        } else if (s.includes('waiting')) {
+            colorCode = '#3498db'; // Blue
         }
 
+        // Added border-left: 4px solid ${colorCode} to the style attribute
         qList.innerHTML += `
-        <div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e; border-left: 5px solid ${statusColor};">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <strong>${formatName(q.name)}</strong> 
-                <span class="status-badge" style="color:white; background:${badgeBg}; font-weight:bold; padding:2px 8px; border-radius:4px;">${q.status}</span>
+            <div class="admin-list-item" style="display:block; margin-bottom:10px; background:#161932; padding:10px; border-radius:6px; border:1px solid #34495e; border-left: 4px solid ${colorCode};">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>${q.name}</strong> 
+                    <span class="status-badge" style="color:white; background:${colorCode};">${q.status}</span>
+                </div>
+                <div style="color:#aaa; font-size:0.8rem;">
+                    ${q.item} ${detHtml}
+                </div>
+                <div style="margin-top:5px; display:flex; gap:5px;">
+                    <button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto; padding:2px 8px; font-size:0.7rem; background:#555;">Pend</button>
+                    <button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto; padding:2px 8px; font-size:0.7rem; background:#9b59b6;">Print</button>
+                    <button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto; padding:2px 8px; font-size:0.7rem; background:#2ecc71;">Ready</button>
+                    <button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto; padding:2px 8px; font-size:0.7rem; background:#1abc9c;">Done</button>
+                </div>
             </div>
-            <div style="color:#aaa; font-size:0.8rem; margin-top:2px;">
-                ${q.item} <span style="opacity:0.7">${detHtml}</span>
-            </div>
-            <div style="margin-top:8px; display:flex; gap:5px; border-top:1px solid rgba(255,255,255,0.05); padding-top:8px;">
-                <button onclick="updateQueueStatus(${id},'Pending')" class="admin-btn" style="width:auto; padding:4px 10px; font-size:0.7rem; background:#555;">Pend</button>
-                <button onclick="updateQueueStatus(${id},'Printing')" class="admin-btn" style="width:auto; padding:4px 10px; font-size:0.7rem; background:#9b59b6; color:white;">Print</button>
-                <button onclick="updateQueueStatus(${id},'Ready!')" class="admin-btn" style="width:auto; padding:4px 10px; font-size:0.7rem; background:#2ecc71; color:black;">Ready</button>
-                <button onclick="updateQueueStatus(${id},'Picked Up')" class="admin-btn" style="width:auto; padding:4px 10px; font-size:0.7rem; background:#1abc9c; color:black;">Done</button>
-            </div>
-        </div>`; 
-    }); 
-}function toggleHistoryView() { showHistory = !showHistory; const b = document.querySelector('#admin-queue .btn-edit'); if(b) b.innerText = showHistory ? "Hide History" : "History"; const h = document.getElementById('admin-queue-history-list'); if(h) { h.style.display = showHistory ? 'block' : 'none'; renderQueueHistory(); } }
+        `;
+    });
+}
+function toggleHistoryView() { showHistory = !showHistory; const b = document.querySelector('#admin-queue .btn-edit'); if(b) b.innerText = showHistory ? "Hide History" : "History"; const h = document.getElementById('admin-queue-history-list'); if(h) { h.style.display = showHistory ? 'block' : 'none'; renderQueueHistory(); } }
 function renderQueueHistory() { const h = document.getElementById('history-content'); if(!h) return; h.innerHTML = ''; const p = queueData.filter(q => q.status === 'Picked Up'); if(p.length === 0) h.innerHTML = '<p style="color:#666;font-size:0.8rem;">No history.</p>'; else p.forEach(q => { const detHtml = q.details ? ` - ${q.details}` : ''; h.innerHTML += `<div class="admin-list-item" style="opacity:0.6"><strong>${q.name}</strong> - ${q.item} ${detHtml} <span style="font-size:0.7rem">${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : 'N/A'}</span></div>`; }); }
 
 /* === ROSTER & LEADERBOARD === */
