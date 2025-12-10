@@ -233,20 +233,43 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
 /* Leaderboard Styles */
 .lb-container { padding-top: 20px; }
 .lb-top-3 { display: flex; justify-content: center; align-items: flex-end; gap: 20px; margin-bottom: 40px; }
-.lb-card { background: var(--card-bg); width: 200px; padding: 20px; border-radius: 15px; display: flex; flex-direction: column; align-items: center; position: relative; border: 1px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: 0.3s; }
-.lb-card:hover { transform: translateY(-10px); }
-.lb-card.rank-1 { height: 260px; border-color: gold; background: linear-gradient(180deg, #161932 0%, rgba(255,215,0,0.1) 100%); z-index: 2; }
+.lb-card { 
+    background: var(--card-bg); 
+    width: 200px; 
+    padding: 20px; 
+    border-radius: 15px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    position: relative; 
+    border: 1px solid #444; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+    transition: 0.3s; 
+}.lb-card:hover { transform: translateY(-10px); }
+.lb-card.rank-1 { min-height: 260px; border-color: gold; background: linear-gradient(180deg, #161932 0%, rgba(255,215,0,0.1) 100%); z-index: 2; }
 .lb-card.rank-1 .lb-badge { background: gold; color: black; }
-.lb-card.rank-1 .lb-icon { border-color: gold; box-shadow: 0 0 20px rgba(255,215,0,0.5); }
-.lb-card.rank-2 { height: 230px; border-color: silver; }
+.lb-icon {width: 80px; height: 80px; border-radius: 50%; border: 3px solid #444; margin-bottom: 15px; background: #0e1025; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; position: relative; flex-shrink: 0; }
+.lb-card.rank-2 { min-height: 230px; border-color: silver; }
 .lb-card.rank-2 .lb-badge { background: silver; color: black; }
-.lb-card.rank-2 .lb-icon { border-color: silver; }
-.lb-card.rank-3 { height: 210px; border-color: #cd7f32; }
+.lb-card.rank-2 .lb-icon { width: 70px; height: 70px; font-size: 2.2rem; }
+.lb-card.rank-3 { min-height: 210px; border-color: #cd7f32; }
 .lb-card.rank-3 .lb-badge { background: #cd7f32; color: black; }
-.lb-card.rank-3 .lb-icon { border-color: #cd7f32; }
+.lb-card.rank-3 .lb-icon { width: 60px; height: 60px; font-size: 1.8rem; }
 .lb-badge { position: absolute; top: -15px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; }
-.lb-icon { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #444; margin-bottom: 15px; background: #0e1025; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; position: relative; }
-.lb-icon i { z-index: 2; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
+.lb-icon { 
+    width: 80px; 
+    height: 80px; 
+    border-radius: 50%; 
+    border: 3px solid #444; 
+    margin-bottom: 15px; 
+    background: #0e1025; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 2.5rem; 
+    position: relative;
+    flex-shrink: 0; /* Prevents oval/squishing */
+}.lb-icon i { z-index: 2; text-shadow: 0 0 10px rgba(0,0,0,0.8); }
 .lb-name { font-weight: bold; font-size: 1.1rem; text-align: center; margin-bottom: 5px; color: white; }
 .lb-points { font-size: 0.9rem; color: var(--color-games); font-weight: bold; text-transform: uppercase; }
 .lb-list { max-width: 800px; margin: 0 auto; }
@@ -389,4 +412,33 @@ header { padding: 20px 40px; display: flex; align-items: center; justify-content
     /* Stack Games Tab Columns */
     .games-layout { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
     .games-side-col { height: auto; max-height: 300px; margin-bottom: 20px; }
+}
+
+/* --- PODIUM LAYOUT FIX --- */
+.podium-points-container {
+    display: flex;
+    flex-direction: column; /* Stacks children vertically */
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.podium-badges-row {
+    display: flex;
+    flex-direction: row; /* Badges sit side-by-side */
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 5px; /* Spacing between badges and text */
+}
+
+.podium-text-row {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #ccc;
+    font-weight: bold;
 }

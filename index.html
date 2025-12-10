@@ -253,11 +253,12 @@
                     <div class="admin-card">
                         <h3>🎮 Active Game Manager</h3>
                         <div id="admin-active-game-editor" style="background: rgba(0,0,0,0.2); padding:15px; border-radius:8px; margin-bottom:15px;">
-                            <label style="color:#aaa; font-size:0.8rem;">Game Title:</label><input type="text" id="ag-title" class="admin-input">
-                            <label style="color:#aaa; font-size:0.8rem;">Image URL:</label><input type="text" id="ag-image" class="admin-input">
-                            <label style="color:#aaa; font-size:0.8rem;">Description:</label><input type="text" id="ag-desc" class="admin-input">
-                            <button class="btn-blue" onclick="saveActiveGame()">UPDATE GAME DETAILS</button>
-                        </div>
+							<label style="color:#aaa; font-size:0.8rem;">Game Title:</label><input type="text" id="ag-title" class="admin-input">
+							<label style="color:#aaa; font-size:0.8rem;">Image URL:</label><input type="text" id="ag-image" class="admin-input">
+							<label style="color:#aaa; font-size:0.8rem;">Description:</label><input type="text" id="ag-desc" class="admin-input">
+							<label style="color:#aaa; font-size:0.8rem;">Game Link:</label><input type="text" id="ag-link" class="admin-input" placeholder="https://...">
+							<button class="btn-blue" onclick="saveActiveGame()">UPDATE GAME DETAILS</button>
+						</div>
                         <h3>🏆 Manage Scores</h3>
                         <div style="display:flex; gap:10px; margin-bottom:10px;">
                             <input type="text" id="ag-score-name" class="admin-input" placeholder="Ninja Name (e.g. Kai S.)" style="flex:2; margin:0;">
@@ -278,7 +279,20 @@
                 <div id="admin-queue" class="admin-section">
                     <div class="admin-card" style="border-color: var(--color-home);"><h3>📊 Interest Tracker <span style="font-size:0.8rem; color:#aaa;">(Standard Items)</span></h3><div id="admin-interest-list"></div></div>
                     <div class="admin-card" style="border-color: var(--color-catalog);"><h3>📩 Incoming Print Requests</h3><div id="admin-requests-list" class="req-list"></div></div>
-                    <div class="admin-card"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><h3 style="margin:0;">⏳ Active Print Queue</h3><button onclick="toggleHistoryView()" class="btn-edit" style="width:auto;">History</button></div><div id="admin-queue-manage-list"></div><div id="admin-queue-history-list" style="display:none; border-top:1px solid #444; padding-top:10px; margin-top:10px;"><h4 style="color:#aaa; margin-top:0;">History</h4><div id="history-content"></div></div></div>
+					<div class="admin-card">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+							<h3 style="margin:0;">⏳ Active Print Queue</h3>
+							<div style="display:flex; gap:5px;">
+								<button onclick="adminAddQueueItem()" class="btn-add" style="width:auto; padding:5px 10px; font-size:0.8rem;">+ Manual Add</button>
+								<button onclick="toggleHistoryView()" class="btn-edit" style="width:auto;">History</button>
+							</div>
+						</div>
+						<div id="admin-queue-manage-list"></div>
+						<div id="admin-queue-history-list" style="display:none; border-top:1px solid #444; padding-top:10px; margin-top:10px;">
+							<h4 style="color:#aaa; margin-top:0;">History</h4>
+							<div id="history-content"></div>
+						</div>
+					</div>
                 </div>
             </div>
         </div>
@@ -296,6 +310,12 @@
     <div id="winner-modal" class="modal-overlay"><div class="modal-content" style="text-align:center;"><div class="modal-header"><h2 style="color:white; margin:0;">Winner!</h2><button onclick="document.getElementById('winner-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><h2 id="win-game-title" style="color:var(--color-jams); margin:0;">Game Title</h2><p id="win-ninja" style="color:white; font-size:1.2rem; margin:10px 0;">By Ninja</p><a id="win-link" href="#" target="_blank" class="btn-blue" style="display:inline-block; margin-top:20px; text-decoration:none;">PLAY GAME</a></div></div></div>
     <div id="challenge-admin-modal" class="modal-overlay"><div class="modal-content" style="max-width:400px;"><div class="modal-header"><h2 style="color:white; margin:0;">Edit Challenge</h2><button onclick="document.getElementById('challenge-admin-modal').style.display='none'" style="background:none; border:none; color:white;"><i class="fa-solid fa-xmark"></i></button></div><div class="modal-body"><label style="color:#aaa; font-size:0.8rem;">Type:</label><select id="chal-type" class="admin-input"><option value="MakeCode Arcade">MakeCode Arcade</option><option value="Roblox">Roblox</option><option value="Minecraft">Minecraft</option><option value="Robotics">Robotics</option><option value="3D Printing">3D Printing</option></select><input type="text" id="chal-desc" class="admin-input" placeholder="Description (e.g. Build a red house)"><input type="text" id="chal-reward" class="admin-input" placeholder="Reward (e.g. +5 Coins)"><label style="color:#aaa; font-size:0.8rem;">Deadline (Leave empty for Indefinite):</label><input type="text" id="chal-duration" class="admin-input" placeholder="e.g. 2 Days Left"><button onclick="saveChallenge()" class="btn-blue" style="margin-top:10px;">SAVE CHALLENGE</button></div></div></div>
 
-    <script src="script.js" defer></script>
+    <script src="config.js" defer></script>
+
+<script src="ui.js" defer></script>
+<script src="auth.js" defer></script>
+<script src="admin.js" defer></script>
+
+<script src="main.js" defer></script>
 </body>
 </html>
